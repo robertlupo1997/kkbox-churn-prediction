@@ -36,13 +36,14 @@ jobs:
       - name: Train + Calibrate (synthetic)
         run: |
           rm -f features/features_processed.csv
-          make features
+          python3 src/features_processor.py
           make models
           make calibrate
 
       - name: Backtests + PSI (synthetic)
         run: |
           rm -f features/features_processed.csv
+          python3 src/features_processor.py
           make backtest
           make psi
           python3 scripts/update_readme.py
