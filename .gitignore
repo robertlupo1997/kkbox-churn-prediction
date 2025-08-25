@@ -55,3 +55,4 @@ build/
 --
 Final SQL consol output.txt
 *.pbix
+release/
