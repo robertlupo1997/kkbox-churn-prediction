@@ -94,15 +94,15 @@ def load_rules():
 
         with open("rules.yaml") as f:
             return yaml.safe_load(f)
-    except:
+    except Exception:
         return None
 
 
 def score(df: pd.DataFrame, clf):
     drop = {"msno", "is_churn", "cutoff_ts", "window"}
     feats = [c for c in df.columns if c not in drop]
-    X = df[feats].fillna(0).to_numpy()
-    probs = clf.predict_proba(X)[:, 1] if hasattr(clf, "predict_proba") else clf.predict(X)
+    x = df[feats].fillna(0).to_numpy()
+    probs = clf.predict_proba(x)[:, 1] if hasattr(clf, "predict_proba") else clf.predict(x)
     return probs, feats
 
 
