@@ -1,0 +1,53 @@
+name: ci
+on:
+  push:
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint & Tests (synthetic)
+        run: |
+          make lint || true
+          make test
+
+      - name: Train + Calibrate (synthetic)
+        run: |
+          make features
+          make models
+          make calibrate
+
+      - name: Backtests + PSI (synthetic)
+        run: |
+          make backtest
+          make psi
+          python3 scripts/update_readme.py
+
+      - name: Upload eval artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-artifacts
+          path: |
+            eval/*.csv
+            models/*.json
+            models/*.pkl

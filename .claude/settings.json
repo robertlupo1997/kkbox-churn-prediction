@@ -1,0 +1,8 @@
+{
+  "defaultMode": "plan",
+  "permissions": {
+    "allow": ["Read(**)", "Bash(git diff:*)", "Bash(pytest:*)"],
+    "ask": ["Edit(**)", "Write(**)", "Bash(psql:*)", "Bash(python:*)"],
+    "deny": ["Read(./.env)", "Read(./secrets/**)", "Bash(curl:*)", "Bash(wget:*)"]
+  }
+}

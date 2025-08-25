@@ -1,0 +1,47 @@
+Here’s exactly how to fire off your whole pipeline from within the built-in SQL Shell (psql) on Windows:
+
+Open SQL Shell (psql).
+You’ll see prompts like:
+Server [localhost]:
+Database [postgres]:
+Port [5432]:
+Username [postgres]:
+Password for user postgres:
+Press Enter to accept the defaults except for Database (enter kkbox_analytics) and Password (enter your Postgres password).
+
+Set your two data-folder variables so that 01_ingest_data.sql knows where to find v1 vs. v2 CSVs:
+
+kkbox_analytics=>  \set data_dir    'C:/Users/Trey/Downloads/KKBOX_PROJECT/kkbox-churn-prediction-challenge'
+kkbox_analytics=>  \set data_dir_v2 'C:/Users/Trey/Downloads/KKBOX_PROJECT/kkbox-churn-prediction-challenge/data/churn_comp_refresh'
+Change your working directory to the project root (so that all the \i sql/… calls in master.sql resolve):
+
+kkbox_analytics=>  \! cd "C:/Users/Trey/Downloads/KKBOX_PROJECT"
+On older psql versions you can instead call your master script with its full path (see step 4).
+
+Run your master script:
+
+If you did step 3, simply type:
+
+kkbox_analytics=>  \i master.sql
+Otherwise, give the absolute path:
+
+kkbox_analytics=>  \i "C:/Users/Trey/Downloads/KKBOX_PROJECT/master.sql"
+Watch the \echo messages scroll by as psql:
+
+creates your staging schema
+
+bulk-loads all raw CSVs
+
+builds core tables, features, KPI materialized views, analysis, modeling tables
+
+validates counts and orphans
+
+When you see
+
+*** Pipeline complete
+kkbox_analytics=> 
+you’re done.
+
+Exit psql with:
+
+kkbox_analytics=>  \q

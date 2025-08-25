@@ -1,0 +1,9 @@
+site_name: KKBOX Churn — Leak-safe and Calibrated
+nav:
+  - Home: index.md
+  - Model Card: ../MODEL_CARD.md
+  - Leak Audit: ../leak_audit.md
+  - Citations: ../CITES.md
+theme:
+  name: material
+repo_url: https://github.com/robertlupo1997/kkbox-churn-prediction

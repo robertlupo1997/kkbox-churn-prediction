@@ -1,0 +1,194 @@
+Server [localhost]:
+Database [postgres]: kkbox_analytics
+Port [5432]:
+Username [postgres]:
+Password for user postgres:
+
+psql (17.4)
+WARNING: Console code page (437) differs from Windows code page (1252)
+         8-bit characters might not work correctly. See psql reference
+         page "Notes for Windows users" for details.
+Type "help" for help.
+
+kkbox_analytics=# \cd C:/Users/Trey/Downloads/KKBOX_PROJECT
+kkbox_analytics=# \i master.sql
+*** Creating staging tables
+BEGIN
+psql:C:/Users/Trey/Downloads/KKBOX_PROJECT/sql/00_create_staging_tables.sql:7: NOTICE:  schema "stg" already exists, skipping
+CREATE SCHEMA
+DROP TABLE
+CREATE TABLE
+DROP TABLE
+CREATE TABLE
+DROP TABLE
+CREATE TABLE
+DROP TABLE
+CREATE TABLE
+DROP TABLE
+CREATE TABLE
+COMMIT
+*** Loading raw data
+Output format is unaligned.
+Rows loaded into stg.members_v3              :  6769473
+Rows loaded into stg.transactions             :  22978755
+Rows loaded into stg.user_logs                :  410502905
+Rows loaded into stg.train                    :  1963891
+Rows loaded into stg.sample_submission        :  1878431
+Output format is aligned.
+ANALYZE
+ANALYZE
+ANALYZE
+ANALYZE
+ANALYZE
+*** Creating core tables
+BEGIN
+DROP TABLE
+CREATE TABLE
+INSERT 0 6769473
+CREATE INDEX
+DROP TABLE
+CREATE TABLE
+INSERT 0 22978755
+CREATE INDEX
+CREATE INDEX
+DROP TABLE
+CREATE TABLE
+INSERT 0 410502905
+CREATE INDEX
+CREATE INDEX
+DROP TABLE
+CREATE TABLE
+INSERT 0 1082190
+COMMIT
+*** Feature engineering
+BEGIN
+psql:C:/Users/Trey/Downloads/KKBOX_PROJECT/sql/03_feature_engineering.sql:6: NOTICE:  schema "features" already exists, skipping
+CREATE SCHEMA
+DROP TABLE
+SELECT 1082190
+DROP TABLE
+SELECT 2426143
+DROP TABLE
+SELECT 5339422
+COMMIT
+*** Creating KPI metrics
+BEGIN
+CREATE SCHEMA
+psql:C:/Users/Trey/Downloads/KKBOX_PROJECT/sql/04_kpi_metrics.sql:9: NOTICE:  materialized view "monthly_summary" does not exist, skipping
+DROP MATERIALIZED VIEW
+SELECT 27
+psql:C:/Users/Trey/Downloads/KKBOX_PROJECT/sql/04_kpi_metrics.sql:59: NOTICE:  materialized view "region_plan_summary" does not exist, skipping
+DROP MATERIALIZED VIEW
+SELECT 1499
+COMMIT
+*** Running analysis queries
+   month    | active_subscribers | churned_users | churn_rate |           total_mrr            |  arpu  |   clv   | promo_uptake_rate
+------------+--------------------+---------------+------------+--------------------------------+--------+---------+-------------------
+ 2015-01-01 |             291959 |         33586 |      10.32 |  49381681.70511206615258600000 | 169.14 | 1691.39 |             12.03
+ 2015-02-01 |             296923 |         33554 |      10.15 |  48134439.65359801503170690000 | 162.11 | 1621.11 |             11.21
+ 2015-03-01 |             354752 |         36993 |       9.44 |  52927305.78496842801308530000 | 149.20 | 1491.95 |              8.84
+ 2015-04-01 |             310032 |         35063 |      10.16 |  34571533.27576509524563940000 | 111.51 | 1115.10 |              6.74
+ 2015-05-01 |             315438 |         35997 |      10.24 |  32735307.06311000846066370000 | 103.78 | 1037.77 |              4.38
+ 2015-06-01 |             371171 |         40414 |       9.82 |  55158287.08974359006333550000 | 148.61 | 1486.06 |              6.00
+ 2015-07-01 |             398238 |         41252 |       9.39 |  60136139.82564102597116650000 | 151.01 | 1510.06 |              5.29
+ 2015-08-01 |             426026 |         43210 |       9.21 |  63011794.05384615418375110000 | 147.91 | 1479.06 |              4.46
+ 2015-09-01 |             434421 |         43968 |       9.19 |  63090266.18205128238134050000 | 145.23 | 1452.28 |              3.60
+ 2015-10-01 |             414176 |         40674 |       8.94 |  58562445.91025641053001960000 | 141.40 | 1413.95 |              1.61
+ 2015-11-01 |             516858 |         48205 |       8.53 |  81986061.56923076962951000000 | 158.62 | 1586.24 |              0.96
+ 2015-12-01 |             539443 |         52514 |       8.87 |  67357608.50256410286587690000 | 124.87 | 1248.65 |              0.83
+ 2016-01-01 |             572332 |         58509 |       9.27 | 100310938.65128205175815190000 | 175.27 | 1752.67 |              0.78
+ 2016-02-01 |             541041 |         57451 |       9.60 |  86897101.94871794908017710000 | 160.61 | 1606.11 |              0.45
+ 2016-03-01 |             554365 |         53956 |       8.87 |  80697186.40256410288783070000 | 145.57 | 1455.67 |              0.39
+ 2016-04-01 |             570358 |         52977 |       8.50 |  82241801.30256410288449280000 | 144.19 | 1441.93 |              0.35
+ 2016-05-01 |             587696 |         53943 |       8.41 |  85051305.05641025673306950000 | 144.72 | 1447.20 |              0.35
+ 2016-06-01 |             610046 |         55322 |       8.31 |  87120467.69487179519487210000 | 142.81 | 1428.10 |              0.32
+ 2016-07-01 |             719432 |         65056 |       8.29 | 105071650.19230769270041289950 | 146.05 | 1460.48 |              0.25
+ 2016-08-01 |             760949 |         71780 |       8.62 | 114367069.65641025682130990000 | 150.30 | 1502.95 |              0.19
+ 2016-09-01 |             778266 |         73141 |       8.59 | 114615430.05128205169963770000 | 147.27 | 1472.70 |              0.19
+ 2016-10-01 |             804349 |         72979 |       8.32 | 116686110.33333333375499190000 | 145.07 | 1450.69 |              0.20
+ 2016-11-01 |             826888 |         73775 |       8.19 | 117683991.13333333375206069800 | 142.32 | 1423.22 |              0.23
+ 2016-12-01 |             842606 |         76590 |       8.33 | 121964841.20000000042795399850 | 144.75 | 1447.47 |              0.22
+ 2017-01-01 |             886639 |         90561 |       9.27 | 128621784.13333333376161259990 | 145.07 | 1450.67 |              0.36
+ 2017-02-01 |             906295 |         80114 |       8.12 | 136192812.77948717992169979990 | 150.27 | 1502.74 |              0.44
+ 2017-03-01 |             923587 |         58385 |       5.95 | 143515717.37435897479645110000 | 155.39 | 1553.89 |              0.49
+(27 rows)
+
+
+   month    | region | plan_duration | subscribers | churned_users | churn_rate | total_mrr
+------------+--------+---------------+-------------+---------------+------------+-----------
+ 2017-01-01 | North  |           410 |         173 |           173 |     100.00 |    309324
+ 2017-01-01 | Other  |           180 |         106 |           106 |     100.00 |     60245
+ 2017-01-01 | North  |            90 |         225 |           223 |      99.11 |     83309
+(3 rows)
+
+
+      cohort_month      | cohort_size | retention_pct
+------------------------+-------------+---------------
+ 2015-01-01 00:00:00-05 |      325545 |          89.7
+ 2015-02-01 00:00:00-05 |       16234 |          77.1
+ 2015-03-01 00:00:00-05 |       68324 |          92.2
+ 2015-04-01 00:00:00-04 |       12239 |          80.4
+ 2015-05-01 00:00:00-04 |       11597 |          80.8
+ 2015-06-01 00:00:00-04 |       16350 |          75.1
+ 2015-07-01 00:00:00-04 |       29996 |          89.5
+ 2015-08-01 00:00:00-04 |       32568 |          90.4
+ 2015-09-01 00:00:00-04 |       29896 |          90.2
+ 2015-10-01 00:00:00-04 |       39696 |          91.8
+ 2015-11-01 00:00:00-04 |       38274 |          91.2
+ 2015-12-01 00:00:00-05 |       34605 |          86.1
+ 2016-01-01 00:00:00-05 |       49814 |          80.1
+ 2016-02-01 00:00:00-05 |       39922 |          78.4
+ 2016-03-01 00:00:00-05 |       31338 |          83.5
+ 2016-04-01 00:00:00-04 |       16430 |          87.8
+ 2016-05-01 00:00:00-04 |       23138 |          91.0
+ 2016-06-01 00:00:00-04 |       27037 |          90.7
+ 2016-07-01 00:00:00-04 |       36574 |          91.1
+ 2016-08-01 00:00:00-04 |       33003 |          88.0
+ 2016-09-01 00:00:00-04 |       22091 |          84.3
+ 2016-10-01 00:00:00-04 |       24815 |          86.2
+ 2016-11-01 00:00:00-04 |       27909 |          86.1
+ 2016-12-01 00:00:00-05 |       29758 |          85.4
+ 2017-01-01 00:00:00-05 |       31019 |          74.2
+ 2017-02-01 00:00:00-05 |       31494 |          81.7
+ 2017-03-01 00:00:00-05 |        2524 |          45.3
+(27 rows)
+
+
+*** Creating predictive features
+BEGIN
+psql:C:/Users/Trey/Downloads/KKBOX_PROJECT/sql/06_predictive_features.sql:6: NOTICE:  schema "model" already exists, skipping
+CREATE SCHEMA
+DROP TABLE
+SELECT 1082190
+CREATE INDEX
+COMMIT
+*** Churn risk scoring
+BEGIN
+DROP TABLE
+SELECT 1082190
+CREATE INDEX
+COMMIT
+*** Validating data
+BEGIN
+SELECT 11
+--- validation row counts ---
+          table_name          | row_count
+------------------------------+-----------
+ dim_members                  |   6769473
+ fact_transactions            |  22978755
+ fact_user_logs               | 410502905
+ fact_churn_labels            |   1082190
+ features.user_churn_labels   |   1082190
+ features.user_tenure_revenue |   2426143
+ features.user_engagement     |   5339422
+ model.churn_dataset          |   1082190
+ model.churn_risk_scores      |   1082190
+ kpi.monthly_summary          |        27
+ kpi.region_plan_summary      |      1499
+(11 rows)
+
+
+DO
+COMMIT
+*** Pipeline complete
+kkbox_analytics=#

@@ -1,0 +1,210 @@
+# KKBOX Churn Retention Rules
+# Business action mapping from churn risk patterns to retention interventions
+#
+# Usage: Map model predictions and SHAP explanations to actionable recommendations
+# Target: Customer success teams, retention campaigns, product decisions
+
+# High-level action categories
+action_categories:
+  engagement:
+    name: "Engagement Recovery"
+    description: "Re-engage inactive or declining users"
+    priority: high
+    
+  pricing:
+    name: "Pricing Intervention" 
+    description: "Address price sensitivity or payment issues"
+    priority: medium
+    
+  content:
+    name: "Content Personalization"
+    description: "Improve music discovery and recommendations"
+    priority: medium
+    
+  experience:
+    name: "User Experience"
+    description: "Fix usability or technical issues"  
+    priority: low
+    
+  retention_campaign:
+    name: "Retention Campaign"
+    description: "Targeted marketing or win-back offers"
+    priority: high
+
+# Pattern-to-action mapping rules
+# Based on SHAP feature importance and risk score thresholds
+rules:
+  
+  # High churn risk (>0.7) with low recent activity
+  - condition:
+      churn_score: ">0.7"
+      top_feature: "secs_30d" 
+      feature_impact: "negative"  # Low usage drives churn risk
+    action: "engagement"
+    recommendation: "🎵 Send personalized playlist based on past listening history"
+    message: "We miss you! Here's a playlist of songs we think you'll love."
+    urgency: "high"
+    channel: ["email", "push_notification", "in_app"]
+    
+  # High churn risk with auto-renewal disabled
+  - condition:
+      churn_score: ">0.6"  
+      top_feature: "auto_renew_latest"
+      feature_impact: "negative"  # No auto-renewal increases risk
+    action: "retention_campaign"
+    recommendation: "💰 Offer 50% discount for enabling auto-renewal"
+    message: "Save with auto-renewal! Get 50% off your next payment."
+    urgency: "high"
+    channel: ["email", "sms"]
+    
+  # Medium-high churn risk with payment issues
+  - condition:
+      churn_score: ">0.5"
+      top_feature: "cancels_total"
+      feature_impact: "positive"  # Previous cancellations indicate payment friction
+    action: "pricing"  
+    recommendation: "🎁 Offer alternative payment methods or flexible billing"
+    message: "Trouble with payments? Try our new flexible payment options."
+    urgency: "medium"
+    channel: ["email", "in_app"]
+    
+  # Medium churn risk with short plan duration preference
+  - condition:
+      churn_score: ">0.4"
+      top_feature: "plan_days_latest" 
+      feature_impact: "negative"  # Short plans suggest commitment issues
+    action: "pricing"
+    recommendation: "📅 Promote longer-term plans with better value proposition"
+    message: "Save more with our 3-month plan! 30% off when you commit longer."
+    urgency: "medium"
+    channel: ["email", "in_app_banner"]
+    
+  # Medium churn risk with declining engagement
+  - condition:
+      churn_score: ">0.4"
+      top_feature: "activity_decay_ratio"
+      feature_impact: "negative"  # Usage is declining over time
+    action: "content"
+    recommendation: "🔍 Improve music discovery with new recommendation engine"
+    message: "Discover new music just for you! Try our enhanced recommendations."
+    urgency: "medium" 
+    channel: ["in_app", "push_notification"]
+    
+  # Any churn risk with age-based patterns
+  - condition:
+      churn_score: ">0.3"
+      top_feature: "age"
+      feature_impact: "positive"  # Older users may have different preferences
+    action: "content"
+    recommendation: "🎶 Curate age-appropriate playlists and nostalgic content"
+    message: "Music that speaks to you. Check out our curated playlists."
+    urgency: "low"
+    channel: ["email", "in_app"]
+    
+  # Low-medium churn risk with gender-based patterns
+  - condition:
+      churn_score: ">0.3"
+      top_feature: "gender"  
+      feature_impact: "any"
+    action: "content"
+    recommendation: "👥 Personalize content based on demographic preferences"
+    message: "Music recommendations tailored just for you."
+    urgency: "low"
+    channel: ["in_app"]
+
+# Default actions for unmatched patterns    
+default_actions:
+  
+  # High risk without clear pattern
+  high_risk_generic:
+    condition: 
+      churn_score: ">0.7"
+    action: "retention_campaign"
+    recommendation: "🚨 High-touch customer success intervention"
+    message: "We want to keep you! Let's chat about how to improve your experience."
+    urgency: "high"
+    channel: ["phone", "email"]
+    
+  # Medium risk generic
+  medium_risk_generic:
+    condition:
+      churn_score: ">0.4"  
+    action: "engagement"
+    recommendation: "📧 General retention email with usage insights"
+    message: "Your music year in review - see what you've been listening to!"
+    urgency: "medium"
+    channel: ["email"]
+    
+  # Low risk monitoring
+  low_risk_generic:
+    condition:
+      churn_score: ">0.2"
+    action: "experience"
+    recommendation: "📊 Monitor for declining engagement patterns"
+    message: "Keep enjoying great music! Here are some new releases."
+    urgency: "low"
+    channel: ["in_app_banner"]
+
+# Business impact tracking
+impact_tracking:
+  metrics:
+    - retention_rate_improvement
+    - revenue_per_user_change  
+    - engagement_score_change
+    - customer_satisfaction_score
+    
+  success_thresholds:
+    retention_lift: 0.15  # 15% improvement in retention
+    revenue_impact: 0.10  # 10% revenue improvement
+    engagement_lift: 0.20  # 20% usage increase
+    
+  measurement_window_days: 30
+
+# Cost-effectiveness guidelines  
+cost_guidelines:
+  
+  # Budget allocation by risk tier
+  high_risk:
+    max_intervention_cost: 50.00  # USD per user
+    expected_clv_multiple: 3.0     # 3x CLV return
+    
+  medium_risk: 
+    max_intervention_cost: 20.00
+    expected_clv_multiple: 2.5
+    
+  low_risk:
+    max_intervention_cost: 5.00
+    expected_clv_multiple: 2.0
+    
+  # Channel costs (relative)
+  channel_costs:
+    phone: 10.0      # High-touch, expensive
+    email: 1.0       # Baseline cost
+    sms: 2.0         # Moderate cost
+    push_notification: 0.5  # Low cost  
+    in_app: 0.1      # Very low cost
+    in_app_banner: 0.05  # Minimal cost
+
+# Implementation guidelines
+implementation:
+  
+  # Frequency caps to avoid over-messaging
+  frequency_limits:
+    email: 2_per_week
+    sms: 1_per_week  
+    push_notification: 3_per_week
+    phone: 1_per_month
+    
+  # Testing framework
+  ab_testing:
+    control_group_size: 0.2  # 20% control
+    minimum_sample_size: 1000
+    test_duration_days: 14
+    
+  # Personalization requirements
+  personalization:
+    - user_music_history
+    - demographic_segment
+    - engagement_level  
+    - payment_history
+    - device_platform

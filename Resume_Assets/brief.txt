@@ -1,0 +1,38 @@
+Title
+Leak-safe churn prediction on KKBOX with calibrated actions
+
+Problem and metric
+Predict churn one month ahead. Score on log loss. See CITES.md.
+
+Approach
+
+* Rebuilt labels with the 30-day rule and tests.
+* DuckDB features with as-of windows and a leak audit.
+* Baselines, XGBoost, isotonic calibration.
+* Rolling backtests across three months.
+* SHAP reasons. Rules for next best action.
+
+Results  [fill with measured numbers]
+
+* Log loss. pre = A, post = B.
+* ROC AUC. C with 95% CI.
+* Brier. D with improved reliability.
+* Backtests. Feb→Mar = E, Mar→Apr = F, Apr→May = G.
+* Drift. PSI for features and score within thresholds.
+
+Demo
+
+* Retention Copilot. Member id or CSV upload.
+* Output. score, top 3 reasons, next action.
+
+Reproducibility
+
+* One command. make all.
+* Docker and green CI on a 1k synthetic fixture.
+
+Links
+
+* App. [URL]
+* Video. [URL]
+* Repo. [URL]
+* Docs. [URL]

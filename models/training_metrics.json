@@ -1,0 +1,39 @@
+{
+  "dummy_most_frequent": {
+    "log_loss": 1.8021826694558576,
+    "auc": 0.5,
+    "model_type": "baseline"
+  },
+  "dummy_stratified": {
+    "log_loss": 3.2439288050205435,
+    "auc": 0.4789473684210526,
+    "model_type": "baseline"
+  },
+  "logistic_regression": {
+    "log_loss": 0.707490273325505,
+    "auc": 0.4652631578947369,
+    "model_type": "linear"
+  },
+  "random_forest": {
+    "log_loss": 0.22039198835327223,
+    "auc": 0.5455263157894737,
+    "model_type": "ensemble"
+  },
+  "xgboost": {
+    "log_loss": 0.30681604514064537,
+    "auc": 0.4515789473684211,
+    "feature_importance": {
+      "cancels_total": "0.15722509",
+      "auto_renew_latest": "0.13598093",
+      "plan_days_latest": "0.13463885",
+      "tx_count_total": "0.13350047",
+      "unq_30d": "0.09704703",
+      "gender": "0.09107577",
+      "secs_30d": "0.08765168",
+      "logs_30d": "0.087369114",
+      "age": "0.07551109"
+    },
+    "model_type": "gradient_boosting",
+    "best_iteration": 200
+  }
+}

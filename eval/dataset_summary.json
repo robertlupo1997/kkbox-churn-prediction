@@ -1,0 +1,10 @@
+{
+  "total_rows": 916814,
+  "total_pos_rate": 0.047152421319918765,
+  "train_rows": 23046,
+  "train_pos_rate": 0.5961555150568428,
+  "val_rows": 893768,
+  "val_pos_rate": 0.032996258536891004,
+  "boundary": "cohort Mar -> Apr 2017",
+  "purge_days": 0
+}

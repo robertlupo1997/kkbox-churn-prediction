@@ -1,0 +1,52 @@
+# KKBOX data (never commit real competition data)
+kkbox-churn-prediction-challenge/
+data/
+*.csv
+*.parquet
+
+# Model artifacts (optional: can be committed for demo)
+# models/*.pkl
+# models/*.json
+# eval/*.csv
+
+# Python environment
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build artifacts
+dist/
+build/
+*.whl
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Large files
+*.zip
+*.7z
+*.gz
+*.tarkkbox_analysis.pbix

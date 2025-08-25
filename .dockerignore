@@ -1,0 +1,9 @@
+kkbox-churn-prediction-challenge/
+data/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+eval/
+models/
