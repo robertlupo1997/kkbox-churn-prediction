@@ -49,4 +49,9 @@ build/
 *.zip
 *.7z
 *.gz
-*.tarkkbox_analysis.pbix
+*.tar
+
+# Stray local files
+--
+Final SQL consol output.txt
+*.pbix
