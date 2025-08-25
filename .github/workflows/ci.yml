@@ -29,6 +29,8 @@ jobs:
       - name: Lint & Tests (synthetic)
         run: |
           make lint || true
+          # Ensure features file exists for code paths that expect it
+          test -f features/features_processed.csv || (mkdir -p features && echo "msno,is_churn,cutoff_ts,tx_count_total,cancels_total,plan_days_latest,auto_renew_latest,logs_30d,secs_30d,unq_30d,gender,age" > features/features_processed.csv)
           make test
 
       - name: Train + Calibrate (synthetic)
