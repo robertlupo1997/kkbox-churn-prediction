@@ -6,10 +6,11 @@ import streamlit as st
 
 # Optional imports
 try:
-    import pickle
+    import pickle as _pkl
 
     HAS_PICKLE = True
 except Exception:
+    _pkl = None
     HAS_PICKLE = False
 
 try:
@@ -36,8 +37,10 @@ def load_model():
 
         xgb_pkl_path = Path("models/xgboost.pkl")
         if xgb_pkl_path.exists():
+            if _pkl is None:
+                return "none", None
             with open(xgb_pkl_path, "rb") as f:
-                clf = pickle.load(f)
+                clf = _pkl.load(f)
             return "xgboost", clf
     except Exception:
         pass
@@ -58,7 +61,8 @@ def load_model():
 
     # Final fallback: pickle
     try:
-        import pickle
+        if _pkl is None:
+            return "none", None
 
         for name, p in [
             ("random_forest", "models/random_forest.pkl"),
@@ -67,7 +71,7 @@ def load_model():
             fp = Path(p)
             if fp.exists():
                 with open(fp, "rb") as f:
-                    return name, pickle.load(f)
+                    return name, _pkl.load(f)
     except Exception:
         pass
 

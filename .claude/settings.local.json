@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(venv/bin/pre-commit run:*)"
     ],
     "deny": [],
     "ask": []
