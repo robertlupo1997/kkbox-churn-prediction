@@ -9,11 +9,11 @@
 
 ## What You Get
 
-✅ **One-Command Execution**: `make all` - Complete pipeline from features to calibrated models  
-✅ **Temporal Safety**: Zero future data leakage with comprehensive unit tests  
-✅ **WSDMChurnLabeller Compliance**: ≥99% accuracy vs official Kaggle Scala reference  
-✅ **Isotonic Calibration**: Reliability improvements with Brier score and ECE validation  
-✅ **Business Action Mapping**: SHAP explanations → retention interventions via [rules.yaml](rules.yaml)  
+✅ **One-Command Execution**: `make all` - Complete pipeline from features to calibrated models
+✅ **Temporal Safety**: Zero future data leakage with comprehensive unit tests
+✅ **WSDMChurnLabeller Compliance**: ≥99% accuracy vs official Kaggle Scala reference
+✅ **Isotonic Calibration**: Reliability improvements with Brier score and ECE validation
+✅ **Business Action Mapping**: SHAP explanations → retention interventions via [rules.yaml](rules.yaml)
 
 ## Performance Metrics *[Updated: 2025-08-25]*
 
@@ -45,7 +45,7 @@ cd kkbox-churn-prediction
 make all
 
 # Or step by step
-make features  # Generate features with temporal safeguards  
+make features  # Generate features with temporal safeguards
 make models    # Train baseline + XGBoost models
 make calibrate # Apply isotonic calibration
 make test      # Run temporal safety validation
@@ -61,7 +61,7 @@ make app       # Streamlit app with SHAP explanations
 make docker-build
 make docker-run
 
-# Verify in isolated environment  
+# Verify in isolated environment
 make docker-test
 ```
 
@@ -75,7 +75,7 @@ make docker-test
 
 ### Model Pipeline
 1. **Labels**: WSDMChurnLabeller.scala semantics with mismatch audit
-2. **Features**: Leak-proof SQL with 90-day transaction, 30-day usage windows  
+2. **Features**: Leak-proof SQL with 90-day transaction, 30-day usage windows
 3. **Models**: Baseline → XGBoost with competition-optimized hyperparameters
 4. **Calibration**: Isotonic regression for reliability improvement
 5. **Validation**: Rolling backtests with PSI drift monitoring
@@ -107,12 +107,12 @@ make docker-test
 
 ### ✅ Completed
 - [x] Labels achieve ≥99% match with WSDMChurnLabeller.scala
-- [x] Zero temporal leakage in unit tests  
+- [x] Zero temporal leakage in unit tests
 - [x] DuckDB SQL type safety with TRY_CAST
 - [x] Repository isolation with pytest.ini
 - [x] Production Docker + Makefile infrastructure
 
-### 🔄 In Progress  
+### 🔄 In Progress
 - [ ] Real KKBOX data metrics validation
 - [ ] Rolling backtests (Jan→Feb, Feb→Mar, Mar→Apr)
 - [ ] Streamlit app with <500ms latency target
@@ -121,15 +121,15 @@ make docker-test
 
 Based on the [WSDM KKBox Churn Prediction Challenge](https://www.kaggle.com/competitions/kkbox-churn-prediction-challenge). See [CITES.md](CITES.md) for official sources and evaluation metric specifications.
 
-**Competition Metric**: Log Loss ([arXiv:1802.03396](https://arxiv.org/pdf/1802.03396))  
-**Churn Definition**: No renewal within 30 days after membership expiry  
+**Competition Metric**: Log Loss ([arXiv:1802.03396](https://arxiv.org/pdf/1802.03396))
+**Churn Definition**: No renewal within 30 days after membership expiry
 
 ## Portfolio Showcase
 
 This project demonstrates expertise across four roles:
 
 - **📊 Data Analyst**: Leak audit, reliability plots, cost curve analysis
-- **🔬 Data Scientist**: Label reproduction, bootstrap CIs, SHAP interpretation  
+- **🔬 Data Scientist**: Label reproduction, bootstrap CIs, SHAP interpretation
 - **⚙️ ML Engineer**: Docker, CI/CD, one-command deployment
 - **🤖 AI Engineer**: Streamlit app, cached inference, business rule integration
 

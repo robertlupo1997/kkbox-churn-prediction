@@ -29,7 +29,7 @@ export RUN_SEED="${RUN_SEED:-42}"
 - [ ] Verify temporal split boundaries
 - [ ] Generate validation reports
 - **Files**: `leakage_check.txt`, `split_check.txt`, `validation_report.txt`
-- **Commands**: 
+- **Commands**:
 ```bash
 # Leakage
 psql -v ON_ERROR_STOP=1 "$PGURL" -c "
@@ -50,7 +50,7 @@ FROM model.churn_dataset;
 # Pipeline health
 psql -v ON_ERROR_STOP=1 "$PGURL" -f sql/08_validation.sql > validation_report.txt
 ```
-- **Stop Conditions**: 
+- **Stop Conditions**:
   - If leaks > 0 → stop and report
   - If val_min <= train_max → stop and report
 
@@ -109,7 +109,7 @@ CREATE INDEX IF NOT EXISTS churn_msno_date ON model.churn_dataset (msno, label_d
 - [ ] Validate submission shape, no NaNs, probability range [0,1]
 - **Files**: `src/generate_submission.py`, `submissions/final_submission.csv`
 - **Command**: `python src/generate_submission.py --model models/calibration.pkl`
-- **Validation**: 
+- **Validation**:
 ```python
 import pandas as pd
 sub = pd.read_csv("submissions/final_submission.csv")
@@ -131,6 +131,6 @@ mkdir -p specs/churn-spec src/models src data eval submissions
 
 ## Stop Conditions Summary
 - Leakage detection: leaks > 0
-- Temporal split: val_min <= train_max  
+- Temporal split: val_min <= train_max
 - Probability validation: any p not in [0,1]
 - Model performance: baseline logloss > 0.65 or XGBoost improvement < 0.05

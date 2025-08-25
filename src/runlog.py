@@ -1,11 +1,18 @@
 from __future__ import annotations
-import json, os, subprocess, time, pathlib
+
+import json
+import os
+import pathlib
+import subprocess
+import time
+
 
 def _git_commit() -> str:
     try:
-        return subprocess.check_output(["git","rev-parse","--short","HEAD"], text=True).strip()
+        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     except Exception:
         return "unknown"
+
 
 def save_run_log(seed: int, params: dict, metrics: dict, path: str = "run.json") -> None:
     run = {

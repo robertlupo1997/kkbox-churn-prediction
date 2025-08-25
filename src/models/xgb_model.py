@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-import argparse, os, json
+import argparse
+import json
+import os
+
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+
 def prep(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["bd"] = df["bd"].clip(10, 80).fillna(30)
-    for c in ["logs_30d","secs_30d","unq_30d","tx_count_total","cancels_total"]:
+    for c in ["logs_30d", "secs_30d", "unq_30d", "tx_count_total", "cancels_total"]:
         df[c] = np.log1p(df[c].fillna(0))
     return df
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -21,15 +26,22 @@ def main():
     args = ap.parse_args()
 
     train = pq.read_table(args.train).to_pandas()
-    val   = pq.read_table(args.val).to_pandas()
+    val = pq.read_table(args.val).to_pandas()
     print(f"Train: {len(train):,} | Val: {len(val):,}")
     print(f"Train churn: {train['is_churn'].mean():.3f} | Val churn: {val['is_churn'].mean():.3f}")
 
-    train = prep(train); val = prep(val)
+    train = prep(train)
+    val = prep(val)
 
     feats = [
-        "plan_days_latest","auto_renew_latest","cancels_total","tx_count_total",
-        "logs_30d","secs_30d","unq_30d","bd"
+        "plan_days_latest",
+        "auto_renew_latest",
+        "cancels_total",
+        "tx_count_total",
+        "logs_30d",
+        "secs_30d",
+        "unq_30d",
+        "bd",
     ]
     X_tr = train[feats].fillna(0)
     y_tr = train["is_churn"].astype(int).to_numpy()
@@ -59,14 +71,21 @@ def main():
         "lambda": 1.0,
         "gamma": 0.0,
         "seed": int(os.getenv("RUN_SEED", "42")),
-        "tree_method": "hist"
+        "tree_method": "hist",
     }
     evals = [(dtr, "train"), (dva, "val")]
-    bst = xgb.train(params, dtr, args.rounds, evals=evals,
-                    early_stopping_rounds=args.early_stopping, verbose_eval=50)
+    bst = xgb.train(
+        params,
+        dtr,
+        args.rounds,
+        evals=evals,
+        early_stopping_rounds=args.early_stopping,
+        verbose_eval=50,
+    )
 
     p_va = bst.predict(dva)
     from sklearn.metrics import log_loss, roc_auc_score
+
     metrics = {
         "best_iteration": int(bst.best_iteration or 0),
         "logloss": float(log_loss(y_va, p_va)),
@@ -84,6 +103,7 @@ def main():
 
     os.makedirs("models", exist_ok=True)
     bst.save_model("models/xgb.json")
+
 
 if __name__ == "__main__":
     main()

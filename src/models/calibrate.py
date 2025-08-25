@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
-import argparse, json, os, numpy as np, pandas as pd, pyarrow.parquet as pq
+import argparse
+import json
+import os
+
+import numpy as np
+import pandas as pd
+import pyarrow.parquet as pq
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import log_loss, roc_auc_score
+
 
 def prep(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["bd"] = df["bd"].clip(10, 80).fillna(30)
-    for c in ["logs_30d","secs_30d","unq_30d","tx_count_total","cancels_total"]:
+    for c in ["logs_30d", "secs_30d", "unq_30d", "tx_count_total", "cancels_total"]:
         df[c] = np.log1p(df[c].fillna(0))
     return df
 
+
 def main():
     import xgboost as xgb
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--val", default="data/val.parquet")
     ap.add_argument("--model", default="models/xgb.json")
@@ -22,7 +31,16 @@ def main():
     val = pq.read_table(args.val).to_pandas()
     y = val["is_churn"].astype(int).to_numpy()
     val = prep(val)
-    feats = ["plan_days_latest","auto_renew_latest","cancels_total","tx_count_total","logs_30d","secs_30d","unq_30d","bd"]
+    feats = [
+        "plan_days_latest",
+        "auto_renew_latest",
+        "cancels_total",
+        "tx_count_total",
+        "logs_30d",
+        "secs_30d",
+        "unq_30d",
+        "bd",
+    ]
 
     bst = xgb.Booster(model_file=args.model)
     dva = xgb.DMatrix(val[feats].fillna(0), feature_names=feats)
@@ -46,6 +64,7 @@ def main():
     }
     open(args.metrics, "w").write(json.dumps(m, indent=2))
     print("Calibration metrics:", m)
+
 
 if __name__ == "__main__":
     main()

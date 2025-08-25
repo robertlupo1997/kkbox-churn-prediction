@@ -8,10 +8,10 @@
 --
 -- See CITES.md for official sources and leak_audit.md for exclusion rules
 
-WITH 
+WITH
 -- Configuration: Define cutoff dates per sample
 label_index AS (
-  SELECT 
+  SELECT
     tr.msno,
     tr.is_churn,
     -- Use March 1, 2017 as cutoff for training samples
@@ -23,13 +23,13 @@ label_index AS (
 
 -- Parse transaction dates with safety checks
 tx_parsed AS (
-  SELECT 
+  SELECT
     tx.msno,
     TRY_CAST(
       strptime(CAST(tx.transaction_date AS VARCHAR), '%Y%m%d') AS DATE
     ) AS transaction_date,
     TRY_CAST(
-      strptime(CAST(tx.membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE  
+      strptime(CAST(tx.membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE
     ) AS membership_expire_date,
     CAST(tx.payment_plan_days AS INTEGER) AS payment_plan_days,
     CAST(tx.plan_list_price AS INTEGER) AS plan_list_price,
@@ -46,36 +46,36 @@ tx_parsed AS (
 -- TRANSACTION FEATURES (90-day window)
 -- Aggregates transaction history respecting temporal boundaries
 tx_features AS (
-  SELECT 
+  SELECT
     li.msno,
     -- Plan characteristics (latest values before cutoff)
     LAST(tp.payment_plan_days ORDER BY tp.transaction_date) AS plan_days_latest,
     LAST(tp.is_auto_renew ORDER BY tp.transaction_date) AS auto_renew_latest,
     LAST(tp.payment_method_id ORDER BY tp.transaction_date) AS payment_method_latest,
-    
+
     -- Aggregated transaction behavior
     COUNT(*) AS tx_count_total,
     SUM(CASE WHEN tp.is_cancel = 1 THEN 1 ELSE 0 END) AS cancels_total,
     SUM(tp.actual_amount_paid) AS revenue_total,
     AVG(tp.actual_amount_paid) AS revenue_avg,
-    
+
     -- Discount behavior
-    AVG(CASE 
-      WHEN tp.plan_list_price > 0 THEN 
-        CAST(tp.actual_amount_paid AS FLOAT) / tp.plan_list_price 
-      ELSE 1.0 
+    AVG(CASE
+      WHEN tp.plan_list_price > 0 THEN
+        CAST(tp.actual_amount_paid AS FLOAT) / tp.plan_list_price
+      ELSE 1.0
     END) AS discount_factor_avg,
-    
+
     -- Tenure (days from first transaction to cutoff)
     (li.feature_cutoff - MIN(tp.transaction_date)) AS tenure_days,
-    
+
     -- Recent activity (last 30 days)
-    COUNT(CASE WHEN tp.transaction_date > li.feature_cutoff - INTERVAL '30 days' 
+    COUNT(CASE WHEN tp.transaction_date > li.feature_cutoff - INTERVAL '30 days'
                THEN 1 END) AS tx_count_30d,
-    
-    -- Payment consistency  
+
+    -- Payment consistency
     COUNT(DISTINCT tp.payment_method_id) AS payment_methods_count
-    
+
   FROM label_index li
   LEFT JOIN tx_parsed tp ON li.msno = tp.msno
   WHERE tp.transaction_date <= li.feature_cutoff  -- CRITICAL: No future data
@@ -83,15 +83,15 @@ tx_features AS (
   GROUP BY li.msno, li.feature_cutoff
 ),
 
--- Parse user log dates with safety checks  
+-- Parse user log dates with safety checks
 logs_parsed AS (
-  SELECT 
+  SELECT
     ul.msno,
     TRY_CAST(
       strptime(CAST(ul.date AS VARCHAR), '%Y%m%d') AS DATE
     ) AS log_date,
     CAST(ul.num_25 AS INTEGER) AS num_25,
-    CAST(ul.num_50 AS INTEGER) AS num_50, 
+    CAST(ul.num_50 AS INTEGER) AS num_50,
     CAST(ul.num_75 AS INTEGER) AS num_75,
     CAST(ul.num_985 AS INTEGER) AS num_985,
     CAST(ul.num_100 AS INTEGER) AS num_100,
@@ -105,33 +105,33 @@ logs_parsed AS (
 -- USAGE FEATURES (30-day window)
 -- User listening behavior patterns
 usage_features AS (
-  SELECT 
+  SELECT
     li.msno,
-    
+
     -- Activity volume (30-day window)
     COUNT(*) AS logs_30d,
     SUM(lp.total_secs) AS secs_30d,
     SUM(lp.num_unq) AS unq_30d,
     SUM(lp.num_25) AS plays_25_30d,
     SUM(lp.num_100) AS plays_100_30d,
-    
+
     -- Engagement quality
-    AVG(CASE WHEN lp.num_25 > 0 THEN 
-          CAST(lp.num_100 AS FLOAT) / lp.num_25 
+    AVG(CASE WHEN lp.num_25 > 0 THEN
+          CAST(lp.num_100 AS FLOAT) / lp.num_25
         ELSE 0 END) AS completion_rate_avg,
-    
+
     -- Listening consistency
     COUNT(DISTINCT lp.log_date) AS active_days_30d,
     AVG(lp.total_secs) AS secs_per_day_avg,
-    
+
     -- Recent activity decay (last 7 days vs prior 23 days)
-    AVG(CASE WHEN lp.log_date > li.feature_cutoff - INTERVAL '7 days' 
+    AVG(CASE WHEN lp.log_date > li.feature_cutoff - INTERVAL '7 days'
              THEN lp.total_secs ELSE 0 END) AS secs_recent_7d,
     AVG(CASE WHEN lp.log_date <= li.feature_cutoff - INTERVAL '7 days'
              AND lp.log_date > li.feature_cutoff - INTERVAL '30 days'
              THEN lp.total_secs ELSE 0 END) AS secs_prior_23d
-    
-  FROM label_index li  
+
+  FROM label_index li
   LEFT JOIN logs_parsed lp ON li.msno = lp.msno
   WHERE lp.log_date <= li.feature_cutoff  -- CRITICAL: No future data
     AND lp.log_date > li.feature_cutoff - INTERVAL '30 days'  -- 30-day window
@@ -140,17 +140,17 @@ usage_features AS (
 
 -- Parse member data with safety checks
 members_parsed AS (
-  SELECT 
+  SELECT
     m.msno,
-    CASE 
+    CASE
       WHEN m.gender IN ('male', 'female') THEN m.gender
       ELSE 'unknown'
     END AS gender,
-    CASE 
+    CASE
       WHEN TRY_CAST(m.city AS INTEGER) BETWEEN 1 AND 25 THEN TRY_CAST(m.city AS INTEGER)
       ELSE NULL
     END AS city,
-    CASE 
+    CASE
       WHEN TRY_CAST(m.bd AS INTEGER) BETWEEN 10 AND 80 THEN TRY_CAST(m.bd AS INTEGER)
       ELSE 25  -- Default age
     END AS age,
@@ -165,27 +165,27 @@ members_parsed AS (
 -- DEMOGRAPHIC FEATURES
 -- User profile and registration characteristics
 demo_features AS (
-  SELECT 
+  SELECT
     li.msno,
     mp.gender,
     mp.city,
     mp.age,
     mp.registered_via,
-    
+
     -- Registration tenure
     (li.feature_cutoff - mp.registration_date) AS registration_tenure_days
-    
+
   FROM label_index li
   LEFT JOIN members_parsed mp ON li.msno = mp.msno
 )
 
 -- FINAL FEATURE ASSEMBLY
 -- Combine all feature groups with proper null handling
-SELECT 
+SELECT
   li.msno,
   li.is_churn,
   li.cutoff_ts,
-  
+
   -- Transaction features (fill nulls for users with no transaction history)
   COALESCE(txf.plan_days_latest, 30) AS plan_days_latest,
   COALESCE(txf.auto_renew_latest, 0) AS auto_renew_latest,
@@ -198,8 +198,8 @@ SELECT
   COALESCE(txf.tenure_days, 0) AS tenure_days,
   COALESCE(txf.tx_count_30d, 0) AS tx_count_30d,
   COALESCE(txf.payment_methods_count, 0) AS payment_methods_count,
-  
-  -- Usage features (fill nulls for users with no activity)  
+
+  -- Usage features (fill nulls for users with no activity)
   COALESCE(uf.logs_30d, 0) AS logs_30d,
   COALESCE(uf.secs_30d, 0) AS secs_30d,
   COALESCE(uf.unq_30d, 0) AS unq_30d,
@@ -210,14 +210,14 @@ SELECT
   COALESCE(uf.secs_per_day_avg, 0) AS secs_per_day_avg,
   COALESCE(uf.secs_recent_7d, 0) AS secs_recent_7d,
   COALESCE(uf.secs_prior_23d, 0) AS secs_prior_23d,
-  
+
   -- Behavioral derived features
-  CASE 
-    WHEN COALESCE(uf.secs_prior_23d, 0) > 0 THEN 
+  CASE
+    WHEN COALESCE(uf.secs_prior_23d, 0) > 0 THEN
       COALESCE(uf.secs_recent_7d, 0) / uf.secs_prior_23d
     ELSE 0
   END AS activity_decay_ratio,
-  
+
   -- Demographic features
   COALESCE(df.gender, 'unknown') AS gender,
   df.city,
@@ -226,7 +226,7 @@ SELECT
   COALESCE(df.registration_tenure_days, 365) AS registration_tenure_days
 
 FROM label_index li
-LEFT JOIN tx_features txf ON li.msno = txf.msno  
+LEFT JOIN tx_features txf ON li.msno = txf.msno
 LEFT JOIN usage_features uf ON li.msno = uf.msno
 LEFT JOIN demo_features df ON li.msno = df.msno
 ORDER BY li.msno;

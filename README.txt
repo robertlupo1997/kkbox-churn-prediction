@@ -33,33 +33,33 @@ The target audience for this README is potential employers interested in data-ce
 The dataset is from the **KKBOX Research Prediction Competition** (Late Submission for the WSDM - KKBox's Churn Prediction Challenge). The main challenge is to predict churn—defined as no new valid subscription within 30 days following the current membership expiration date.
 
 ### Key Points:
-- **Churn Definition:**  
+- **Churn Definition:**
   A subscriber is considered to have churned if no new subscription transaction occurs within 30 days after membership expiration. Note that a cancellation (`is_cancel`) does not necessarily equate to churn since plan changes can also lead to renewal.
-  
-- **Data Overview:**  
-  - **Training Data:**  
+
+- **Data Overview:**
+  - **Training Data:**
     - `train.csv` (and refreshed version `train_v2.csv`): Contains user IDs and churn labels.
-  - **Test Data:**  
+  - **Test Data:**
     - `sample_submission_zero.csv` (and refreshed version `sample_submission_v2.csv`): Contains user IDs for predictions.
-  - **Transactional Data:**  
+  - **Transactional Data:**
     - `transactions.csv` and `transactions_v2.csv`: Logs user transactions including payment method, plan details, transaction date, membership expiration date, and cancellation.
-  - **User Behavior:**  
+  - **User Behavior:**
     - `user_logs.csv` and `user_logs_v2.csv`: Daily user logs showing listening behavior (e.g., song play counts, unique songs, total seconds played).
-  - **User Profiles:**  
+  - **User Profiles:**
     - `members.csv` and updated `members_v3.csv`: User information with demographics, registration details, and membership expiration snapshots.
 
 ---
 
 ## Files Included
 The dataset consists of 10 compressed files (7z archives), totaling approximately 8.95 GB. Key files include:
-- **CSV Data Files:**  
+- **CSV Data Files:**
   - `train.csv` / `train_v2.csv`
   - `sample_submission_zero.csv` / `sample_submission_v2.csv`
   - `transactions.csv` / `transactions_v2.csv`
   - `user_logs.csv` / `user_logs_v2.csv`
   - `members.csv` / `members_v3.csv`
-  
-- **Additional Files:**  
+
+- **Additional Files:**
   - `WSDMChurnLabeller.scala` – Scala script used for generating churn labels.
   - Other supporting documentation and compressed files.
 
@@ -88,12 +88,12 @@ Initially, I attempted to load the CSV files into **SQL Server** by:
 
 ### Transition to PostgreSQL
 Due to compatibility and ease-of-use considerations, I transitioned to PostgreSQL:
-1. **Database Setup:**  
+1. **Database Setup:**
    - Created the database using:
      ```sql
      CREATE DATABASE kkbox_analytics;
      ```
-2. **Table Creation:**  
+2. **Table Creation:**
    - Defined staging tables (e.g., `stg_members_v3`) to mirror CSV structures:
      ```sql
      CREATE TABLE stg_members_v3 (
@@ -105,8 +105,8 @@ Due to compatibility and ease-of-use considerations, I transitioned to PostgreSQ
          registration_init_time VARCHAR(8)
      );
      ```
-3. **Using COPY vs. \copy:**  
-   - The PostgreSQL server’s `COPY` command raised permission issues on Windows.  
+3. **Using COPY vs. \copy:**
+   - The PostgreSQL server’s `COPY` command raised permission issues on Windows.
    - Switched to client-side `\copy` in psql:
      ```sql
      \copy stg_members_v3 FROM 'C:\Path\To\members_v3.csv' DELIMITER ',' CSV HEADER
@@ -115,8 +115,8 @@ Due to compatibility and ease-of-use considerations, I transitioned to PostgreSQ
      ```sql
      \c kkbox_analytics
      ```
-4. **Final Verification:**  
-   - Completed data import in pgAdmin 4.  
+4. **Final Verification:**
+   - Completed data import in pgAdmin 4.
    - Verified row counts (e.g., `stg_members_v3` with 6,769,473 rows).
 
 ---
@@ -131,13 +131,13 @@ A typical project folder structure:
 ## Usage
 ### Running SQL Scripts
 Run the provided SQL scripts to set up the database schema and load the data:
-- **Creating Tables:**  
+- **Creating Tables:**
   Use the `create_tables.sql` script to create staging tables.
-- **Data Cleaning (Planned):**  
+- **Data Cleaning (Planned):**
   Refer to `clean_data.sql` for converting VARCHAR date fields to PostgreSQL’s DATE type. For example:
   ```sql
   CREATE TABLE dim_transactions AS
-  SELECT 
+  SELECT
       msno,
       TO_DATE(transaction_date, 'YYYYMMDD') AS transaction_date,
       TO_DATE(membership_expire_date, 'YYYYMMDD') AS membership_expire_date,

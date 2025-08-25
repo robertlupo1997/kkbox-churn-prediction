@@ -1,10 +1,10 @@
 -- Simplified KKBOX Feature Engineering with Temporal Safeguards
 -- Focuses on core features with strict leak prevention
 
-WITH 
+WITH
 -- Define cutoff dates per sample (February 28, 2017 for training as per official split)
 label_index AS (
-  SELECT 
+  SELECT
     tr.msno,
     tr.is_churn,
     DATE '2017-02-28' AS cutoff_ts  -- Official train cutoff per Kaggle spec
@@ -14,7 +14,7 @@ label_index AS (
 
 -- Parse and filter transactions (90-day lookback, no future data)
 tx_features AS (
-  SELECT 
+  SELECT
     li.msno,
     COUNT(*) AS tx_count_total,
     SUM(CASE WHEN CAST(tx.is_cancel AS INTEGER) = 1 THEN 1 ELSE 0 END) AS cancels_total,
@@ -29,9 +29,9 @@ tx_features AS (
   GROUP BY li.msno
 ),
 
--- Parse and filter user logs (30-day lookback, no future data)  
+-- Parse and filter user logs (30-day lookback, no future data)
 usage_features AS (
-  SELECT 
+  SELECT
     li.msno,
     COUNT(*) AS logs_30d,
     SUM(COALESCE(CAST(ul.total_secs AS INTEGER), 0)) AS secs_30d,
@@ -42,48 +42,48 @@ usage_features AS (
     TRY_CAST(strptime(CAST(ul.date AS VARCHAR), '%Y%m%d') AS DATE) <= li.cutoff_ts
     AND TRY_CAST(strptime(CAST(ul.date AS VARCHAR), '%Y%m%d') AS DATE) >= li.cutoff_ts - INTERVAL '30 days'
   )
-  GROUP BY li.msno  
+  GROUP BY li.msno
 ),
 
 -- Demographic features with data cleaning
 demo_features AS (
-  SELECT 
+  SELECT
     li.msno,
-    CASE 
+    CASE
       WHEN m.gender IN ('male', 'female') THEN m.gender
       ELSE 'unknown'
     END AS gender,
-    CASE 
+    CASE
       WHEN CAST(m.bd AS INTEGER) BETWEEN 10 AND 80 THEN CAST(m.bd AS INTEGER)
-      ELSE 25  
+      ELSE 25
     END AS age
   FROM label_index li
   LEFT JOIN read_csv_auto('${members_path}') m ON li.msno = m.msno
 )
 
 -- Combine all features with proper null handling and type safety
-SELECT 
+SELECT
   li.msno,
   li.is_churn,
   li.cutoff_ts,
-  
+
   -- Transaction features (explicit defaults for users with no data)
   CASE WHEN txf.tx_count_total IS NULL THEN 0 ELSE txf.tx_count_total END AS tx_count_total,
   CASE WHEN txf.cancels_total IS NULL THEN 0 ELSE txf.cancels_total END AS cancels_total,
   CASE WHEN txf.plan_days_latest IS NULL THEN 30 ELSE txf.plan_days_latest END AS plan_days_latest,
   CASE WHEN txf.auto_renew_latest IS NULL THEN 0 ELSE txf.auto_renew_latest END AS auto_renew_latest,
-  
+
   -- Usage features (explicit defaults for inactive users)
   CASE WHEN uf.logs_30d IS NULL THEN 0 ELSE uf.logs_30d END AS logs_30d,
   CASE WHEN uf.secs_30d IS NULL THEN 0 ELSE uf.secs_30d END AS secs_30d,
   CASE WHEN uf.unq_30d IS NULL THEN 0 ELSE uf.unq_30d END AS unq_30d,
-  
+
   -- Demographic features (explicit defaults)
   CASE WHEN df.gender IS NULL THEN 'unknown' ELSE df.gender END AS gender,
   CASE WHEN df.age IS NULL THEN 25 ELSE df.age END AS age
 
 FROM label_index li
 LEFT JOIN tx_features txf ON li.msno = txf.msno
-LEFT JOIN usage_features uf ON li.msno = uf.msno  
+LEFT JOIN usage_features uf ON li.msno = uf.msno
 LEFT JOIN demo_features df ON li.msno = df.msno
 ORDER BY li.msno;

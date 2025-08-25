@@ -162,6 +162,12 @@ def create_churn_labels(
     result = con.execute(query).fetchdf()
     con.close()
 
+    # Ensure back-compat columns always exist
+    if "expire_date" not in result.columns and "last_expire_date" in result.columns:
+        result["expire_date"] = result["last_expire_date"]
+    if "next_renewal_date" not in result.columns and "next_txn_date" in result.columns:
+        result["next_renewal_date"] = result["next_txn_date"]
+
     return result
 
 
