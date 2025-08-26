@@ -103,8 +103,11 @@ def prepare_synthetic_data() -> dict[str, str]:
         data_paths: File paths for SQL template substitution
     """
     import sys
+    from pathlib import Path
 
-    sys.path.append("/mnt/c/Users/Trey/Downloads/KKBOX_PROJECT")
+    # Add project root to path for imports
+    project_root = Path(__file__).parent.parent
+    sys.path.insert(0, str(project_root))
 
     from tests.fixtures.generate_synthetic import generate_kkbox_dataset
 
@@ -123,7 +126,7 @@ def prepare_synthetic_data() -> dict[str, str]:
         data_paths[f"{table_name}_path"] = str(file_path)
         print(f"✅ {table_name}: {len(df)} records")
 
-    return data_paths
+    return data_paths, temp_dir
 
 
 def run_feature_pipeline(
@@ -148,8 +151,9 @@ def run_feature_pipeline(
     processor = FeatureProcessor()
 
     # Prepare data paths
+    temp_dir = None
     if use_synthetic:
-        data_paths = prepare_synthetic_data()
+        data_paths, temp_dir = prepare_synthetic_data()
     else:
         # Production data paths (would be provided)
         raise NotImplementedError("Production data paths not configured")
@@ -173,7 +177,7 @@ def run_feature_pipeline(
 
     finally:
         # Cleanup temporary files
-        if use_synthetic and "temp_dir" in locals():
+        if use_synthetic and temp_dir is not None:
             shutil.rmtree(temp_dir, ignore_errors=True)
             print("🧹 Cleaned up temporary files")
 
