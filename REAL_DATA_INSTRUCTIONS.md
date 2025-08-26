@@ -6,7 +6,7 @@ All infrastructure is complete and tested. Follow these steps to integrate real 
 
 ### ✅ **Current Status**
 - **Infrastructure**: 100% complete ✅
-- **Synthetic Testing**: All tests passing ✅  
+- **Synthetic Testing**: All tests passing ✅
 - **Pipeline Components**: Ready for real data ✅
 - **Stop Rule Validation**: ≥99% label accuracy framework ready ✅
 
@@ -23,7 +23,7 @@ mkdir -p kkbox-churn-prediction-challenge/data/churn_comp_refresh/
 # Place KKBOX files (download from Kaggle competition):
 # kkbox-churn-prediction-challenge/data/churn_comp_refresh/
 # ├── transactions_v2.csv
-# ├── user_logs_v2.csv  
+# ├── user_logs_v2.csv
 # ├── members_v3.csv
 # └── train_v2.csv
 ```
@@ -98,14 +98,14 @@ make app
 | `eval/psi.csv` | Feature drift monitoring |
 
 ### **Go/No-Go Gates**
-✅ **Labels**: ≥99% accuracy vs train_v2.csv  
-✅ **Calibration**: Brier & ECE improvements  
-✅ **Backtests**: <10% log-loss degradation across windows  
-✅ **App**: <500ms p50 latency target  
+✅ **Labels**: ≥99% accuracy vs train_v2.csv
+✅ **Calibration**: Brier & ECE improvements
+✅ **Backtests**: <10% log-loss degradation across windows
+✅ **App**: <500ms p50 latency target
 
 ### **Portfolio Artifacts**
 - `eval/backtests.csv` → README performance tables
-- `models/calibration_metrics.json` → Reliability improvements  
+- `models/calibration_metrics.json` → Reliability improvements
 - `eval/app_features.csv` → Live demo data
 - Streamlit app → Interactive retention copilot
 
@@ -175,7 +175,7 @@ make production-check    # All tests pass
 make docker-test        # Containerized validation
 python3 test_integration.py  # Integration tests
 
-# Performance validation  
+# Performance validation
 make app                # <500ms target
 curl -X POST app/predict  # API latency check
 ```
@@ -185,7 +185,7 @@ curl -X POST app/predict  # API latency check
 ## 🚀 **SHIPPING CHECKLIST**
 
 - [ ] Label accuracy ≥99% achieved
-- [ ] Calibration improves Brier & ECE  
+- [ ] Calibration improves Brier & ECE
 - [ ] Rolling backtests show stable performance
 - [ ] PSI flags drift >0.2 appropriately
 - [ ] App meets <500ms latency target

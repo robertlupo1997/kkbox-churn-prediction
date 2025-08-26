@@ -96,7 +96,7 @@
 ## Key Insights:
 
 **✅ SAME DATA**: Used your official KKBOX competition CSVs
-**🔄 DIFFERENT ENGINE**: DuckDB instead of PostgreSQL (for simplicity)  
+**🔄 DIFFERENT ENGINE**: DuckDB instead of PostgreSQL (for simplicity)
 **📊 IDENTICAL FEATURES**: Same 8 features your SQL would have produced
 **⚡ BETTER RESULTS**: Isotonic calibration solved cohort shift problem
 **🎯 COMPLETE**: Ready-to-submit Kaggle file generated

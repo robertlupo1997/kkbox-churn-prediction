@@ -6,18 +6,18 @@ All components implemented and tested. Ready for production deployment.
 
 ---
 
-## ✅ **IMPLEMENTATION COMPLETE** 
+## ✅ **IMPLEMENTATION COMPLETE**
 
 ### **Core Pipeline**
 - [x] **WSDMChurnLabeller.scala Compliance**: Labels with ≥99% accuracy framework ✅
-- [x] **Temporal Safety**: Zero future data leakage with unit tests ✅  
+- [x] **Temporal Safety**: Zero future data leakage with unit tests ✅
 - [x] **Feature Engineering**: DuckDB-safe SQL with explicit type handling ✅
 - [x] **Model Training**: Baseline + XGBoost with competition metrics ✅
 - [x] **Isotonic Calibration**: Reliability improvements (Brier/ECE) ✅
 
 ### **Advanced Analytics**
 - [x] **Rolling Backtests**: Jan→Feb, Feb→Mar, Mar→Apr windows ✅
-- [x] **PSI Drift Monitoring**: Features + model scores with >0.2 flagging ✅  
+- [x] **PSI Drift Monitoring**: Features + model scores with >0.2 flagging ✅
 - [x] **Business Rules**: SHAP → action mapping with cost guidelines ✅
 - [x] **Performance Tracking**: Real-time metrics with stop rule enforcement ✅
 
@@ -47,7 +47,7 @@ All components implemented and tested. Ready for production deployment.
 
 ### **Integration Tests**
 - ✅ Synthetic Backtest: PASS
-- ✅ PSI Calculation: PASS  
+- ✅ PSI Calculation: PASS
 - ✅ Model Availability: PASS
 - ✅ App Features: PASS
 
@@ -60,7 +60,7 @@ All components implemented and tested. Ready for production deployment.
 ### **Four Role Expertise**
 1. **📊 Data Analyst**: Leak audit, PSI drift, cost analysis, business rules
 2. **🔬 Data Scientist**: Label compliance, calibration, bootstrap metrics, SHAP
-3. **⚙️ ML Engineer**: Docker, CI/CD, temporal testing, one-command deploy  
+3. **⚙️ ML Engineer**: Docker, CI/CD, temporal testing, one-command deploy
 4. **🤖 AI Engineer**: Streamlit app, cached inference, business integration
 
 ### **Key Differentiators**
@@ -78,7 +78,7 @@ All components implemented and tested. Ready for production deployment.
 ./ship.sh  # Complete validation pipeline
 ```
 
-### **2. Individual Components**  
+### **2. Individual Components**
 ```bash
 make all         # Full pipeline
 make app         # Launch demo
@@ -99,7 +99,7 @@ python3 scripts/update_readme.py
 
 ### **Advanced SQL Engineering**
 - DuckDB-safe temporal boundaries with TRY_CAST
-- Explicit CASE statements instead of COALESCE conflicts  
+- Explicit CASE statements instead of COALESCE conflicts
 - Anti-leakage unit tests with synthetic future events
 
 ### **ML Engineering Excellence**
@@ -107,7 +107,7 @@ python3 scripts/update_readme.py
 - Rolling window backtests with PSI drift monitoring
 - Production-grade Docker with Python 3.11-slim
 
-### **Software Engineering Best Practices** 
+### **Software Engineering Best Practices**
 - Repository isolation (pytest.ini, pyproject.toml)
 - Pre-commit hooks (ruff, black, YAML validation)
 - Comprehensive error handling with stop rules
@@ -118,11 +118,11 @@ python3 scripts/update_readme.py
 
 ### **Core Implementation**
 - `src/labels.py` - WSDMChurnLabeller compliance with mismatch audit
-- `src/backtest.py` - Rolling window validation with feature/score persistence  
+- `src/backtest.py` - Rolling window validation with feature/score persistence
 - `src/psi.py` - Population Stability Index for drift detection
 - `app/streamlit_app.py` - <500ms cached retention copilot
 
-### **Infrastructure**  
+### **Infrastructure**
 - `Dockerfile` - Production container with health checks
 - `Makefile` - One-command execution targets
 - `ship.sh` - Complete validation pipeline with stop rules
@@ -130,7 +130,7 @@ python3 scripts/update_readme.py
 
 ### **Documentation**
 - `README.md` - Auto-updating metrics with professional structure
-- `RELEASE_CHECKLIST.md` - Go/No-Go gates with completion tracking  
+- `RELEASE_CHECKLIST.md` - Go/No-Go gates with completion tracking
 - `REAL_DATA_COMMANDS.md` - Copy-paste integration commands
 - `rules.yaml` - Business action mapping with cost guidelines
 
@@ -146,7 +146,7 @@ python3 scripts/update_readme.py
 
 ### ✅ **PRODUCTION READY**
 - [x] Zero temporal leakage with comprehensive testing
-- [x] WSDMChurnLabeller.scala compliance framework  
+- [x] WSDMChurnLabeller.scala compliance framework
 - [x] Isotonic calibration with reliability improvements
 - [x] Rolling backtests with PSI drift monitoring
 - [x] Streamlit app with <500ms latency target
@@ -156,7 +156,7 @@ python3 scripts/update_readme.py
 
 ### ⏳ **AWAITING REAL DATA**
 - [ ] Label accuracy ≥99% validation on train_v2.csv
-- [ ] Performance metrics on official KKBOX splits  
+- [ ] Performance metrics on official KKBOX splits
 - [ ] Rolling backtest execution across real time windows
 - [ ] Final app deployment with verified latency
 
@@ -169,7 +169,7 @@ python3 scripts/update_readme.py
 This repository demonstrates:
 - **Enterprise-grade ML engineering** with temporal safety
 - **Production-ready deployment** with Docker + CI/CD
-- **Advanced analytics** with drift monitoring and calibration  
+- **Advanced analytics** with drift monitoring and calibration
 - **Business integration** with actionable recommendations
 - **Software engineering excellence** with comprehensive testing
 

@@ -16,7 +16,7 @@ PostgreSQL Pipeline → Feature Extract → Purged Split → Model Training → 
 **Schema**:
 ```yaml
 features:
-  - name: tenure_months  
+  - name: tenure_months
     source: features.user_tenure_revenue
     window: up_to_label_date
     aggregation: latest
@@ -25,7 +25,7 @@ features:
     fill_value: 0
     description: months since signup at label_date
   - name: avg_seconds_per_day
-    source: features.user_engagement  
+    source: features.user_engagement
     window: up_to_label_date
     aggregation: mean
     null_policy: fill_median
@@ -46,9 +46,9 @@ def extract_dataset(
 ) -> tuple[str, str]:
     """Extract train/val with purged temporal split"""
 ```
-**Boundary Rule**: 
+**Boundary Rule**:
 - Train: label_date < boundary - 30 days
-- Validate: label_date >= boundary + 30 days  
+- Validate: label_date >= boundary + 30 days
 - Purge window: [boundary - 30 days, boundary + 30 days)
 
 ### 3. Run Logging (`src/runlog.py`)
@@ -68,7 +68,7 @@ def save_run_log(
 ### 4. Model Pipeline (`src/models/`)
 **Components**:
 - `baseline.py`: L2 Logistic with StandardScaler, target logloss ≤ 0.65
-- `xgboost_model.py`: XGBClassifier with early stopping, improve by ≥ 0.05  
+- `xgboost_model.py`: XGBClassifier with early stopping, improve by ≥ 0.05
 - `calibrator.py`: Isotonic calibration on validation folds
 **Metric**: Optimize logloss only. Track AUC/Brier as secondary.
 
@@ -80,7 +80,7 @@ def save_run_log(
 
 ## Error Handling & Stop Conditions
 - **Data Leakage**: If leaks > 0, stop and report count
-- **Split Overlap**: If val_min <= train_max, stop and report dates  
+- **Split Overlap**: If val_min <= train_max, stop and report dates
 - **Probability Range**: If any p not in [0,1], stop and report bounds
 - **Missing Data**: Apply null_policy from features.yaml, log warnings
 - **Reproducibility**: Write run.json on each run with metadata

@@ -7,8 +7,8 @@ all: install lint test features models calibrate evaluate
 # Installation
 install:
 	pip install -r requirements.txt
-	
-dev: 
+
+dev:
 	pip install -r requirements-dev.txt
 
 # Code quality
@@ -16,7 +16,7 @@ lint:
 	@echo "🔍 Running code quality checks..."
 	python -m ruff check src/ tests/ || true
 	python -m black --check src/ tests/ || true
-	
+
 format:
 	@echo "🎨 Formatting code..."
 	python -m black src/ tests/
@@ -48,7 +48,7 @@ calibrate:
 	@echo "🎯 Calibrating models..."
 	python3 src/calibration.py
 
-evaluate: 
+evaluate:
 	@echo "📊 Evaluating models..."
 	@echo "Evaluation pipeline to be implemented"
 
