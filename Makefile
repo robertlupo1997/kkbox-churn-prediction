@@ -53,7 +53,7 @@ evaluate:
 	@echo "Evaluation pipeline to be implemented"
 
 backtest:
-	@echo "⏱ Rolling backtests..."
+	@echo "⏱ Rolling backtests (requires real KKBOX data)..."
 	python3 src/backtest.py --transactions kkbox-churn-prediction-challenge/data/churn_comp_refresh/transactions_v2.csv \
 	  --user-logs kkbox-churn-prediction-challenge/data/churn_comp_refresh/user_logs_v2.csv \
 	  --members kkbox-churn-prediction-challenge/data/churn_comp_refresh/members_v3.csv \
@@ -61,6 +61,23 @@ backtest:
 	  --features-sql features/features_simple.sql \
 	  --windows "2017-01:2017-02,2017-02:2017-03,2017-03:2017-04" \
 	  --out eval/backtests.csv
+
+# CI-friendly backtest using synthetic data
+backtest-ci:
+	@echo "⏱ Rolling backtests (synthetic data)..."
+	python3 src/backtest.py \
+	  --transactions tests/fixtures/transactions_synthetic.csv \
+	  --user-logs tests/fixtures/user_logs_synthetic.csv \
+	  --members tests/fixtures/members_synthetic.csv \
+	  --train-placeholder tests/fixtures/train_synthetic.csv \
+	  --features-sql features/features_simple.sql \
+	  --windows "2017-01:2017-02,2017-02:2017-03" \
+	  --out eval/backtests.csv
+
+# Generate synthetic test fixtures (run before CI tests)
+fixtures:
+	@echo "🔧 Generating synthetic test fixtures..."
+	python3 tests/fixtures/generate_synthetic.py
 
 psi:
 	@echo "📈 PSI drift (using features_* CSVs with 'window' col)..."
