@@ -37,7 +37,8 @@ jobs:
 
       - name: Clean stale model files
         run: |
-          rm -f models/*.pkl models/*.npz
+          mkdir -p models features eval
+          rm -f models/*.pkl models/*.npz models/*.json
           rm -f features/features_processed.csv
           echo "Cleaned stale artifacts"
 
