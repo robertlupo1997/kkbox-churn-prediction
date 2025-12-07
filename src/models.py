@@ -280,44 +280,65 @@ class ModelTrainer:
         output_path = Path(output_dir)
         output_path.mkdir(exist_ok=True)
         
+        print(f"💾 Saving models to {output_path}...")
+        
         # Save models with format harmonization
         for name, model in self.models.items():
-            # Primary format: pickle
+            # Primary format: pickle with protocol 4 (Python 3.4+ compatible)
             model_path = output_path / f"{name}.pkl"
-            with open(model_path, 'wb') as f:
-                pickle.dump(model, f)
+            try:
+                with open(model_path, 'wb') as f:
+                    pickle.dump(model, f, protocol=4)
+                print(f"  ✅ Saved {name}.pkl")
+            except Exception as e:
+                print(f"  ❌ Failed to save {name}.pkl: {e}")
+                continue
             
             # Special handling for XGBoost: save both JSON and PKL formats
             if name == 'xgboost':
                 try:
                     json_path = output_path / "xgboost.json"
                     model.save_model(str(json_path))
-                    print(f"  XGBoost saved in both formats: .pkl and .json")
+                    print(f"  ✅ Saved XGBoost in JSON format for compatibility")
                 except Exception as e:
-                    print(f"  Warning: Could not save XGBoost JSON format: {e}")
+                    print(f"  ⚠️  Could not save XGBoost JSON format: {e}")
             
             # Use joblib for scikit-learn models (better compatibility)
             if name in ['random_forest', 'logistic_regression']:
                 try:
                     import joblib
                     joblib_path = output_path / f"{name}_joblib.pkl"
-                    joblib.dump(model, joblib_path)
-                    print(f"  {name} saved with joblib compatibility")
+                    joblib.dump(model, joblib_path, protocol=4)
+                    print(f"  ✅ Saved {name} with joblib (protocol 4)")
                 except ImportError:
                     pass  # joblib not available, pickle is fine
+                except Exception as e:
+                    print(f"  ⚠️  joblib save failed: {e}")
         
-        # Save feature encoders and scaler
-        with open(output_path / "feature_encoders.pkl", 'wb') as f:
-            pickle.dump(self.feature_encoders, f)
+        # Save feature encoders and scaler with protocol 4
+        try:
+            with open(output_path / "feature_encoders.pkl", 'wb') as f:
+                pickle.dump(self.feature_encoders, f, protocol=4)
+            print(f"  ✅ Saved feature_encoders.pkl")
+        except Exception as e:
+            print(f"  ❌ Failed to save feature encoders: {e}")
         
-        with open(output_path / "scaler.pkl", 'wb') as f:
-            pickle.dump(self.scaler, f)
+        try:
+            with open(output_path / "scaler.pkl", 'wb') as f:
+                pickle.dump(self.scaler, f, protocol=4)
+            print(f"  ✅ Saved scaler.pkl")
+        except Exception as e:
+            print(f"  ❌ Failed to save scaler: {e}")
         
         # Save metrics
-        with open(output_path / "training_metrics.json", 'w') as f:
-            json.dump(self.metrics, f, indent=2, default=str)
+        try:
+            with open(output_path / "training_metrics.json", 'w') as f:
+                json.dump(self.metrics, f, indent=2, default=str)
+            print(f"  ✅ Saved training_metrics.json")
+        except Exception as e:
+            print(f"  ❌ Failed to save metrics: {e}")
         
-        print(f"Models and metadata saved to {output_path}")
+        print(f"✅ Models and metadata saved to {output_path}")
 
 def run_training_pipeline(features_path: str, output_dir: str = "models",
                          use_temporal_split: bool = True,
