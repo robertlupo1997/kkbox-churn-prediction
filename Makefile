@@ -1,5 +1,5 @@
 # KKBOX Churn Prediction - Production Makefile
-.PHONY: all clean test lint format install dev docker-build docker-run
+.PHONY: all clean test lint format install dev docker-build docker-run features labels models calibrate evaluate backtest backtest-ci fixtures psi app
 
 # Default target - one command to rule them all
 all: install lint test features models calibrate evaluate
