@@ -34,11 +34,20 @@ jobs:
           make lint || true
           python3 -m pytest tests/test_temporal_safety.py tests/test_new_modules.py -v --tb=short
 
-      - name: Train + Calibrate (synthetic)
+      - name: Clean stale model files
         run: |
-          make features
-          make models
-          make calibrate
+          rm -f models/*.pkl models/*.npz
+          rm -f features/features_processed.csv
+          echo "Cleaned stale artifacts"
+
+      - name: Generate features (synthetic)
+        run: python3 src/features_processor.py
+
+      - name: Train models (synthetic)
+        run: python3 train_models.py
+
+      - name: Calibrate models
+        run: python3 src/calibration.py
 
       - name: Backtests (synthetic - optional)
         continue-on-error: true
