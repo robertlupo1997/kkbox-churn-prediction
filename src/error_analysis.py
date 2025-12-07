@@ -63,10 +63,23 @@ class ChurnErrorAnalyzer:
 
         Returns:
             Dictionary containing analysis results
+
+        Raises:
+            ValueError: If inputs are invalid
         """
         # Convert to numpy if needed
         y_true = np.asarray(y_true)
         y_pred = np.asarray(y_pred)
+
+        # Input validation
+        if len(y_true) == 0 or len(y_pred) == 0:
+            raise ValueError("Input arrays cannot be empty")
+
+        if len(y_true) != len(y_pred):
+            raise ValueError(f"Length mismatch: y_true={len(y_true)}, y_pred={len(y_pred)}")
+
+        if len(features_df) != len(y_true):
+            raise ValueError(f"features_df length ({len(features_df)}) must match y_true ({len(y_true)})")
 
         # Get predictions at threshold
         y_pred_binary = (y_pred >= self.threshold).astype(int)
