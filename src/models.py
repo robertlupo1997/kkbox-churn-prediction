@@ -17,12 +17,17 @@ from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
-# Import temporal CV utilities
+# Import temporal CV utilities (try both relative and absolute imports)
+HAS_TEMPORAL_CV = False
 try:
-    from temporal_cv import TemporalSplit, ChurnTemporalCV, BootstrapMetrics
+    from src.temporal_cv import TemporalSplit, ChurnTemporalCV, BootstrapMetrics
     HAS_TEMPORAL_CV = True
 except ImportError:
-    HAS_TEMPORAL_CV = False
+    try:
+        from temporal_cv import TemporalSplit, ChurnTemporalCV, BootstrapMetrics
+        HAS_TEMPORAL_CV = True
+    except ImportError:
+        pass  # Will use fallback random splits
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     log_loss, roc_auc_score, precision_recall_curve, 

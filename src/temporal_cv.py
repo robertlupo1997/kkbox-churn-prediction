@@ -203,7 +203,26 @@ class BootstrapMetrics:
 
         Returns:
             Dictionary with metrics and their confidence intervals
+
+        Raises:
+            ValueError: If inputs are invalid (empty, mismatched length, or invalid values)
         """
+        # Input validation
+        y_true = np.asarray(y_true)
+        y_pred = np.asarray(y_pred)
+
+        if len(y_true) == 0 or len(y_pred) == 0:
+            raise ValueError("Input arrays cannot be empty")
+
+        if len(y_true) != len(y_pred):
+            raise ValueError(f"Length mismatch: y_true={len(y_true)}, y_pred={len(y_pred)}")
+
+        if not np.all((y_pred >= 0) & (y_pred <= 1)):
+            raise ValueError("y_pred must contain probabilities in [0, 1]")
+
+        if len(np.unique(y_true)) < 2:
+            raise ValueError("y_true must contain at least 2 classes")
+
         np.random.seed(self.random_state)
 
         n_samples = len(y_true)
