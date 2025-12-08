@@ -36,6 +36,7 @@ ENV/
 
 # Jupyter
 .ipynb_checkpoints/
+*.ipynb
 
 # OS
 .DS_Store
@@ -43,6 +44,21 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Build artifacts
+*.whl
+
+# Large files
+*.zip
+*.7z
+*.gz
+*.tar
+
+# Stray local files
+--
+Final SQL consol output.txt
+*.pbix
+release/
 
 # Local data (use synthetic for CI)
 kkbox-churn-prediction-challenge/
