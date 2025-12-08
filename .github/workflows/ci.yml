@@ -35,6 +35,10 @@ jobs:
           make lint || true
           python3 -m pytest tests/test_temporal_safety.py tests/test_new_modules.py -v --tb=short
 
+      - name: Integration Tests
+        continue-on-error: true
+        run: python3 test_integration.py
+
       - name: Clean stale model files
         run: |
           mkdir -p models features eval
