@@ -95,18 +95,21 @@ class FeatureProcessor:
         
         return validation
 
-def prepare_synthetic_data() -> Dict[str, str]:
+def prepare_synthetic_data() -> tuple[Dict[str, str], Path]:
     """
     Set up synthetic data files for feature processing.
-    
+
     Returns:
         data_paths: File paths for SQL template substitution
+        temp_dir: Path to temporary directory (caller should clean up)
     """
     import sys
-    sys.path.append('/mnt/c/Users/Trey/Downloads/KKBOX_PROJECT')
-    
+    # Add project root to path for imports
+    project_root = Path(__file__).parent.parent
+    sys.path.insert(0, str(project_root))
+
     from tests.fixtures.generate_synthetic import generate_kkbox_dataset
-    
+
     # Create temporary directory
     temp_dir = Path(tempfile.mkdtemp())
     print(f"📁 Creating synthetic data in {temp_dir}")
@@ -121,8 +124,8 @@ def prepare_synthetic_data() -> Dict[str, str]:
         df.to_csv(file_path, index=False)
         data_paths[f"{table_name}_path"] = str(file_path)
         print(f"✅ {table_name}: {len(df)} records")
-    
-    return data_paths
+
+    return data_paths, temp_dir
 
 def run_feature_pipeline(use_synthetic: bool = True,
                         sql_file: str = "features/features_simple.sql",
@@ -139,24 +142,25 @@ def run_feature_pipeline(use_synthetic: bool = True,
         processed_features: Feature dataframe ready for modeling
     """
     print("🚀 Starting KKBOX Feature Processing Pipeline")
-    
+
     # Initialize processor
     processor = FeatureProcessor()
-    
+
     # Prepare data paths
+    temp_dir = None
     if use_synthetic:
-        data_paths = prepare_synthetic_data()
+        data_paths, temp_dir = prepare_synthetic_data()
     else:
         # Production data paths (would be provided)
         raise NotImplementedError("Production data paths not configured")
-    
+
     # Ensure output directory exists
     Path(output_file).parent.mkdir(exist_ok=True, parents=True)
-    
+
     try:
         # Process features
         features_df = processor.process_features(sql_file, data_paths, output_file)
-        
+
         # Validate results
         validation = processor.validate_features(features_df)
         print("\n📊 Feature Validation Summary:")
@@ -164,12 +168,12 @@ def run_feature_pipeline(use_synthetic: bool = True,
         print(f"  Features: {validation['total_features']}")
         print(f"  Churn Rate: {validation['churn_rate']:.3f}")
         print(f"  Missing Values: {sum(validation['missing_values'].values())} total")
-        
+
         return features_df
-        
+
     finally:
         # Cleanup temporary files
-        if use_synthetic and 'temp_dir' in locals():
+        if temp_dir is not None:
             shutil.rmtree(temp_dir, ignore_errors=True)
             print("🧹 Cleaned up temporary files")
 

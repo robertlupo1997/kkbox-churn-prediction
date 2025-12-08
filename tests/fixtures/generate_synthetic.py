@@ -221,11 +221,14 @@ def main():
     members.to_csv(fixtures_dir / "members_synthetic.csv", index=False)
     train_labels.to_csv(fixtures_dir / "train_synthetic.csv", index=False)
     
-    # Save as parquet for efficiency
-    pd.DataFrame({'tables': [str(len(transactions)), str(len(user_logs)), 
-                             str(len(members)), str(len(train_labels))]}).to_parquet(
-        fixtures_dir / "tiny_sample.parquet"
-    )
+    # Save as parquet for efficiency (optional - skip if pyarrow not available)
+    try:
+        pd.DataFrame({'tables': [str(len(transactions)), str(len(user_logs)),
+                                 str(len(members)), str(len(train_labels))]}).to_parquet(
+            fixtures_dir / "tiny_sample.parquet"
+        )
+    except ImportError:
+        print("   ⚠️ Skipping parquet (pyarrow not installed) - CSV files are sufficient")
     
     print(f"✅ Synthetic dataset generated:")
     print(f"   📊 Transactions: {len(transactions):,}")
