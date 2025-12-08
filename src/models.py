@@ -16,6 +16,18 @@ from datetime import datetime
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+
+# Import temporal CV utilities (try both relative and absolute imports)
+HAS_TEMPORAL_CV = False
+try:
+    from src.temporal_cv import TemporalSplit, ChurnTemporalCV, BootstrapMetrics
+    HAS_TEMPORAL_CV = True
+except ImportError:
+    try:
+        from temporal_cv import TemporalSplit, ChurnTemporalCV, BootstrapMetrics
+        HAS_TEMPORAL_CV = True
+    except ImportError:
+        pass  # Will use fallback random splits
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     log_loss, roc_auc_score, precision_recall_curve, 
@@ -268,76 +280,117 @@ class ModelTrainer:
         output_path = Path(output_dir)
         output_path.mkdir(exist_ok=True)
         
+        print(f"💾 Saving models to {output_path}...")
+        
         # Save models with format harmonization
         for name, model in self.models.items():
-            # Primary format: pickle
+            # Primary format: pickle with protocol 4 (Python 3.4+ compatible)
             model_path = output_path / f"{name}.pkl"
-            with open(model_path, 'wb') as f:
-                pickle.dump(model, f)
+            try:
+                with open(model_path, 'wb') as f:
+                    pickle.dump(model, f, protocol=4)
+                print(f"  ✅ Saved {name}.pkl")
+            except Exception as e:
+                print(f"  ❌ Failed to save {name}.pkl: {e}")
+                continue
             
             # Special handling for XGBoost: save both JSON and PKL formats
             if name == 'xgboost':
                 try:
                     json_path = output_path / "xgboost.json"
                     model.save_model(str(json_path))
-                    print(f"  XGBoost saved in both formats: .pkl and .json")
+                    print(f"  ✅ Saved XGBoost in JSON format for compatibility")
                 except Exception as e:
-                    print(f"  Warning: Could not save XGBoost JSON format: {e}")
+                    print(f"  ⚠️  Could not save XGBoost JSON format: {e}")
             
             # Use joblib for scikit-learn models (better compatibility)
             if name in ['random_forest', 'logistic_regression']:
                 try:
                     import joblib
                     joblib_path = output_path / f"{name}_joblib.pkl"
-                    joblib.dump(model, joblib_path)
-                    print(f"  {name} saved with joblib compatibility")
+                    joblib.dump(model, joblib_path, protocol=4)
+                    print(f"  ✅ Saved {name} with joblib (protocol 4)")
                 except ImportError:
                     pass  # joblib not available, pickle is fine
+                except Exception as e:
+                    print(f"  ⚠️  joblib save failed: {e}")
         
-        # Save feature encoders and scaler
-        with open(output_path / "feature_encoders.pkl", 'wb') as f:
-            pickle.dump(self.feature_encoders, f)
+        # Save feature encoders and scaler with protocol 4
+        try:
+            with open(output_path / "feature_encoders.pkl", 'wb') as f:
+                pickle.dump(self.feature_encoders, f, protocol=4)
+            print(f"  ✅ Saved feature_encoders.pkl")
+        except Exception as e:
+            print(f"  ❌ Failed to save feature encoders: {e}")
         
-        with open(output_path / "scaler.pkl", 'wb') as f:
-            pickle.dump(self.scaler, f)
+        try:
+            with open(output_path / "scaler.pkl", 'wb') as f:
+                pickle.dump(self.scaler, f, protocol=4)
+            print(f"  ✅ Saved scaler.pkl")
+        except Exception as e:
+            print(f"  ❌ Failed to save scaler: {e}")
         
         # Save metrics
-        with open(output_path / "training_metrics.json", 'w') as f:
-            json.dump(self.metrics, f, indent=2, default=str)
+        try:
+            with open(output_path / "training_metrics.json", 'w') as f:
+                json.dump(self.metrics, f, indent=2, default=str)
+            print(f"  ✅ Saved training_metrics.json")
+        except Exception as e:
+            print(f"  ❌ Failed to save metrics: {e}")
         
-        print(f"Models and metadata saved to {output_path}")
+        print(f"✅ Models and metadata saved to {output_path}")
 
-def run_training_pipeline(features_path: str, output_dir: str = "models") -> Dict[str, Any]:
+def run_training_pipeline(features_path: str, output_dir: str = "models",
+                         use_temporal_split: bool = True,
+                         train_cutoff: str = "2017-02-01") -> Dict[str, Any]:
     """
     Execute complete model training pipeline.
-    
+
     Args:
         features_path: Path to processed features CSV
         output_dir: Directory to save models and results
-        
+        use_temporal_split: If True, use time-based train/val split (recommended).
+                           If False, use random stratified split.
+        train_cutoff: Date cutoff for temporal split (training uses data before this date)
+
     Returns:
         comprehensive_metrics: All model performance metrics
     """
     print("🚀 Starting KKBOX Churn Model Training Pipeline")
-    
+
     # Load features
     print(f"📊 Loading features from {features_path}")
     df = pd.read_csv(features_path)
-    
+
     # Validate temporal safety
     print(f"🔍 Validating data: {len(df)} samples, {df['is_churn'].mean():.3f} churn rate")
-    
+
     # Initialize trainer
     trainer = ModelTrainer(random_state=42)
-    
-    # Prepare features
+
+    # Prepare features (keep original df for temporal splitting)
     X, y = trainer.prepare_features(df)
     print(f"✅ Features prepared: {X.shape[1]} features, {len(X)} samples")
-    
-    # Train/validation split (temporal aware - could use time-based split in production)
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
+
+    # Train/validation split
+    if use_temporal_split and HAS_TEMPORAL_CV and 'cutoff_ts' in df.columns:
+        print(f"📅 Using TEMPORAL split (cutoff: {train_cutoff})")
+        splitter = TemporalSplit(train_end=train_cutoff)
+        train_idx, val_idx = splitter.split(df, time_column='cutoff_ts')
+
+        if len(train_idx) == 0 or len(val_idx) == 0:
+            print("⚠️ Temporal split failed (insufficient data), falling back to random split")
+            X_train, X_val, y_train, y_val = train_test_split(
+                X, y, test_size=0.2, random_state=42, stratify=y
+            )
+        else:
+            X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+            y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+    else:
+        print("📅 Using RANDOM stratified split (consider temporal split for production)")
+        X_train, X_val, y_train, y_val = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
     
     print(f"📊 Train: {len(X_train)} samples, Val: {len(X_val)} samples")
     
@@ -368,6 +421,31 @@ def run_training_pipeline(features_path: str, output_dir: str = "models") -> Dic
     # Save everything
     trainer.save_models(output_dir)
     
+    # Compute bootstrap confidence intervals for best model
+    bootstrap_ci = None
+    if HAS_TEMPORAL_CV:
+        try:
+            print("\n📊 Computing bootstrap confidence intervals...")
+            best_model_obj = trainer.models[best_model]
+
+            # Get predictions for bootstrap
+            if best_model == 'logistic_regression':
+                X_val_processed = trainer.scaler.transform(X_val)
+            else:
+                X_val_processed = X_val.values if hasattr(X_val, 'values') else X_val
+
+            y_val_pred = best_model_obj.predict_proba(X_val_processed)[:, 1]
+
+            bootstrap = BootstrapMetrics(n_bootstrap=500, random_state=42)
+            bootstrap_ci = bootstrap.compute(y_val.values, y_val_pred)
+
+            print(f"  Log Loss: {bootstrap_ci['log_loss']['mean']:.4f} "
+                  f"({bootstrap_ci['log_loss']['ci_lower']:.4f} - {bootstrap_ci['log_loss']['ci_upper']:.4f})")
+            print(f"  AUC: {bootstrap_ci['auc']['mean']:.4f} "
+                  f"({bootstrap_ci['auc']['ci_lower']:.4f} - {bootstrap_ci['auc']['ci_upper']:.4f})")
+        except Exception as e:
+            print(f"  ⚠️ Bootstrap CI computation failed: {e}")
+
     # Add training metadata
     training_summary = {
         'timestamp': datetime.now().isoformat(),
@@ -377,9 +455,11 @@ def run_training_pipeline(features_path: str, output_dir: str = "models") -> Dic
         'best_model': best_model,
         'best_log_loss': float(all_metrics[best_model]['log_loss']),
         'best_auc': float(all_metrics[best_model]['auc']),
-        'models_trained': list(all_metrics.keys())
+        'models_trained': list(all_metrics.keys()),
+        'split_type': 'temporal' if (use_temporal_split and HAS_TEMPORAL_CV) else 'random',
+        'bootstrap_ci': bootstrap_ci
     }
-    
+
     return {
         'metrics': all_metrics,
         'summary': training_summary,

@@ -66,8 +66,8 @@ tx_features AS (
       ELSE 1.0 
     END) AS discount_factor_avg,
     
-    -- Tenure (days from first transaction to cutoff)
-    (li.feature_cutoff - MIN(tp.transaction_date)) AS tenure_days,
+    -- Tenure (days from first transaction to cutoff) - use DATE_DIFF for integer result
+    DATE_DIFF('day', MIN(tp.transaction_date), li.feature_cutoff) AS tenure_days,
     
     -- Recent activity (last 30 days)
     COUNT(CASE WHEN tp.transaction_date > li.feature_cutoff - INTERVAL '30 days' 
@@ -172,8 +172,8 @@ demo_features AS (
     mp.age,
     mp.registered_via,
     
-    -- Registration tenure
-    (li.feature_cutoff - mp.registration_date) AS registration_tenure_days
+    -- Registration tenure - use DATE_DIFF for integer result
+    DATE_DIFF('day', mp.registration_date, li.feature_cutoff) AS registration_tenure_days
     
   FROM label_index li
   LEFT JOIN members_parsed mp ON li.msno = mp.msno

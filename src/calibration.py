@@ -38,24 +38,64 @@ class ModelCalibrator:
         """Load previously trained models and preprocessing objects."""
         models_path = Path(models_dir)
         
+        if not models_path.exists():
+            raise FileNotFoundError(
+                f"Models directory '{models_dir}' not found. "
+                "Please run train_models.py first to generate model files."
+            )
+        
         models = {}
         model_files = list(models_path.glob("*.pkl"))
+        
+        # Filter out files that start with 'calibrator_' to avoid loading old calibrators
+        model_files = [f for f in model_files if not f.name.startswith('calibrator_')]
         
         for model_file in model_files:
             if model_file.name in ['feature_encoders.pkl', 'scaler.pkl']:
                 continue
             
             model_name = model_file.stem
-            with open(model_file, 'rb') as f:
-                models[model_name] = pickle.load(f)
+            try:
+                with open(model_file, 'rb') as f:
+                    models[model_name] = pickle.load(f)
+                print(f"  ✅ Loaded {model_name}")
+            except (pickle.UnpicklingError, EOFError, AttributeError) as e:
+                print(f"  ⚠️ Failed to load {model_name}: {type(e).__name__}")
+                print(f"     Skipping {model_name} (may be corrupted or incompatible)")
+                continue
+            except Exception as e:
+                print(f"  ❌ Unexpected error loading {model_name}: {e}")
+                continue
+        
+        if not models:
+            raise ValueError(
+                f"No valid model files found in {models_dir}. "
+                "Please ensure train_models.py completed successfully."
+            )
         
         # Load preprocessing objects
-        with open(models_path / "feature_encoders.pkl", 'rb') as f:
-            feature_encoders = pickle.load(f)
-            
-        with open(models_path / "scaler.pkl", 'rb') as f:
-            scaler = pickle.load(f)
+        required_files = ['feature_encoders.pkl', 'scaler.pkl']
+        for req_file in required_files:
+            file_path = models_path / req_file
+            if not file_path.exists():
+                raise FileNotFoundError(
+                    f"Required file '{req_file}' not found in {models_dir}. "
+                    "Please run train_models.py to generate all required files."
+                )
         
+        try:
+            with open(models_path / "feature_encoders.pkl", 'rb') as f:
+                feature_encoders = pickle.load(f)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load feature_encoders.pkl: {e}")
+            
+        try:
+            with open(models_path / "scaler.pkl", 'rb') as f:
+                scaler = pickle.load(f)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load scaler.pkl: {e}")
+        
+        print(f"✅ Successfully loaded {len(models)} models")
         return models, feature_encoders, scaler
     
     def expected_calibration_error(self, y_true: np.ndarray, y_prob: np.ndarray, 
@@ -238,11 +278,14 @@ class ModelCalibrator:
         """Save calibrated models and calibration metrics."""
         output_path = Path(output_dir)
         
-        # Save calibrators
+        # Save calibrators with protocol 4
         for model_name, results in calibration_results.items():
             calibrator_path = output_path / f"calibrator_{model_name}.pkl"
-            with open(calibrator_path, 'wb') as f:
-                pickle.dump(results['calibrator'], f)
+            try:
+                with open(calibrator_path, 'wb') as f:
+                    pickle.dump(results['calibrator'], f, protocol=4)
+            except Exception as e:
+                print(f"  ⚠️  Failed to save calibrator for {model_name}: {e}")
         
         # Save calibration metrics
         metrics_summary = {}
