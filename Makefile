@@ -7,8 +7,8 @@ all: install lint test features models calibrate evaluate
 # Installation
 install:
 	pip install -r requirements.txt
-	
-dev: 
+
+dev:
 	pip install -r requirements-dev.txt
 
 # Code quality
@@ -16,7 +16,7 @@ lint:
 	@echo "🔍 Running code quality checks..."
 	python -m ruff check src/ tests/ || true
 	python -m black --check src/ tests/ || true
-	
+
 format:
 	@echo "🎨 Formatting code..."
 	python -m black src/ tests/
@@ -36,6 +36,21 @@ features:
 	@echo "🔧 Generating features with synthetic data..."
 	python3 src/features_processor.py
 
+# Comprehensive features from real Kaggle data (100+ features)
+features-real:
+	@echo "🔧 Generating comprehensive features from real KKBOX data..."
+	@echo "⚠️  This will process 30GB of data and may take 10-30 minutes..."
+	python3 src/features_comprehensive_processor.py
+
+# Full pipeline with real data
+all-real: install features-real models-real calibrate
+	@echo "✅ Full pipeline with real data complete!"
+
+# Train models on comprehensive features
+models-real:
+	@echo "🤖 Training models on comprehensive features..."
+	python3 train_models.py --features features/features_comprehensive.parquet
+
 labels:
 	@echo "🏷️  Validating churn labels (requires real KKBOX data)..."
 	@echo "Note: Run 'python3 src/labels.py --transactions <path> --train-labels <path>' with real data"
@@ -48,7 +63,7 @@ calibrate:
 	@echo "🎯 Calibrating models..."
 	python3 src/calibration.py
 
-evaluate: 
+evaluate:
 	@echo "📊 Evaluating models..."
 	@echo "Evaluation pipeline to be implemented"
 
