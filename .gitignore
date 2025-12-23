@@ -25,6 +25,7 @@ htmlcov/
 # IDE
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 
@@ -62,3 +63,13 @@ release/
 
 # Local data (use synthetic for CI)
 kkbox-churn-prediction-challenge/
+data/
+submissions/
+
+# Large eval outputs (keep app_features.csv for demo)
+eval/labels_*.csv
+eval/features_*.csv
+
+# Synthetic test fixtures (regenerate with make fixtures)
+tests/fixtures/*.csv
+tests/fixtures/*.parquet
