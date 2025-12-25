@@ -1,0 +1,61 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: kkbox-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount models directory for model access
+      - ./models:/app/models:ro
+      # Mount eval directory for features and metrics
+      - ./eval:/app/eval:ro
+      # Mount rules.yaml for business rules
+      - ./rules.yaml:/app/rules.yaml:ro
+      # Mount features.yaml for feature definitions (optional)
+      - ./features.yaml:/app/features.yaml:ro
+    environment:
+      # Model paths (defaults in config.py should work with mounted volumes)
+      - MODEL_PATH=models/xgb.json
+      - FEATURES_PATH=eval/app_features.csv
+      - RULES_PATH=rules.yaml
+      - METRICS_PATH=models/training_metrics.json
+      - CALIBRATION_PATH=models/calibration_metrics.json
+      # CORS settings to allow frontend access
+      - CORS_ORIGINS=["http://localhost:3000","http://frontend:3000"]
+      # API settings
+      - API_TITLE=KKBOX Churn API
+      - API_VERSION=1.0.0
+      - API_PREFIX=/api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kkbox-network
+
+  frontend:
+    build:
+      context: ./gemini-app
+      dockerfile: Dockerfile
+    container_name: kkbox-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Vite config will proxy /api to backend service
+      - VITE_API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - kkbox-network
+    stdin_open: true
+    tty: true
+
+networks:
+  kkbox-network:
+    driver: bridge
