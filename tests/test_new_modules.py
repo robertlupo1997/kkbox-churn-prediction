@@ -10,14 +10,15 @@ These tests cover:
 
 import sys
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from temporal_cv import TemporalSplit, ChurnTemporalCV, BootstrapMetrics
 from error_analysis import ChurnErrorAnalyzer
+from temporal_cv import BootstrapMetrics, ChurnTemporalCV, TemporalSplit
 
 
 class TestTemporalSplit:
@@ -25,13 +26,15 @@ class TestTemporalSplit:
 
     def test_basic_split(self):
         """Test basic temporal split functionality."""
-        df = pd.DataFrame({
-            'cutoff_ts': pd.date_range('2017-01-01', '2017-04-30', periods=100),
-            'feature1': np.random.randn(100)
-        })
+        df = pd.DataFrame(
+            {
+                "cutoff_ts": pd.date_range("2017-01-01", "2017-04-30", periods=100),
+                "feature1": np.random.randn(100),
+            }
+        )
 
-        splitter = TemporalSplit(train_end='2017-03-01')
-        train_idx, val_idx = splitter.split(df, 'cutoff_ts')
+        splitter = TemporalSplit(train_end="2017-03-01")
+        train_idx, val_idx = splitter.split(df, "cutoff_ts")
 
         # Train should be before March, val should be March onwards
         assert len(train_idx) > 0, "Train set should not be empty"
@@ -39,8 +42,8 @@ class TestTemporalSplit:
         assert len(train_idx) + len(val_idx) == len(df), "All samples should be assigned"
 
         # Verify temporal ordering
-        train_dates = df.iloc[train_idx]['cutoff_ts']
-        val_dates = df.iloc[val_idx]['cutoff_ts']
+        train_dates = df.iloc[train_idx]["cutoff_ts"]
+        val_dates = df.iloc[val_idx]["cutoff_ts"]
         assert train_dates.max() < val_dates.min(), "Train dates should be before val dates"
 
 
@@ -49,16 +52,16 @@ class TestChurnTemporalCV:
 
     def test_fold_count(self):
         """Test that correct number of folds are generated."""
-        cv = ChurnTemporalCV(months=['2017-01', '2017-02', '2017-03', '2017-04'])
+        cv = ChurnTemporalCV(months=["2017-01", "2017-02", "2017-03", "2017-04"])
         assert cv.get_n_splits() == 3, "Should have 3 folds for 4 months"
 
     def test_fold_descriptions(self):
         """Test fold description generation."""
-        cv = ChurnTemporalCV(months=['2017-01', '2017-02', '2017-03'])
+        cv = ChurnTemporalCV(months=["2017-01", "2017-02", "2017-03"])
         descriptions = cv.get_fold_description()
         assert len(descriptions) == 2
-        assert 'Train' in descriptions[0]
-        assert 'Val' in descriptions[0]
+        assert "Train" in descriptions[0]
+        assert "Val" in descriptions[0]
 
 
 class TestBootstrapMetrics:
@@ -74,20 +77,20 @@ class TestBootstrapMetrics:
         results = bootstrap.compute(y_true, y_pred)
 
         # Check all metrics are present
-        assert 'log_loss' in results
-        assert 'auc' in results
-        assert 'brier' in results
+        assert "log_loss" in results
+        assert "auc" in results
+        assert "brier" in results
 
         # Check each metric has required keys
         for metric in results.values():
-            assert 'mean' in metric
-            assert 'std' in metric
-            assert 'ci_lower' in metric
-            assert 'ci_upper' in metric
+            assert "mean" in metric
+            assert "std" in metric
+            assert "ci_lower" in metric
+            assert "ci_upper" in metric
 
         # CI should be valid
         for metric in results.values():
-            assert metric['ci_lower'] <= metric['mean'] <= metric['ci_upper']
+            assert metric["ci_lower"] <= metric["mean"] <= metric["ci_upper"]
 
     def test_empty_input_raises(self):
         """Test that empty inputs raise ValueError."""
@@ -134,11 +137,13 @@ class TestChurnErrorAnalyzer:
         np.random.seed(42)
         n = 100
 
-        features_df = pd.DataFrame({
-            'msno': [f'user_{i}' for i in range(n)],
-            'feature1': np.random.randn(n),
-            'feature2': np.random.randn(n)
-        })
+        features_df = pd.DataFrame(
+            {
+                "msno": [f"user_{i}" for i in range(n)],
+                "feature1": np.random.randn(n),
+                "feature2": np.random.randn(n),
+            }
+        )
 
         y_true = np.random.binomial(1, 0.3, n)
         y_pred = np.clip(y_true * 0.7 + np.random.uniform(0, 0.3, n), 0, 1)
@@ -147,15 +152,15 @@ class TestChurnErrorAnalyzer:
         results = analyzer.analyze(y_true, y_pred, features_df)
 
         # Check all sections present
-        assert 'summary' in results
-        assert 'confidence_analysis' in results
-        assert 'segment_analysis' in results
-        assert 'business_impact' in results
-        assert 'recommendations' in results
+        assert "summary" in results
+        assert "confidence_analysis" in results
+        assert "segment_analysis" in results
+        assert "business_impact" in results
+        assert "recommendations" in results
 
         # Check summary contents
-        assert 'n_samples' in results['summary']
-        assert results['summary']['n_samples'] == n
+        assert "n_samples" in results["summary"]
+        assert results["summary"]["n_samples"] == n
 
     def test_empty_input_raises(self):
         """Test that empty inputs raise ValueError."""
@@ -169,7 +174,7 @@ class TestChurnErrorAnalyzer:
     def test_length_mismatch_raises(self):
         """Test that mismatched lengths raise ValueError."""
         analyzer = ChurnErrorAnalyzer()
-        features_df = pd.DataFrame({'x': [1, 2, 3]})
+        features_df = pd.DataFrame({"x": [1, 2, 3]})
         try:
             analyzer.analyze(np.array([0, 1]), np.array([0.5, 0.5]), features_df)
             assert False, "Should raise ValueError for length mismatch"
@@ -183,7 +188,7 @@ def run_tests():
         TestTemporalSplit,
         TestChurnTemporalCV,
         TestBootstrapMetrics,
-        TestChurnErrorAnalyzer
+        TestChurnErrorAnalyzer,
     ]
 
     total_passed = 0
@@ -192,10 +197,10 @@ def run_tests():
     for test_class in test_classes:
         print(f"\n{'='*50}")
         print(f"Testing {test_class.__name__}")
-        print('='*50)
+        print("=" * 50)
 
         instance = test_class()
-        methods = [m for m in dir(instance) if m.startswith('test_')]
+        methods = [m for m in dir(instance) if m.startswith("test_")]
 
         for method_name in methods:
             try:
@@ -208,7 +213,7 @@ def run_tests():
 
     print(f"\n{'='*50}")
     print(f"Results: {total_passed} passed, {total_failed} failed")
-    print('='*50)
+    print("=" * 50)
 
     return total_failed == 0
 

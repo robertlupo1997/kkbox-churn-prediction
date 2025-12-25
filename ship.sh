@@ -45,7 +45,7 @@ if [[ "$USE_REAL_DATA" == "true" ]]; then
       --output eval/labels_train_march.csv \
       --cutoff 2017-03-01 \
       --min-accuracy 0.99 || error_exit "Label accuracy <99%. Check eval/labels_train_march_mismatches.csv"
-    
+
     success_msg "Label validation passed (≥99% accuracy)"
 else
     warning_msg "Skipping label validation (synthetic data)"
@@ -56,7 +56,7 @@ echo -e "\n🤖 STEP 2: Model Training"
 make models || error_exit "Model training failed"
 success_msg "Models trained successfully"
 
-# Step 3: Calibration  
+# Step 3: Calibration
 echo -e "\n🎯 STEP 3: Model Calibration"
 make calibrate || error_exit "Model calibration failed"
 
@@ -66,7 +66,7 @@ if [[ -f "models/calibration_metrics.json" ]]; then
 import json
 with open('models/calibration_metrics.json') as f:
     cal = json.load(f)
-    
+
 # Check if any model shows improvement
 improved = False
 for model, metrics in cal.items():

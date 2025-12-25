@@ -10,7 +10,7 @@
 - **Validation**: Mismatch audit generates 50-example diff CSV
 - **Stop Rule**: Accuracy validation with detailed error analysis
 
-#### 2. No Leakage in Tests ✅  
+#### 2. No Leakage in Tests ✅
 - **Status**: Temporal safety unit tests passing
 - **Implementation**: `tests/test_temporal_safety.py`
 - **Validation**: Fabricates future events, asserts zero leakage
@@ -55,7 +55,7 @@
 - **Current**: Infrastructure complete, needs real data validation
 
 #### 9. Rolling Backtests
-- **Windows**: Jan→Feb, Feb→Mar, Mar→Apr  
+- **Windows**: Jan→Feb, Feb→Mar, Mar→Apr
 - **Metrics**: Log loss, AUC, Brier, ECE per window
 - **Drift**: PSI >0.2 flagging on features and scores
 
@@ -74,7 +74,7 @@
 - ✅ `features/features_simple.sql` - DuckDB-safe, temporal leak-proof
 
 ### Infrastructure
-- ✅ `pytest.ini` - Test isolation 
+- ✅ `pytest.ini` - Test isolation
 - ✅ `pyproject.toml` - Python 3.11, deps, tool config
 - ✅ `requirements.txt` - Pinned production deps
 - ✅ `requirements-dev.txt` - Dev dependencies
@@ -85,7 +85,7 @@
 - ✅ `tests/test_temporal_safety.py` - Anti-leakage unit tests
 - ✅ `tests/fixtures/generate_synthetic.py` - 1k synthetic dataset
 
-### Documentation  
+### Documentation
 - ✅ `CITES.md` - Official competition citations
 - ✅ `MODEL_CARD.md` - ML documentation template
 - ✅ `leak_audit.md` - Temporal safety rules
@@ -97,7 +97,7 @@
 ```bash
 # Repository isolation check
 make test                    # ✅ Passes with temporal safety
-make lint                    # ✅ Code quality (when deps installed)  
+make lint                    # ✅ Code quality (when deps installed)
 make production-check        # ✅ Full validation pipeline
 
 # Docker verification
@@ -105,7 +105,7 @@ make docker-build            # Build production image
 make docker-test             # Run tests in container
 make docker-run              # Full pipeline in container
 
-# Pipeline execution  
+# Pipeline execution
 make features                # ✅ Synthetic data generation
 make models                  # ✅ Training with calibration
 make calibrate               # ✅ Isotonic reliability improvement
@@ -115,7 +115,7 @@ make calibrate               # ✅ Isotonic reliability improvement
 
 ### Pre-Calibration Baseline
 - **Log Loss**: TBD (official competition metric)
-- **AUC**: TBD (expect ~0.5-0.6 based on literature)  
+- **AUC**: TBD (expect ~0.5-0.6 based on literature)
 - **Brier Score**: TBD (reliability measure)
 - **ECE**: TBD (calibration error)
 
@@ -137,7 +137,7 @@ make calibrate               # ✅ Isotonic reliability improvement
 ### 🚧 Requires Real Data
 - Label accuracy validation (≥99% target)
 - Model performance benchmarking
-- Calibration effectiveness validation  
+- Calibration effectiveness validation
 - Rolling backtest execution
 - PSI drift monitoring
 

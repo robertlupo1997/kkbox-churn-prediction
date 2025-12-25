@@ -8,8 +8,8 @@ features:
     dtype: int
     fill_value: null
     description: churn target (0=retain, 1=churn)
-  
-  # From members_v3.csv (demographics)  
+
+  # From members_v3.csv (demographics)
   - name: city
     source: members_v3.csv
     window: up_to_label_date
@@ -18,8 +18,8 @@ features:
     dtype: int
     fill_value: 1
     description: user city code
-    
-  - name: bd  
+
+  - name: bd
     source: members_v3.csv
     window: up_to_label_date
     aggregation: latest
@@ -27,20 +27,20 @@ features:
     dtype: int
     fill_value: 25
     description: user age (clipped 0-100)
-    
+
   - name: gender
     source: members_v3.csv
-    window: up_to_label_date  
+    window: up_to_label_date
     aggregation: latest
     null_policy: fill_unknown
     dtype: category
     fill_value: unknown
     description: user gender (male/female/unknown)
-    
+
   - name: registered_via
     source: members_v3.csv
     window: up_to_label_date
-    aggregation: latest  
+    aggregation: latest
     null_policy: fill_mode
     dtype: int
     fill_value: 7
@@ -52,10 +52,10 @@ features:
     window: before_label_date
     aggregation: mode
     null_policy: fill_zero
-    dtype: int  
+    dtype: int
     fill_value: 0
     description: most common payment method
-    
+
   - name: payment_plan_days
     source: transactions_v2.csv
     window: before_label_date
@@ -64,16 +64,16 @@ features:
     dtype: float32
     fill_value: 30.0
     description: average plan duration
-    
+
   - name: plan_list_price
-    source: transactions_v2.csv  
+    source: transactions_v2.csv
     window: before_label_date
     aggregation: mean
     null_policy: fill_median
     dtype: float32
     fill_value: 149.0
     description: average plan price
-    
+
   - name: actual_amount_paid
     source: transactions_v2.csv
     window: before_label_date
@@ -82,7 +82,7 @@ features:
     dtype: float32
     fill_value: 0.0
     description: total amount paid (lifetime value)
-    
+
   - name: is_auto_renew
     source: transactions_v2.csv
     window: before_label_date
@@ -91,7 +91,7 @@ features:
     dtype: int
     fill_value: 0
     description: most common auto-renew setting
-    
+
   - name: transaction_count
     source: transactions_v2.csv
     window: before_label_date
@@ -100,7 +100,7 @@ features:
     dtype: int
     fill_value: 0
     description: total number of transactions
-    
+
   # From user_logs_v2.csv (engagement behavior)
   - name: num_25
     source: user_logs_v2.csv
@@ -110,8 +110,8 @@ features:
     dtype: int
     fill_value: 0
     description: total songs played 25%
-    
-  - name: num_50  
+
+  - name: num_50
     source: user_logs_v2.csv
     window: before_label_date
     aggregation: sum
@@ -119,7 +119,7 @@ features:
     dtype: int
     fill_value: 0
     description: total songs played 50%
-    
+
   - name: num_75
     source: user_logs_v2.csv
     window: before_label_date
@@ -128,7 +128,7 @@ features:
     dtype: int
     fill_value: 0
     description: total songs played 75%
-    
+
   - name: num_985
     source: user_logs_v2.csv
     window: before_label_date
@@ -137,7 +137,7 @@ features:
     dtype: int
     fill_value: 0
     description: total songs played 98.5%
-    
+
   - name: num_100
     source: user_logs_v2.csv
     window: before_label_date
@@ -146,7 +146,7 @@ features:
     dtype: int
     fill_value: 0
     description: total songs played 100%
-    
+
   - name: num_unq
     source: user_logs_v2.csv
     window: before_label_date
@@ -155,16 +155,16 @@ features:
     dtype: int
     fill_value: 0
     description: total unique songs
-    
+
   - name: total_secs
-    source: user_logs_v2.csv  
+    source: user_logs_v2.csv
     window: before_label_date
     aggregation: sum
     null_policy: fill_zero
     dtype: int
     fill_value: 0
     description: total listening seconds
-    
+
   - name: listening_days
     source: user_logs_v2.csv
     window: before_label_date
