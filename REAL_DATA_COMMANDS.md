@@ -19,7 +19,7 @@ python3 src/labels.py \
   --min-accuracy 0.99
 ```
 
-### 2) Train & Calibrate  
+### 2) Train & Calibrate
 ```bash
 make models
 make calibrate
@@ -78,7 +78,7 @@ print(f'Prediction latency: {(time.time()-start)*1000:.0f}ms per batch of {len(d
 
 The pipeline will halt if:
 - Label accuracy < 99% vs train_v2.csv
-- Calibration doesn't improve Brier & ECE  
+- Calibration doesn't improve Brier & ECE
 - Integration tests fail
 - Missing required files
 

@@ -5,97 +5,97 @@ Executes SQL feature engineering and prepares data for model training.
 Bridges DuckDB SQL queries with Python ML pipeline.
 """
 
+import shutil
+import tempfile
+from pathlib import Path
+
 import duckdb
 import pandas as pd
-from pathlib import Path
-from typing import Dict, Optional
-import tempfile
-import shutil
-import os
+
 
 class FeatureProcessor:
     """
     Process KKBOX features using DuckDB SQL queries.
-    
+
     Handles:
     - SQL query execution with parameter substitution
     - Data validation and quality checks
     - Feature engineering pipeline orchestration
     """
-    
+
     def __init__(self, db_path: str = ":memory:"):
         """Initialize DuckDB connection."""
         self.conn = duckdb.connect(db_path)
-        
-    def process_features(self, 
-                        sql_file: str,
-                        data_paths: Dict[str, str],
-                        output_path: str) -> pd.DataFrame:
+
+    def process_features(
+        self, sql_file: str, data_paths: dict[str, str], output_path: str
+    ) -> pd.DataFrame:
         """
         Execute SQL feature engineering pipeline.
-        
+
         Args:
             sql_file: Path to SQL feature engineering file
             data_paths: Dictionary mapping template variables to file paths
             output_path: Where to save processed features
-            
+
         Returns:
             df: Processed feature dataframe
         """
         # Read SQL template
-        with open(sql_file, 'r') as f:
+        with open(sql_file) as f:
             sql_template = f.read()
-        
+
         # Substitute file paths
         sql_query = sql_template
         for var, path in data_paths.items():
             sql_query = sql_query.replace(f"${{{var}}}", path)
-        
-        print(f"🔄 Executing feature engineering SQL...")
+
+        print("🔄 Executing feature engineering SQL...")
         print(f"📊 Data sources: {list(data_paths.keys())}")
-        
+
         # Execute query
         try:
             result = self.conn.execute(sql_query).fetchdf()
             print(f"✅ Features generated: {len(result)} rows, {result.shape[1]} columns")
-            
+
             # Save results
             result.to_csv(output_path, index=False)
             print(f"💾 Features saved to: {output_path}")
-            
+
             return result
-            
+
         except Exception as e:
             print(f"❌ SQL execution failed: {str(e)}")
             raise
-    
-    def validate_features(self, df: pd.DataFrame) -> Dict[str, any]:
+
+    def validate_features(self, df: pd.DataFrame) -> dict[str, any]:
         """
         Validate processed features for quality and completeness.
-        
+
         Returns:
             validation_report: Quality metrics and flags
         """
         validation = {
-            'total_rows': len(df),
-            'total_features': df.shape[1],
-            'missing_values': df.isnull().sum().to_dict(),
-            'churn_rate': df['is_churn'].mean() if 'is_churn' in df.columns else None,
-            'feature_types': df.dtypes.to_dict(),
+            "total_rows": len(df),
+            "total_features": df.shape[1],
+            "missing_values": df.isnull().sum().to_dict(),
+            "churn_rate": df["is_churn"].mean() if "is_churn" in df.columns else None,
+            "feature_types": df.dtypes.to_dict(),
         }
-        
+
         # Check for temporal leakage indicators
-        if 'cutoff_ts' in df.columns:
-            validation['cutoff_dates'] = df['cutoff_ts'].unique().tolist()
-        
+        if "cutoff_ts" in df.columns:
+            validation["cutoff_dates"] = df["cutoff_ts"].unique().tolist()
+
         # Feature distribution stats
-        numeric_cols = df.select_dtypes(include=['number']).columns
+        numeric_cols = df.select_dtypes(include=["number"]).columns
         if len(numeric_cols) > 0:
-            validation['numeric_summary'] = df[numeric_cols].describe().to_dict()
-        
+            validation["numeric_summary"] = df[numeric_cols].describe().to_dict()
+
         return validation
 
-def prepare_synthetic_data() -> tuple[Dict[str, str], Path]:
+
+def prepare_synthetic_data() -> tuple[dict[str, str], Path]:
     """
     Set up synthetic data files for feature processing.
 
@@ -104,6 +104,7 @@ def prepare_synthetic_data() -> tuple[Dict[str, str], Path]:
         temp_dir: Path to temporary directory (caller should clean up)
     """
     import sys
+
     # Add project root to path for imports
     project_root = Path(__file__).parent.parent
     sys.path.insert(0, str(project_root))
@@ -113,10 +114,10 @@ def prepare_synthetic_data() -> tuple[Dict[str, str], Path]:
     # Create temporary directory
     temp_dir = Path(tempfile.mkdtemp())
     print(f"📁 Creating synthetic data in {temp_dir}")
-    
+
     # Generate synthetic dataset
     synthetic_data = generate_kkbox_dataset(n_samples=1000)
-    
+
     # Save individual CSV files
     data_paths = {}
     for table_name, df in synthetic_data.items():
@@ -127,17 +128,20 @@ def prepare_synthetic_data() -> tuple[Dict[str, str], Path]:
 
     return data_paths, temp_dir
 
-def run_feature_pipeline(use_synthetic: bool = True,
-                        sql_file: str = "features/features_simple.sql",
-                        output_file: str = "features/features_processed.csv") -> pd.DataFrame:
+
+def run_feature_pipeline(
+    use_synthetic: bool = True,
+    sql_file: str = "features/features_simple.sql",
+    output_file: str = "features/features_processed.csv",
+) -> pd.DataFrame:
     """
     Execute complete feature processing pipeline.
-    
+
     Args:
         use_synthetic: Whether to use synthetic data (default for demo)
         sql_file: SQL feature engineering file
         output_file: Output CSV file path
-        
+
     Returns:
         processed_features: Feature dataframe ready for modeling
     """
@@ -176,6 +180,7 @@ def run_feature_pipeline(use_synthetic: bool = True,
         if temp_dir is not None:
             shutil.rmtree(temp_dir, ignore_errors=True)
             print("🧹 Cleaned up temporary files")
+
 
 if __name__ == "__main__":
     # Execute pipeline with synthetic data

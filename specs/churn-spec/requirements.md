@@ -15,34 +15,34 @@ Predict subscriber churn using train.csv labels as source of truth, with strict 
 ## User Stories & EARS Acceptance Criteria
 
 ### US-1: Leakage Guard
-**As a** ML engineer  
-**I want** strict temporal boundaries on feature computation  
+**As a** ML engineer
+**I want** strict temporal boundaries on feature computation
 **So that** no future information leaks into predictions
 
 **EARS:**
 - **Given** a user with label_date X from train.csv
-- **When** computing features for that user  
+- **When** computing features for that user
 - **Then** system SHALL only read events with log_date < X
 - **And** assert COUNT(*) = 0 for any events WHERE log_date >= label_date
 - **Stop Condition**: If leaks > 0, stop and report failing count
 
 ### US-2: Purged Time Split
-**As a** model validator  
-**I want** forward-chained splits with exclusion windows  
+**As a** model validator
+**I want** forward-chained splits with exclusion windows
 **So that** validation mimics production deployment gaps
 
 **EARS:**
 - **Given** labeled dataset spanning 2015-2017
 - **When** creating train/validation splits
 - **Then** system SHALL train on label_date < 2017-02-01
-- **And** validate on label_date >= 2017-02-01  
+- **And** validate on label_date >= 2017-02-01
 - **And** purge exclude label_date in [boundary - 30 days, boundary + 30 days)
 - **And** assert min(val_label_date) > max(train_label_date)
 - **Stop Condition**: If val_min <= train_max, stop and report overlap dates
 
 ### US-3: Calibration Requirement
-**As a** prediction consumer  
-**I want** well-calibrated probability estimates  
+**As a** prediction consumer
+**I want** well-calibrated probability estimates
 **So that** predicted probabilities reflect true likelihood
 
 **EARS:**
@@ -53,9 +53,9 @@ Predict subscriber churn using train.csv labels as source of truth, with strict 
 - **And** apply calibration to test predictions
 - **Stop Condition**: If prob range not in [0,1], stop and report bounds
 
-### US-4: Reproducibility Guarantee  
-**As a** ML practitioner  
-**I want** deterministic, versioned model runs  
+### US-4: Reproducibility Guarantee
+**As a** ML practitioner
+**I want** deterministic, versioned model runs
 **So that** results can be replicated and audited
 
 **EARS:**
@@ -67,8 +67,8 @@ Predict subscriber churn using train.csv labels as source of truth, with strict 
 - **And** generate identical results on repeat with same seed
 
 ### US-5: Class Imbalance Handling
-**As a** ML engineer working with imbalanced data  
-**I want** stratified temporal splits and calibrated probabilities  
+**As a** ML engineer working with imbalanced data
+**I want** stratified temporal splits and calibrated probabilities
 **So that** model selection uses appropriate techniques
 
 **EARS:**
@@ -80,8 +80,8 @@ Predict subscriber churn using train.csv labels as source of truth, with strict 
 - **And** use calibrated probabilities for final predictions
 
 ### US-6: Feature Registry
-**As a** feature engineer  
-**I want** declarative feature definitions in features.yaml  
+**As a** feature engineer
+**I want** declarative feature definitions in features.yaml
 **So that** feature lineage and policies are explicit
 
 **EARS:**

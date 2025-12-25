@@ -1,11 +1,11 @@
 # Real Data Fast Path - Minimum Viable Ship
 
-## 🚀 **Prerequisites** 
+## 🚀 **Prerequisites**
 Place KKBOX competition files:
 ```
 kkbox-churn-prediction-challenge/data/churn_comp_refresh/
 ├── transactions_v2.csv
-├── user_logs_v2.csv  
+├── user_logs_v2.csv
 ├── members_v3.csv
 └── train_v2.csv
 ```
@@ -35,9 +35,9 @@ make app
 ## 🔍 **Pre-Release Sniff Test** (Quick Wins)
 
 ### **Artifacts Generated**
-- [ ] `eval/backtests.csv` exists with **3 windows × N models** rows  
+- [ ] `eval/backtests.csv` exists with **3 windows × N models** rows
 - [ ] `eval/psi_features.csv` created; PSI > 0.2 flagged for investigation
-- [ ] `eval/psi_scores.csv` created; score drift > 0.2 documented  
+- [ ] `eval/psi_scores.csv` created; score drift > 0.2 documented
 - [ ] `eval/features_YYYY-MM-YYYY-MM.csv` present for each window
 - [ ] Latest features copied to `eval/app_features.csv` for demo
 
@@ -49,7 +49,7 @@ make app
 
 ### **Quality Gates**
 - [ ] Label accuracy ≥ 99% on train_v2.csv
-- [ ] At least 1 model shows Brier & ECE improvement  
+- [ ] At least 1 model shows Brier & ECE improvement
 - [ ] No high PSI drift (>0.2) without documentation
 - [ ] All integration tests passing (`python3 test_integration.py`)
 
@@ -57,7 +57,7 @@ make app
 
 Pipeline halts if:
 - **Label accuracy < 99%**: Check `eval/labels_train_march_mismatches.csv`
-- **No calibration improvement**: Brier_post >= Brier_pre OR ECE_post >= ECE_pre  
+- **No calibration improvement**: Brier_post >= Brier_pre OR ECE_post >= ECE_pre
 - **App latency > 500ms**: Check model loading, feature size
 - **Integration tests fail**: Fix component issues before proceeding
 
@@ -67,7 +67,7 @@ Pipeline halts if:
 - Labels validate at ≥99% accuracy vs official train_v2
 - Models train and calibrate with reliability improvements
 - Rolling backtests complete across 3 time windows
-- PSI drift analysis flags potential issues  
+- PSI drift analysis flags potential issues
 - Streamlit app loads with <500ms inference
 - README auto-populated with verified metrics
 

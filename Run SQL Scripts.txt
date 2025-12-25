@@ -39,7 +39,7 @@ validates counts and orphans
 When you see
 
 *** Pipeline complete
-kkbox_analytics=> 
+kkbox_analytics=>
 you’re done.
 
 Exit psql with:

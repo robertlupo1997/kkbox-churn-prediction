@@ -1,40 +1,65 @@
 #!/usr/bin/env python3
-import argparse, os, json, numpy as np, pandas as pd, duckdb, pyarrow as pa, pyarrow.parquet as pq
+import argparse
+import os
 
-FEATS = ["plan_days_latest","auto_renew_latest","cancels_total","tx_count_total","logs_30d","secs_30d","unq_30d","bd"]
+import duckdb
+import numpy as np
+import pandas as pd
+
+FEATS = [
+    "plan_days_latest",
+    "auto_renew_latest",
+    "cancels_total",
+    "tx_count_total",
+    "logs_30d",
+    "secs_30d",
+    "unq_30d",
+    "bd",
+]
+
 
 def prep(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     # Convert to numeric and clip bd
     df["bd"] = pd.to_numeric(df["bd"], errors="coerce").clip(10, 80).fillna(30)
     # Convert to numeric and log-transform heavy-tailed features
-    for c in ["logs_30d","secs_30d","unq_30d","tx_count_total","cancels_total"]:
+    for c in ["logs_30d", "secs_30d", "unq_30d", "tx_count_total", "cancels_total"]:
         df[c] = np.log1p(pd.to_numeric(df[c], errors="coerce").fillna(0))
     # Also convert plan_days_latest and auto_renew_latest to numeric
     df["plan_days_latest"] = pd.to_numeric(df["plan_days_latest"], errors="coerce").fillna(0)
     df["auto_renew_latest"] = pd.to_numeric(df["auto_renew_latest"], errors="coerce").fillna(0)
     return df
 
+
 def load_calibrator(path: str):
-    if not os.path.exists(path): return None
+    if not os.path.exists(path):
+        return None
     z = np.load(path)
     x, y = z["x"], z["y"]
+
     # piecewise-linear isotonic transform
     def f(p):
         return np.interp(p, x, y, left=y[0], right=y[-1])
+
     return f
+
 
 def main():
     import xgboost as xgb
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", default="kkbox-churn-prediction-challenge/data/churn_comp_refresh")
-    ap.add_argument("--sample", default="kkbox-churn-prediction-challenge/data/churn_comp_refresh/sample_submission_v2.csv")
+    ap.add_argument(
+        "--data-dir", default="kkbox-churn-prediction-challenge/data/churn_comp_refresh"
+    )
+    ap.add_argument(
+        "--sample",
+        default="kkbox-churn-prediction-challenge/data/churn_comp_refresh/sample_submission_v2.csv",
+    )
     ap.add_argument("--start", default="2017-04-01")  # test window start (default = Apr)
-    ap.add_argument("--end",   default="2017-05-01")  # test window end (exclusive)
+    ap.add_argument("--end", default="2017-05-01")  # test window end (exclusive)
     ap.add_argument("--model", default="models/xgb.json")
-    ap.add_argument("--cal",   default="models/calibrator_isotonic.npz")
-    ap.add_argument("--out",   default="submissions/final_submission.csv")
+    ap.add_argument("--cal", default="models/calibrator_isotonic.npz")
+    ap.add_argument("--out", default="submissions/final_submission.csv")
     args = ap.parse_args()
 
     os.makedirs("submissions", exist_ok=True)
@@ -42,14 +67,23 @@ def main():
     # 1) Build features in DuckDB, restricted to msno in sample
     con = duckdb.connect()
     con.execute(f"SET threads TO {os.cpu_count() or 4}")
-    con.execute(f"CREATE VIEW sample AS SELECT * FROM read_csv_auto('{args.sample}', IGNORE_ERRORS=TRUE)")
-    con.execute(f"CREATE VIEW members AS SELECT * FROM read_csv_auto('kkbox-churn-prediction-challenge/members_v3.csv', IGNORE_ERRORS=TRUE)")
-    con.execute(f"CREATE VIEW tx AS SELECT * FROM read_csv_auto('{args.data_dir}/transactions_v2.csv', IGNORE_ERRORS=TRUE)")
-    con.execute(f"CREATE VIEW logs AS SELECT * FROM read_csv_auto('{args.data_dir}/user_logs_v2.csv', IGNORE_ERRORS=TRUE)")
+    con.execute(
+        f"CREATE VIEW sample AS SELECT * FROM read_csv_auto('{args.sample}', IGNORE_ERRORS=TRUE)"
+    )
+    con.execute(
+        "CREATE VIEW members AS SELECT * FROM read_csv_auto('kkbox-churn-prediction-challenge/members_v3.csv', IGNORE_ERRORS=TRUE)"
+    )
+    con.execute(
+        f"CREATE VIEW tx AS SELECT * FROM read_csv_auto('{args.data_dir}/transactions_v2.csv', IGNORE_ERRORS=TRUE)"
+    )
+    con.execute(
+        f"CREATE VIEW logs AS SELECT * FROM read_csv_auto('{args.data_dir}/user_logs_v2.csv', IGNORE_ERRORS=TRUE)"
+    )
 
     print(f"🔄 Building features for test period {args.start} to {args.end}")
 
-    con.execute(f"""
+    con.execute(
+        f"""
     CREATE OR REPLACE TABLE to_pred AS
     WITH tx_norm AS (
       SELECT msno,
@@ -106,7 +140,8 @@ def main():
       LEFT JOIN members_clean m USING (msno)
     )
     SELECT * FROM joined
-    """)
+    """
+    )
 
     tbl = con.execute("SELECT * FROM to_pred").fetch_arrow_table()
     df = tbl.to_pandas()
@@ -114,8 +149,18 @@ def main():
     print(f"📊 Built features for {len(df):,} users")
 
     # fill NAs for unseen users gracefully
-    for c in ["plan_days_latest","auto_renew_latest","cancels_total","tx_count_total","logs_30d","secs_30d","unq_30d","bd"]:
-        if c not in df.columns: df[c]=0
+    for c in [
+        "plan_days_latest",
+        "auto_renew_latest",
+        "cancels_total",
+        "tx_count_total",
+        "logs_30d",
+        "secs_30d",
+        "unq_30d",
+        "bd",
+    ]:
+        if c not in df.columns:
+            df[c] = 0
     df = prep(df)
 
     # 2) Predict with XGB
@@ -136,12 +181,13 @@ def main():
     p = np.clip(p, 0.0, 1.0)
     out = pd.DataFrame({"msno": df["msno"].values, "is_churn": p})
     out.to_csv(args.out, index=False)
-    
-    print(f"📈 Prediction stats:")
+
+    print("📈 Prediction stats:")
     print(f"  Min: {p.min():.4f}")
     print(f"  Max: {p.max():.4f}")
     print(f"  Mean: {p.mean():.4f}")
     print(f"✅ Saved {len(out):,} predictions → {args.out}")
+
 
 if __name__ == "__main__":
     main()

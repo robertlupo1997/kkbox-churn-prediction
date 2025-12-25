@@ -8,13 +8,14 @@ Key insight: Churn prediction is inherently temporal. Random splits allow
 "future" information to leak into training, producing optimistic metrics.
 """
 
+from collections.abc import Iterator
+from datetime import timedelta
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import List, Tuple, Iterator, Optional, Dict, Any
-from datetime import date, timedelta
 from sklearn.base import BaseEstimator, clone
-from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss
-from sklearn.utils import resample
+from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
 
 class TemporalSplit:
@@ -31,8 +32,7 @@ class TemporalSplit:
         >>> train_idx, val_idx = splitter.split(df, time_column='cutoff_ts')
     """
 
-    def __init__(self, train_end: str, val_end: Optional[str] = None,
-                 gap_days: int = 0):
+    def __init__(self, train_end: str, val_end: str | None = None, gap_days: int = 0):
         """
         Args:
             train_end: Cutoff date for training data (exclusive)
@@ -43,8 +43,9 @@ class TemporalSplit:
         self.val_end = pd.to_datetime(val_end) if val_end else None
         self.gap_days = gap_days
 
-    def split(self, df: pd.DataFrame, time_column: str = 'cutoff_ts'
-              ) -> Tuple[np.ndarray, np.ndarray]:
+    def split(
+        self, df: pd.DataFrame, time_column: str = "cutoff_ts"
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Split data temporally.
 
@@ -90,8 +91,7 @@ class ChurnTemporalCV:
         ...     # Train and evaluate model
     """
 
-    def __init__(self, months: List[str], time_column: str = 'cutoff_ts',
-                 expanding: bool = True):
+    def __init__(self, months: list[str], time_column: str = "cutoff_ts", expanding: bool = True):
         """
         Args:
             months: List of month strings in 'YYYY-MM' format, sorted chronologically
@@ -107,7 +107,7 @@ class ChurnTemporalCV:
         """Return number of CV folds."""
         return len(self.months) - 1
 
-    def split(self, df: pd.DataFrame) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
+    def split(self, df: pd.DataFrame) -> Iterator[tuple[np.ndarray, np.ndarray]]:
         """
         Generate train/validation indices for each fold.
 
@@ -122,9 +122,9 @@ class ChurnTemporalCV:
             year, month = int(m[:4]), int(m[5:7])
             start = pd.Timestamp(year=year, month=month, day=1)
             if month == 12:
-                end = pd.Timestamp(year=year+1, month=1, day=1)
+                end = pd.Timestamp(year=year + 1, month=1, day=1)
             else:
-                end = pd.Timestamp(year=year, month=month+1, day=1)
+                end = pd.Timestamp(year=year, month=month + 1, day=1)
             month_ranges.append((start, end))
 
         # Generate folds
@@ -138,7 +138,7 @@ class ChurnTemporalCV:
                 train_end = val_start
                 train_mask = times < train_end
             else:
-                train_start, train_end = month_ranges[i-1]
+                train_start, train_end = month_ranges[i - 1]
                 train_mask = (times >= train_start) & (times < train_end)
 
             train_idx = np.where(train_mask)[0]
@@ -149,15 +149,15 @@ class ChurnTemporalCV:
 
             yield train_idx, val_idx
 
-    def get_fold_description(self) -> List[str]:
+    def get_fold_description(self) -> list[str]:
         """Return human-readable descriptions of each fold."""
         descriptions = []
         for i in range(1, len(self.months)):
             if self.expanding:
                 train_months = self.months[:i]
-                train_desc = '+'.join(train_months)
+                train_desc = "+".join(train_months)
             else:
-                train_desc = self.months[i-1]
+                train_desc = self.months[i - 1]
             val_desc = self.months[i]
             descriptions.append(f"Train: {train_desc}, Val: {val_desc}")
         return descriptions
@@ -179,8 +179,7 @@ class BootstrapMetrics:
         >>> print(f"AUC: {results['auc']['mean']:.3f} ({results['auc']['ci_lower']:.3f}-{results['auc']['ci_upper']:.3f})")
     """
 
-    def __init__(self, n_bootstrap: int = 1000, confidence: float = 0.95,
-                 random_state: int = 42):
+    def __init__(self, n_bootstrap: int = 1000, confidence: float = 0.95, random_state: int = 42):
         """
         Args:
             n_bootstrap: Number of bootstrap samples
@@ -192,8 +191,7 @@ class BootstrapMetrics:
         self.random_state = random_state
         self.alpha = (1 - confidence) / 2
 
-    def compute(self, y_true: np.ndarray, y_pred: np.ndarray
-                ) -> Dict[str, Dict[str, float]]:
+    def compute(self, y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, dict[str, float]]:
         """
         Compute bootstrap confidence intervals for multiple metrics.
 
@@ -228,11 +226,7 @@ class BootstrapMetrics:
         n_samples = len(y_true)
 
         # Storage for bootstrap samples
-        metrics = {
-            'log_loss': [],
-            'auc': [],
-            'brier': []
-        }
+        metrics = {"log_loss": [], "auc": [], "brier": []}
 
         for _ in range(self.n_bootstrap):
             # Resample with replacement
@@ -245,40 +239,45 @@ class BootstrapMetrics:
                 continue
 
             # Compute metrics
-            metrics['log_loss'].append(log_loss(y_true_boot, y_pred_boot))
-            metrics['auc'].append(roc_auc_score(y_true_boot, y_pred_boot))
-            metrics['brier'].append(brier_score_loss(y_true_boot, y_pred_boot))
+            metrics["log_loss"].append(log_loss(y_true_boot, y_pred_boot))
+            metrics["auc"].append(roc_auc_score(y_true_boot, y_pred_boot))
+            metrics["brier"].append(brier_score_loss(y_true_boot, y_pred_boot))
 
         # Compute confidence intervals
         results = {}
         for metric_name, values in metrics.items():
             values = np.array(values)
             results[metric_name] = {
-                'mean': np.mean(values),
-                'std': np.std(values),
-                'ci_lower': np.percentile(values, self.alpha * 100),
-                'ci_upper': np.percentile(values, (1 - self.alpha) * 100),
-                'n_samples': len(values)
+                "mean": np.mean(values),
+                "std": np.std(values),
+                "ci_lower": np.percentile(values, self.alpha * 100),
+                "ci_upper": np.percentile(values, (1 - self.alpha) * 100),
+                "n_samples": len(values),
             }
 
         return results
 
-    def format_results(self, results: Dict[str, Dict[str, float]]) -> str:
+    def format_results(self, results: dict[str, dict[str, float]]) -> str:
         """Format results for display."""
         lines = ["Bootstrap Confidence Intervals:"]
         lines.append("-" * 50)
         for metric, vals in results.items():
-            line = (f"{metric:12s}: {vals['mean']:.4f} "
-                   f"({vals['ci_lower']:.4f} - {vals['ci_upper']:.4f})")
+            line = (
+                f"{metric:12s}: {vals['mean']:.4f} "
+                f"({vals['ci_lower']:.4f} - {vals['ci_upper']:.4f})"
+            )
             lines.append(line)
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
-def temporal_cross_val_score(estimator: BaseEstimator, X: pd.DataFrame,
-                             y: pd.Series, cv: ChurnTemporalCV,
-                             scoring: str = 'log_loss',
-                             return_estimators: bool = False
-                             ) -> Dict[str, Any]:
+def temporal_cross_val_score(
+    estimator: BaseEstimator,
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv: ChurnTemporalCV,
+    scoring: str = "log_loss",
+    return_estimators: bool = False,
+) -> dict[str, Any]:
     """
     Evaluate estimator using temporal cross-validation.
 
@@ -311,7 +310,7 @@ def temporal_cross_val_score(estimator: BaseEstimator, X: pd.DataFrame,
         model = clone(estimator)
 
         # Prepare data (exclude time column for training)
-        drop_cols = ['msno', 'is_churn', 'cutoff_ts']
+        drop_cols = ["msno", "is_churn", "cutoff_ts"]
         feature_cols = [c for c in X.columns if c not in drop_cols]
 
         X_train = X.iloc[train_idx][feature_cols].fillna(0)
@@ -326,38 +325,40 @@ def temporal_cross_val_score(estimator: BaseEstimator, X: pd.DataFrame,
         y_pred = model.predict_proba(X_val)[:, 1]
 
         # Score
-        if scoring == 'log_loss':
+        if scoring == "log_loss":
             score = log_loss(y_val, y_pred)
-        elif scoring == 'auc':
+        elif scoring == "auc":
             score = roc_auc_score(y_val, y_pred)
-        elif scoring == 'brier':
+        elif scoring == "brier":
             score = brier_score_loss(y_val, y_pred)
         else:
             raise ValueError(f"Unknown scoring: {scoring}")
 
         scores.append(score)
-        fold_details.append({
-            'fold': fold_idx,
-            'description': fold_descriptions[fold_idx],
-            'n_train': len(train_idx),
-            'n_val': len(val_idx),
-            'train_churn_rate': y_train.mean(),
-            'val_churn_rate': y_val.mean(),
-            'score': score
-        })
+        fold_details.append(
+            {
+                "fold": fold_idx,
+                "description": fold_descriptions[fold_idx],
+                "n_train": len(train_idx),
+                "n_val": len(val_idx),
+                "train_churn_rate": y_train.mean(),
+                "val_churn_rate": y_val.mean(),
+                "score": score,
+            }
+        )
 
         if return_estimators:
             estimators.append(model)
 
     result = {
-        'scores': scores,
-        'mean_score': np.mean(scores),
-        'std_score': np.std(scores),
-        'fold_details': fold_details
+        "scores": scores,
+        "mean_score": np.mean(scores),
+        "std_score": np.std(scores),
+        "fold_details": fold_details,
     }
 
     if return_estimators:
-        result['estimators'] = estimators
+        result["estimators"] = estimators
 
     return result
 
@@ -371,21 +372,23 @@ if __name__ == "__main__":
     np.random.seed(42)
     n_samples = 1000
 
-    dates = pd.date_range('2017-01-01', '2017-04-30', periods=n_samples)
-    df = pd.DataFrame({
-        'cutoff_ts': dates,
-        'feature1': np.random.randn(n_samples),
-        'feature2': np.random.randn(n_samples),
-        'is_churn': np.random.binomial(1, 0.1, n_samples)
-    })
+    dates = pd.date_range("2017-01-01", "2017-04-30", periods=n_samples)
+    df = pd.DataFrame(
+        {
+            "cutoff_ts": dates,
+            "feature1": np.random.randn(n_samples),
+            "feature2": np.random.randn(n_samples),
+            "is_churn": np.random.binomial(1, 0.1, n_samples),
+        }
+    )
 
     # Test temporal split
-    splitter = TemporalSplit(train_end='2017-03-01')
-    train_idx, val_idx = splitter.split(df, 'cutoff_ts')
+    splitter = TemporalSplit(train_end="2017-03-01")
+    train_idx, val_idx = splitter.split(df, "cutoff_ts")
     print(f"Temporal Split: Train={len(train_idx)}, Val={len(val_idx)}")
 
     # Test temporal CV
-    cv = ChurnTemporalCV(months=['2017-01', '2017-02', '2017-03', '2017-04'])
+    cv = ChurnTemporalCV(months=["2017-01", "2017-02", "2017-03", "2017-04"])
     print(f"\nTemporal CV: {cv.get_n_splits()} folds")
     for desc in cv.get_fold_description():
         print(f"  {desc}")
