@@ -1,11 +1,21 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Member } from "../types";
 
-// Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy initialization - only create client when needed and API key is available
+let ai: GoogleGenAI | null = null;
+
+const getAI = () => {
+  if (!ai && process.env.API_KEY) {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return ai;
+};
 
 export const getRiskExplanation = async (member: Member) => {
+  const client = getAI();
+  if (!client) {
+    return "AI insights unavailable - Gemini API key not configured.";
+  }
   const prompt = `
     Analyze this KKBox subscriber for churn risk:
     - Risk Score: ${(member.risk_score * 100).toFixed(1)}%
@@ -19,8 +29,8 @@ export const getRiskExplanation = async (member: Member) => {
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+    const response = await client.models.generateContent({
+      model: 'gemini-2.0-flash',
       contents: prompt,
     });
     // Extracting Text Output from GenerateContentResponse using the .text property.

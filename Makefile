@@ -100,8 +100,10 @@ psi:
 	python3 scripts/psi_scores.py
 
 app:
-	@echo "🚀 Starting Streamlit app..."
-	streamlit run app/streamlit_app.py
+	@echo "🚀 Starting ChurnPro (FastAPI + React)..."
+	docker-compose up -d --build
+	@echo "✅ Frontend: http://localhost:3000"
+	@echo "✅ API: http://localhost:8000/api/health"
 
 # Docker operations
 docker-build:
