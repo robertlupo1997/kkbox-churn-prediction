@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 _model_cache: dict[str, Any] = {}
 
 
-def load_model() -> xgb.XGBClassifier:
+def load_model() -> xgb.Booster:
     """Load XGBoost model from JSON file.
 
     Returns:
-        Loaded XGBoost classifier
+        Loaded XGBoost Booster
 
     Raises:
         FileNotFoundError: If model file doesn't exist
@@ -36,13 +36,13 @@ def load_model() -> xgb.XGBClassifier:
         raise FileNotFoundError(f"Model file not found: {model_path}")
 
     try:
-        # Load XGBoost model from JSON (same as streamlit_app.py:16-23)
-        clf = xgb.XGBClassifier()
-        clf.load_model(str(model_path))
+        # Load XGBoost model using Booster for compatibility
+        bst = xgb.Booster()
+        bst.load_model(str(model_path))
 
-        _model_cache["model"] = clf
-        logger.info(f"Model loaded successfully from {model_path}")
-        return clf
+        _model_cache["model"] = bst
+        logger.info(f"Model loaded successfully from {model_path} ({bst.num_features()} features)")
+        return bst
 
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
@@ -144,24 +144,25 @@ def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         - probabilities: Array of churn probabilities
         - feature_names: List of feature column names used
     """
-    clf = load_model()
+    bst = load_model()
 
-    # Drop metadata columns (same as streamlit_app.py:86-87)
+    # Drop metadata columns
     drop = {"msno", "is_churn", "cutoff_ts", "window"}
     feats = [c for c in df.columns if c not in drop]
 
     X = df[feats].copy()
 
-    # Encode categorical columns (same as streamlit_app.py:91-93)
+    # Encode categorical columns
     if "gender" in X.columns:
         gender_map = {"male": 0, "female": 1, "unknown": 2}
         X["gender"] = X["gender"].map(gender_map).fillna(2)
 
-    # Fill missing values
-    X = X.fillna(0).to_numpy()
+    # Fill missing values and convert to DMatrix with feature names
+    X = X.fillna(0)
+    dmatrix = xgb.DMatrix(X, feature_names=feats)
 
-    # Get predictions (same as streamlit_app.py:96)
-    probs = clf.predict_proba(X)[:, 1]
+    # Get predictions (Booster returns probabilities directly for binary classification)
+    probs = bst.predict(dmatrix)
 
     return probs, feats
 

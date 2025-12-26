@@ -8,8 +8,7 @@ duckdb>=1.1.0,<2.0
 # Data formats and serialization
 pyarrow==14.0.1
 
-# Web app and visualization
-streamlit>=1.28,<2
+# Visualization (web app now in gemini-app/)
 
 # Model interpretation
 shap==0.43.0
