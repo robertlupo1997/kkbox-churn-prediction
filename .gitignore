@@ -63,6 +63,7 @@ release/
 
 # Local data (use synthetic for CI)
 kkbox-churn-prediction-challenge/
+KKBOX/
 data/
 submissions/
 
@@ -73,3 +74,8 @@ eval/features_*.csv
 # Synthetic test fixtures (regenerate with make fixtures)
 tests/fixtures/*.csv
 tests/fixtures/*.parquet
+
+# Local notes and scratch files
+thoughts/
+PHASE1_IMPLEMENTATION.md
+test_api_startup.py
