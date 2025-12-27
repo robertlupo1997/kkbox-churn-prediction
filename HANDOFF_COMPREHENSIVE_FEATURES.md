@@ -43,7 +43,7 @@ ls -la features/features_comprehensive.*
 | `src/features_comprehensive_processor.py` | NEW - Real data processor |
 | `train_models.py` | MODIFIED - Added --features arg |
 | `Makefile` | MODIFIED - Added features-real target |
-| `app/streamlit_app.py` | MODIFIED - Fixed gender encoding bug |
+| `api/` + `gemini-app/` | React/FastAPI web application |
 | `.gitignore` | MODIFIED - Added data/ and fixtures |
 
 ---
@@ -86,9 +86,9 @@ python src/calibration.py
 | Log Loss | ~0.10-0.12 | 0.30 |
 | AUC | ~0.85+ | 0.67 |
 
-### Step 5: Update Streamlit App
+### Step 5: Update App Features
 
-The app at `app/streamlit_app.py` will need to be updated to use the new feature set. The new features file for the app should be copied:
+The React/FastAPI app uses `eval/app_features.csv` for member data. Update with new features:
 
 ```bash
 # Copy features for app (sample for demo)
@@ -109,7 +109,7 @@ make features-real
 # Just training (after features exist)
 make models-real
 
-# Start Streamlit app
+# Start React/FastAPI app via Docker
 make app
 ```
 

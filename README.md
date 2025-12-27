@@ -51,7 +51,7 @@ make calibrate # Apply isotonic calibration
 make test      # Run temporal safety validation
 
 # Launch interactive app
-make app       # Streamlit app with SHAP explanations
+make app       # Start ChurnPro (React + FastAPI) via Docker
 ```
 
 ## Docker Deployment
@@ -115,7 +115,7 @@ make docker-test
 ### 🔄 In Progress
 - [ ] Real KKBOX data metrics validation
 - [ ] Rolling backtests (Jan→Feb, Feb→Mar, Mar→Apr)
-- [ ] Streamlit app with <500ms latency target
+- [ ] React/FastAPI app with <100ms API latency
 
 ## Citations
 
@@ -131,7 +131,7 @@ This project demonstrates expertise across four roles:
 - **📊 Data Analyst**: Leak audit, reliability plots, cost curve analysis
 - **🔬 Data Scientist**: Label reproduction, bootstrap CIs, SHAP interpretation
 - **⚙️ ML Engineer**: Docker, CI/CD, one-command deployment
-- **🤖 AI Engineer**: Streamlit app, cached inference, business rule integration
+- **🤖 AI Engineer**: React/FastAPI app, cached inference, business rule integration
 
 ---
 

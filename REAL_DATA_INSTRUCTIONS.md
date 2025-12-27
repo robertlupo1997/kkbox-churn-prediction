@@ -76,13 +76,10 @@ cat eval/psi.csv        # Feature drift detection (flag >0.2)
 # Prepare safe feature set for demo (latest window)
 cp eval/features_2017-03-2017-04.csv eval/app_features.csv
 
-# Install streamlit if needed
-pip install streamlit
-
-# Launch retention copilot
+# Launch React/FastAPI app via Docker
 make app
 
-# Test latency targets: <500ms per prediction
+# Test latency targets: <100ms API response
 ```
 
 ---
@@ -107,7 +104,7 @@ make app
 - `eval/backtests.csv` → README performance tables
 - `models/calibration_metrics.json` → Reliability improvements
 - `eval/app_features.csv` → Live demo data
-- Streamlit app → Interactive retention copilot
+- React/FastAPI app → Interactive retention copilot with SHAP
 
 ---
 
@@ -163,7 +160,7 @@ Replace placeholders in README.md with actual numbers from:
 - `eval/psi.csv`
 
 ### **2. Generate Proof Pack**
-- Screenshot of Streamlit app
+- Screenshot of ChurnPro React app
 - Demo video (2 minutes)
 - Brief.pdf from Resume_Assets/brief.txt
 - Live app deployment

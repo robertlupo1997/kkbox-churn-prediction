@@ -144,7 +144,7 @@ make calibrate               # ✅ Isotonic reliability improvement
 ### 📋 Portfolio Materials
 - README top fold with verified metrics
 - Proof pack generation (brief.pdf, demo video)
-- Streamlit app with <500ms latency
+- React/FastAPI app with <100ms API latency
 - Live deployment artifacts
 
 **Status**: Core infrastructure complete. Ready for real KKBOX data integration and final performance validation.

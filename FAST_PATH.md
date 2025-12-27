@@ -68,7 +68,7 @@ Pipeline halts if:
 - Models train and calibrate with reliability improvements
 - Rolling backtests complete across 3 time windows
 - PSI drift analysis flags potential issues
-- Streamlit app loads with <500ms inference
+- React/FastAPI app loads with <100ms API latency
 - README auto-populated with verified metrics
 
 **Time Estimate**: 15-30 minutes with real KKBOX data on standard laptop

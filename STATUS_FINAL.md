@@ -28,7 +28,7 @@ All components implemented and tested. Ready for production deployment.
 - [x] **Repository Isolation**: pytest.ini, .gitignore, pre-commit ✅
 
 ### **Interactive Demo**
-- [x] **Streamlit App**: <500ms latency with cached model loading ✅
+- [x] **React/FastAPI App**: <100ms API latency with cached model loading ✅
 - [x] **Individual Lookup**: Real-time member churn prediction ✅
 - [x] **Batch Processing**: CSV upload with bulk scoring ✅
 - [x] **Business Actions**: Rules-based retention recommendations ✅
@@ -61,7 +61,7 @@ All components implemented and tested. Ready for production deployment.
 1. **📊 Data Analyst**: Leak audit, PSI drift, cost analysis, business rules
 2. **🔬 Data Scientist**: Label compliance, calibration, bootstrap metrics, SHAP
 3. **⚙️ ML Engineer**: Docker, CI/CD, temporal testing, one-command deploy
-4. **🤖 AI Engineer**: Streamlit app, cached inference, business integration
+4. **🤖 AI Engineer**: React/FastAPI app, cached inference, business integration
 
 ### **Key Differentiators**
 - **Temporal Safety First**: Anti-leakage unit tests with fabricated future events
@@ -120,7 +120,8 @@ python3 scripts/update_readme.py
 - `src/labels.py` - WSDMChurnLabeller compliance with mismatch audit
 - `src/backtest.py` - Rolling window validation with feature/score persistence
 - `src/psi.py` - Population Stability Index for drift detection
-- `app/streamlit_app.py` - <500ms cached retention copilot
+- `api/` - FastAPI backend with cached model inference
+- `gemini-app/` - React/TypeScript frontend (ChurnPro dashboard)
 
 ### **Infrastructure**
 - `Dockerfile` - Production container with health checks
@@ -149,7 +150,7 @@ python3 scripts/update_readme.py
 - [x] WSDMChurnLabeller.scala compliance framework
 - [x] Isotonic calibration with reliability improvements
 - [x] Rolling backtests with PSI drift monitoring
-- [x] Streamlit app with <500ms latency target
+- [x] React/FastAPI app with <100ms API latency
 - [x] Docker production deployment
 - [x] CI/CD pipeline with synthetic testing
 - [x] Professional documentation with auto-updating metrics
