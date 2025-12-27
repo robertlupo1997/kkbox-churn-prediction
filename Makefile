@@ -72,7 +72,7 @@ backtest:
 	python3 src/backtest.py --transactions kkbox-churn-prediction-challenge/data/churn_comp_refresh/transactions_v2.csv \
 	  --user-logs kkbox-churn-prediction-challenge/data/churn_comp_refresh/user_logs_v2.csv \
 	  --members kkbox-churn-prediction-challenge/members_v3.csv \
-	  --train-placeholder tests/fixtures/train_synthetic.csv \
+	  --train-placeholder kkbox-churn-prediction-challenge/data/churn_comp_refresh/train_v2.csv \
 	  --features-sql features/features_comprehensive.sql \
 	  --windows "2017-01:2017-02,2017-02:2017-03,2017-03:2017-04" \
 	  --out eval/backtests.csv
