@@ -201,6 +201,11 @@ def main():
     Path("eval").mkdir(exist_ok=True, parents=True)
     con = duckdb.connect()
 
+    # Configure DuckDB for large datasets
+    con.execute("SET threads=4")
+    con.execute("SET preserve_insertion_order=false")
+    con.execute("SET memory_limit='8GB'")
+
     rows = []
     for pair in args.windows.split(","):
         cutoff_ym, expire_ym = pair.split(":")
