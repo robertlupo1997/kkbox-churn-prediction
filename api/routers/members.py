@@ -34,8 +34,12 @@ async def list_members(
     if features_df.empty:
         return MemberListResponse(members=[], total=0, limit=limit, offset=offset)
 
-    # Get predictions for all members
-    probs, feature_names = model_service.predict(features_df)
+    # Use cached predictions if available
+    cached = model_service.get_cached_predictions()
+    if cached is not None:
+        probs, feature_names = cached
+    else:
+        probs, feature_names = model_service.predict(features_df)
 
     # Build member list
     members = []

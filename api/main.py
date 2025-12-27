@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.models.schemas import HealthResponse
-from api.routers import members, metrics, predictions
+from api.routers import members, metrics, predictions, shap
 from api.services import model_service
 
 # Configure logging
@@ -91,6 +91,7 @@ async def health_check() -> HealthResponse:
 app.include_router(members.router, prefix=settings.API_PREFIX)
 app.include_router(predictions.router, prefix=settings.API_PREFIX)
 app.include_router(metrics.router, prefix=settings.API_PREFIX)
+app.include_router(shap.router, prefix=settings.API_PREFIX)
 
 
 @app.get("/", tags=["root"])

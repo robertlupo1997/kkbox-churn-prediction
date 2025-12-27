@@ -80,3 +80,18 @@ export interface CalibrationData {
   uncalibrated: CalibrationPoint[];
   calibrated: CalibrationPoint[];
 }
+
+export interface ShapValue {
+  feature: string;
+  impact: number;
+}
+
+export interface ShapExplanation {
+  msno: string;
+  explanation: {
+    base_value: number;
+    shap_values: Record<string, number>;
+    top_risk_factors: ShapValue[];
+    top_protective_factors: ShapValue[];
+  };
+}

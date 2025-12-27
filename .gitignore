@@ -79,3 +79,9 @@ tests/fixtures/*.parquet
 thoughts/
 PHASE1_IMPLEMENTATION.md
 test_api_startup.py
+
+# Generated feature files
+.claude/settings.local.json
+features/features_comprehensive.csv
+features/features_comprehensive.parquet
+features/features_processed.csv
