@@ -134,8 +134,8 @@ def evaluate_window(
     df = feats.merge(labels, on="msno", how="inner", suffixes=("", "_label"))
     y = df["is_churn"].to_numpy().astype(int)
 
-    # Basic feature selection: drop id, cutoffs, target
-    drop_cols = {"msno", "is_churn", "cutoff_ts"}
+    # Basic feature selection: drop id, cutoffs, target, window, merge artifacts
+    drop_cols = {"msno", "is_churn", "is_churn_label", "cutoff_ts", "window"}
     X = df[[c for c in df.columns if c not in drop_cols]].to_numpy()
 
     # Load models if present; otherwise skip gracefully
