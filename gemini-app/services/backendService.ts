@@ -83,6 +83,21 @@ export interface PredictionResult {
   action: string;
 }
 
+export interface ShapValue {
+  feature: string;
+  impact: number;
+}
+
+export interface ShapExplanation {
+  msno: string;
+  explanation: {
+    base_value: number;
+    shap_values: Record<string, number>;
+    top_risk_factors: ShapValue[];
+    top_protective_factors: ShapValue[];
+  };
+}
+
 /**
  * Fetch paginated list of members with risk scores
  */
@@ -186,6 +201,22 @@ export async function checkHealth(): Promise<{ status: string; model_loaded: boo
 
   if (!response.ok) {
     throw new Error(`Health check failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch SHAP explanation for a specific member
+ */
+export async function fetchShapExplanation(msno: string): Promise<ShapExplanation> {
+  const response = await fetch(`${API_BASE}/shap/${encodeURIComponent(msno)}`);
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`SHAP explanation not available for ${msno}`);
+    }
+    throw new Error(`Failed to fetch SHAP explanation: ${response.statusText}`);
   }
 
   return response.json();

@@ -1,17 +1,19 @@
 
 import React, { useState } from 'react';
-import { Search, Loader2, AlertCircle, TrendingUp, TrendingDown, UserSearch, Sparkles, BrainCircuit } from 'lucide-react';
+import { Search, Loader2, AlertCircle, UserSearch, Sparkles, BrainCircuit } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { fetchMember } from '../services/backendService';
+import { fetchMember, fetchShapExplanation, ShapExplanation } from '../services/backendService';
 import { getRiskExplanation } from '../services/geminiService';
 import { MemberDetail } from '../types';
 import { useApp } from '../App';
+import ShapWaterfall from './ShapWaterfall';
 
 const MemberLookup: React.FC = () => {
   const { setLoading: setGlobalLoading } = useApp();
   const [searchId, setSearchId] = useState('');
   const [selectedMember, setSelectedMember] = useState<MemberDetail | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
+  const [shapData, setShapData] = useState<ShapExplanation | null>(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +27,15 @@ const MemberLookup: React.FC = () => {
       // Fetch member details from API
       const memberData = await fetchMember(searchId.trim());
       setSelectedMember(memberData);
+
+      // Fetch SHAP explanation
+      try {
+        const shap = await fetchShapExplanation(searchId.trim());
+        setShapData(shap);
+      } catch (shapErr) {
+        console.warn('SHAP explanation not available:', shapErr);
+        setShapData(null);
+      }
 
       // Get Gemini AI explanation
       const riskText = await getRiskExplanation({
@@ -40,6 +51,7 @@ const MemberLookup: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Failed to fetch member');
       setSelectedMember(null);
       setExplanation(null);
+      setShapData(null);
     } finally {
       setLocalLoading(false);
       setGlobalLoading(false);
@@ -196,21 +208,22 @@ const MemberLookup: React.FC = () => {
             </div>
 
             <div className="glass p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none">
-              <h3 className="font-black text-xl mb-6 dark:text-white">Interpretability Markers</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { icon: <TrendingDown className="text-rose-500" />, label: 'is_auto_renew', impact: 'Negative', detail: 'Critical churn signal' },
-                  { icon: <TrendingUp className="text-emerald-500" />, label: 'num_100', impact: 'Positive', detail: 'High loyalty marker' },
-                  { icon: <TrendingDown className="text-rose-500" />, label: 'last_payment', impact: 'Negative', detail: 'Imminent expiry risk' }
-                ].map((item, i) => (
-                  <div key={i} className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-3xl border border-white/60 dark:border-slate-800/60 hover:shadow-lg transition-all duration-300">
-                    <div className="mb-4">{item.icon}</div>
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">{item.label}</p>
-                    <p className="text-sm font-black text-slate-900 dark:text-white mb-1">{item.impact} Impact</p>
-                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
+              <h3 className="font-black text-xl mb-6 dark:text-white flex items-center space-x-2">
+                <BrainCircuit size={20} className="text-indigo-600" />
+                <span>SHAP Feature Impact</span>
+              </h3>
+              {shapData ? (
+                <ShapWaterfall
+                  riskFactors={shapData.explanation.top_risk_factors}
+                  protectiveFactors={shapData.explanation.top_protective_factors}
+                  baseValue={shapData.explanation.base_value}
+                  prediction={selectedMember.risk_score}
+                />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-slate-400 dark:text-slate-600">
+                  <p className="text-sm font-medium">SHAP explanation loading...</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

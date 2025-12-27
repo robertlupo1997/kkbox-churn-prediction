@@ -17,6 +17,18 @@ logger = logging.getLogger(__name__)
 _model_cache: dict[str, Any] = {}
 
 
+def get_cached_predictions() -> tuple[np.ndarray, list[str]] | None:
+    """Get cached predictions if available."""
+    if "predictions" in _model_cache:
+        return _model_cache["predictions"]
+    return None
+
+
+def cache_predictions(probs: np.ndarray, feature_names: list[str]) -> None:
+    """Cache predictions for reuse."""
+    _model_cache["predictions"] = (probs, feature_names)
+
+
 def load_model() -> xgb.Booster:
     """Load XGBoost model from JSON file.
 
@@ -73,6 +85,11 @@ def load_features() -> pd.DataFrame:
     try:
         df = pd.read_csv(features_path)
         _model_cache["features"] = df
+
+        # Pre-compute and cache predictions for all members at load time
+        probs, feats = predict(df)
+        cache_predictions(probs, feats)
+
         logger.info(f"Loaded {len(df):,} members from {features_path}")
         return df
 

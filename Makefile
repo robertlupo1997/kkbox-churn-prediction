@@ -71,9 +71,9 @@ backtest:
 	@echo "⏱ Rolling backtests (requires real KKBOX data)..."
 	python3 src/backtest.py --transactions kkbox-churn-prediction-challenge/data/churn_comp_refresh/transactions_v2.csv \
 	  --user-logs kkbox-churn-prediction-challenge/data/churn_comp_refresh/user_logs_v2.csv \
-	  --members kkbox-churn-prediction-challenge/data/churn_comp_refresh/members_v3.csv \
+	  --members kkbox-churn-prediction-challenge/members_v3.csv \
 	  --train-placeholder tests/fixtures/train_synthetic.csv \
-	  --features-sql features/features_simple.sql \
+	  --features-sql features/features_comprehensive.sql \
 	  --windows "2017-01:2017-02,2017-02:2017-03,2017-03:2017-04" \
 	  --out eval/backtests.csv
 
@@ -98,6 +98,10 @@ psi:
 	@echo "📈 PSI drift (using features_* CSVs with 'window' col)..."
 	python3 src/psi.py --features "eval/features_*.csv" --out eval/psi_features.csv
 	python3 scripts/psi_scores.py
+
+app-features:
+	@echo "📊 Generating app features (10,000 users)..."
+	python3 scripts/generate_app_features.py
 
 app:
 	@echo "🚀 Starting ChurnPro (FastAPI + React)..."
