@@ -85,9 +85,9 @@ This document provides a comprehensive analysis of the KKBOX Churn Prediction pr
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  DEPLOYMENT (app/streamlit_app.py)                                  │
-│  • Cached model loading (<500ms target)                             │
-│  • Individual member lookup                                         │
+│  DEPLOYMENT (api/ + gemini-app/)                                    │
+│  • React/FastAPI with <100ms API latency                            │
+│  • Individual member lookup with SHAP explanations                  │
 │  • Batch CSV scoring                                                │
 │  • Business action recommendations (rules.yaml)                     │
 └─────────────────────────────────────────────────────────────────────┘
@@ -104,7 +104,7 @@ This document provides a comprehensive analysis of the KKBOX Churn Prediction pr
 | `src/temporal_cv.py` | **NEW** Temporal cross-validation | 280 |
 | `src/error_analysis.py` | **NEW** Error analysis | 350 |
 | `features/features_simple.sql` | Feature engineering | 89 |
-| `app/streamlit_app.py` | Web deployment | 263 |
+| `api/` + `gemini-app/` | React/FastAPI web app | - |
 
 ---
 
