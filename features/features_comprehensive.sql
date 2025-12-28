@@ -510,7 +510,60 @@ SELECT
     WHEN COALESCE(log90.avg_secs_per_day_90d, 0) > 0
     THEN COALESCE(log90.std_secs_90d, 0) / log90.avg_secs_per_day_90d
     ELSE 0
-  END AS listening_consistency_90d
+  END AS listening_consistency_90d,
+
+  -- =========================================================================
+  -- WINNER-INSPIRED FEATURES (from Bryan Gregory's 1st place solution)
+  -- =========================================================================
+
+  -- Auto-renew interaction: users with auto-renew AND no cancel are sticky
+  CASE
+    WHEN COALESCE(tx90.latest_auto_renew, 0) = 1 AND COALESCE(tx90.cancel_count_90d, 0) = 0
+    THEN 1 ELSE 0
+  END AS autorenew_not_cancel,
+
+  -- Discount amount (list price - actual paid)
+  COALESCE(tx90.avg_discount_90d, 0) AS discount,
+
+  -- Amount per day (value density)
+  CASE
+    WHEN COALESCE(tx90.avg_plan_days_90d, 0) > 0
+    THEN COALESCE(tx90.avg_paid_90d, 0) / tx90.avg_plan_days_90d
+    ELSE 0
+  END AS amt_per_day,
+
+  -- Cancellation rate per payment days (top feature from winner)
+  CASE
+    WHEN COALESCE(tx90.avg_plan_days_90d, 0) > 0
+    THEN COALESCE(tx90.cancel_count_90d, 0) * 1.0 / tx90.avg_plan_days_90d
+    ELSE 0
+  END AS canc_per_payment_days,
+
+  -- Last 2 weeks vs last month unique songs (trend feature)
+  COALESCE(log14.total_unq_14d, 0) - COALESCE(log30.total_unq_30d, 0) * 0.467 AS unq_trend_14v30,
+
+  -- Month-over-month listening trend (ul_mo1_mo2_trend equivalent)
+  CASE
+    WHEN COALESCE(log60.total_secs_60d, 0) > 0
+    THEN (COALESCE(log30.total_secs_30d, 0) - COALESCE(log60.total_secs_60d, 0) * 0.5) / (log60.total_secs_60d * 0.5 + 1)
+    ELSE 0
+  END AS listening_trend_ratio,
+
+  -- Standard deviation of unique songs (engagement variability)
+  COALESCE(log30.std_secs_30d, 0) / (COALESCE(log30.avg_secs_per_day_30d, 0) + 1) AS secs_cv_30d,
+
+  -- Days since last transaction relative to plan days
+  CASE
+    WHEN COALESCE(tx90.latest_plan_days, 30) > 0
+    THEN COALESCE(tx90.days_since_last_tx, 90) * 1.0 / tx90.latest_plan_days
+    ELSE 3
+  END AS days_since_tx_per_plan,
+
+  -- Has transaction with no cancel (loyalty indicator)
+  CASE
+    WHEN COALESCE(tx90.tx_count_90d, 0) > 1 AND COALESCE(tx90.cancel_count_90d, 0) = 0
+    THEN 1 ELSE 0
+  END AS last_trx_gt1_no_cancel
 
 FROM label_index li
 LEFT JOIN tx_features_90d tx90 ON li.msno = tx90.msno
