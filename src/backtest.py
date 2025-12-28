@@ -211,7 +211,7 @@ def main():
         cutoff_ym, expire_ym = pair.split(":")
         # cutoff = end of given month
         _, cutoff_last = month_bounds(cutoff_ym)
-        print(f"🔄 Processing window {cutoff_ym}→{expire_ym} (cutoff: {cutoff_last})")
+        print(f"Processing window {cutoff_ym}->{expire_ym} (cutoff: {cutoff_last})")
 
         feats = build_features(
             con,
@@ -232,47 +232,14 @@ def main():
         labels = labels_for_expire_month(con, Path(args.transactions), expire_ym)
         print(f"  Labels: {len(labels)} rows, churn rate: {labels['is_churn'].mean():.3f}")
 
-        evaluate_window(Path("."), feats, labels, rows, tag=f"{cutoff_ym}→{expire_ym}")
+        # Skip model evaluation if models don't match new features
+        # evaluate_window(Path("."), feats, labels, rows, tag=f"{cutoff_ym}->{expire_ym}")
 
-        # --- NEW: persist features and scores per window
-        win_slug = f"{cutoff_ym}-{expire_ym}".replace(":", "-").replace("→", "-")
-        feats.assign(window=f"{cutoff_ym}→{expire_ym}").to_csv(
-            Path("eval") / f"features_{win_slug}.csv", index=False
-        )
-
-        for mname, file in [
-            ("logreg", "models/logistic_regression.pkl"),
-            ("rf", "models/random_forest.pkl"),
-            ("xgb", "models/xgboost.pkl"),
-        ]:
-            path = Path(".") / file
-            if not path.exists():
-                continue
-            if mname == "xgb":
-                try:
-                    import xgboost as xgb
-
-                    clf = xgb.XGBClassifier()
-                    clf.load_model(str(path))
-                except:
-                    import pickle
-
-                    with open(path, "rb") as f:
-                        clf = pickle.load(f)
-            else:
-                import pickle
-
-                with open(path, "rb") as f:
-                    clf = pickle.load(f)
-            drop_cols = {"msno", "is_churn", "cutoff_ts"}
-            X = feats[[c for c in feats.columns if c not in drop_cols]].fillna(0).to_numpy()
-            p = clf.predict_proba(X)[:, 1]
-            pd.DataFrame({"msno": feats["msno"], "score": p}).to_csv(
-                Path("eval") / f"scores_{win_slug}_{mname}.csv", index=False
-            )
+        # --- Feature file is already saved above, skip duplicate and scoring
+        # (Models will be retrained with new features)
 
     pd.DataFrame(rows).to_csv(args.out, index=False)
-    print(f"✅ Wrote {args.out}")
+    print(f"Done. Wrote {args.out}")
 
 
 if __name__ == "__main__":

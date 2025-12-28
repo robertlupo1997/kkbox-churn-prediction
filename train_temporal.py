@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+import lightgbm as lgb
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss
@@ -139,6 +140,50 @@ def train_and_evaluate():
     }
     print(f"    AUC: {metrics['xgboost']['auc']:.4f}")
 
+    # LightGBM (Bryan Gregory used 12% LightGBM in winning ensemble)
+    print("  Training LightGBM...")
+    lgb_model = lgb.LGBMClassifier(
+        objective="binary",
+        max_depth=7,
+        num_leaves=256,
+        learning_rate=0.05,
+        n_estimators=240,
+        scale_pos_weight=scale_pos_weight,
+        random_state=42,
+        n_jobs=-1,
+        verbose=-1,
+    )
+    lgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
+    lgb_pred = lgb_model.predict_proba(X_val)[:, 1]
+
+    models["lightgbm"] = lgb_model
+    metrics["lightgbm"] = {
+        "log_loss": log_loss(y_val, lgb_pred),
+        "auc": roc_auc_score(y_val, lgb_pred),
+        "brier": brier_score_loss(y_val, lgb_pred),
+    }
+    print(f"    AUC: {metrics['lightgbm']['auc']:.4f}")
+
+    # XGB + LGB Ensemble (88% XGB + 12% LGB as per winning solution)
+    print("  Creating XGB+LGB Ensemble (88/12 weights)...")
+    ensemble_pred = 0.88 * xgb_pred + 0.12 * lgb_pred
+
+    metrics["xgb_lgb_ensemble"] = {
+        "log_loss": log_loss(y_val, ensemble_pred),
+        "auc": roc_auc_score(y_val, ensemble_pred),
+        "brier": brier_score_loss(y_val, ensemble_pred),
+    }
+    print(f"    AUC: {metrics['xgb_lgb_ensemble']['auc']:.4f}")
+
+    # Also try 50/50 ensemble
+    ensemble_50_pred = 0.5 * xgb_pred + 0.5 * lgb_pred
+    metrics["xgb_lgb_50_50"] = {
+        "log_loss": log_loss(y_val, ensemble_50_pred),
+        "auc": roc_auc_score(y_val, ensemble_50_pred),
+        "brier": brier_score_loss(y_val, ensemble_50_pred),
+    }
+    print(f"    AUC (50/50): {metrics['xgb_lgb_50_50']['auc']:.4f}")
+
     # Save models
     print("\n5. Saving Models")
     output_dir = Path("models")
@@ -152,6 +197,10 @@ def train_and_evaluate():
     # Save XGBoost in native format using the booster
     models["xgboost"].get_booster().save_model(str(output_dir / "xgb.json"))
     print(f"  Saved xgb.json")
+
+    # Save LightGBM in native format
+    models["lightgbm"].booster_.save_model(str(output_dir / "lgb.txt"))
+    print(f"  Saved lgb.txt")
 
     # Save scaler
     with open(output_dir / "scaler.pkl", "wb") as f:
