@@ -82,47 +82,116 @@ def build_features(
     return con.execute(sql).fetchdf()
 
 
-# ---- Label build (Scala semantics)
+# ---- Label build (matching Kaggle winner's labeler_v5.py logic)
 def labels_for_expire_month(
     con, transactions_csv: Path, expire_month: str, window_days: int = 30
 ) -> pd.DataFrame:
+    """
+    Generate churn labels matching Bryan Gregory's labeler_v5.py logic.
+
+    A user is labeled for a target month if:
+    1. They have a transaction with membership_expire_date in target month
+    2. The transaction is NOT a cancellation (is_cancel=0)
+    3. The transaction_date is BEFORE the target month (critical!)
+
+    A user churns if:
+    1. No subsequent transaction within 30 days of expiration, OR
+    2. Subsequent transactions don't extend membership beyond expiration
+
+    NOTE: This function combines both transactions.csv (v1) and transactions_v2.csv
+    to match the winner's approach. The v2 file is a supplement with March 2017 data.
+    """
     first, last = month_bounds(expire_month)
+    # Target month in YYYYMM format (e.g., 201703 for March 2017)
+    y, m = parse_month(expire_month)
+    target_ym = y * 100 + m
+
+    # Determine paths for both v1 and v2 transaction files
+    tx_csv = Path(transactions_csv)
+    tx_dir = tx_csv.parent
+
+    # Check for v1 file in parent directories
+    v1_candidates = [
+        tx_dir.parent / "transactions.csv",  # kkbox-churn-prediction-challenge/transactions.csv
+        tx_dir / "transactions.csv",
+        tx_dir.parent.parent / "transactions.csv",
+    ]
+    v1_path = None
+    for candidate in v1_candidates:
+        if candidate.exists():
+            v1_path = candidate
+            break
+
+    # Build UNION of both transaction files
+    if v1_path and v1_path != tx_csv:
+        tx_union = f"""
+        SELECT * FROM read_csv_auto('{v1_path}', IGNORE_ERRORS=TRUE)
+        UNION ALL
+        SELECT * FROM read_csv_auto('{tx_csv}', IGNORE_ERRORS=TRUE)
+        """
+    else:
+        tx_union = f"SELECT * FROM read_csv_auto('{tx_csv}', IGNORE_ERRORS=TRUE)"
+
     q = f"""
-    WITH tx AS (
-      SELECT
+    WITH tx_raw AS (
+      {tx_union}
+    ),
+    tx AS (
+      SELECT DISTINCT
         msno,
+        CAST(transaction_date AS INTEGER) AS txn_date_int,
+        CAST(membership_expire_date AS INTEGER) AS exp_date_int,
         TRY_CAST(STRPTIME(CAST(transaction_date AS VARCHAR), '%Y%m%d') AS DATE) AS txn_dt,
         TRY_CAST(STRPTIME(CAST(membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE) AS exp_dt,
         CAST(is_cancel AS INTEGER) AS is_cancel
-      FROM read_csv_auto('{transactions_csv}', IGNORE_ERRORS=TRUE)
-      WHERE msno IS NOT NULL AND transaction_date IS NOT NULL AND membership_expire_date IS NOT NULL
+      FROM tx_raw
+      WHERE msno IS NOT NULL
+        AND transaction_date IS NOT NULL
+        AND membership_expire_date IS NOT NULL
     ),
-    last_exp AS (
-      SELECT msno, MAX(exp_dt) AS last_exp_dt
-      FROM tx
-      WHERE exp_dt BETWEEN DATE '{first}' AND DATE '{last}'
-      GROUP BY msno
-    ),
-    next_tx AS (
+    -- Find qualifying transactions: expire in target month, not cancel, txn before target month
+    qualifying_tx AS (
       SELECT
-        le.msno,
-        le.last_exp_dt,
-        MIN(t2.txn_dt) AS next_txn_dt
-      FROM last_exp le
-      LEFT JOIN tx t2 ON t2.msno = le.msno
-        AND t2.txn_dt > le.last_exp_dt
-        AND t2.is_cancel = 0
-        AND t2.exp_dt > le.last_exp_dt  -- must extend membership
-      GROUP BY le.msno, le.last_exp_dt
+        msno,
+        txn_dt,
+        exp_dt,
+        txn_date_int,
+        exp_date_int,
+        -- Rank by transaction date DESC to get the LAST qualifying transaction
+        ROW_NUMBER() OVER (PARTITION BY msno ORDER BY txn_date_int DESC, exp_date_int DESC) AS rn
+      FROM tx
+      WHERE CAST(exp_date_int / 100 AS INTEGER) = {target_ym}  -- Expire in target month
+        AND is_cancel = 0  -- Not a cancellation
+        AND CAST(txn_date_int / 100 AS INTEGER) < {target_ym}  -- Transaction BEFORE target month (critical!)
+    ),
+    -- Get only the last qualifying transaction per user
+    last_qualifying AS (
+      SELECT msno, txn_dt, exp_dt, txn_date_int, exp_date_int
+      FROM qualifying_tx
+      WHERE rn = 1
+    ),
+    -- Find renewal transactions after expiration
+    renewals AS (
+      SELECT
+        lq.msno,
+        lq.exp_dt AS last_exp_dt,
+        lq.exp_date_int,
+        MIN(CASE
+          WHEN t2.is_cancel = 0
+            AND t2.txn_dt > lq.exp_dt
+            AND DATE_DIFF('day', lq.exp_dt, t2.txn_dt) < {window_days}
+            AND t2.exp_dt > lq.exp_dt
+          THEN t2.txn_dt
+          ELSE NULL
+        END) AS renewal_dt
+      FROM last_qualifying lq
+      LEFT JOIN tx t2 ON t2.msno = lq.msno
+      GROUP BY lq.msno, lq.exp_dt, lq.exp_date_int
     )
     SELECT
-      n.msno,
-      CASE
-        WHEN n.next_txn_dt IS NULL THEN 1
-        WHEN DATE_DIFF('day', n.last_exp_dt, n.next_txn_dt) <= {window_days} THEN 0
-        ELSE 1
-      END AS is_churn
-    FROM next_tx n
+      msno,
+      CASE WHEN renewal_dt IS NOT NULL THEN 0 ELSE 1 END AS is_churn
+    FROM renewals
     """
     return con.execute(q).fetchdf()
 
@@ -179,6 +248,33 @@ def evaluate_window(
         out_rows.append(dict(window=tag, model=mname, **vals))
 
 
+def get_labels_for_window(
+    con, transactions_csv: Path, expire_month: str, official_labels_path: Path = None
+) -> pd.DataFrame:
+    """
+    Get labels for a window, preferring official labels when available.
+
+    For Feb 2017 (the official Kaggle month), uses train_v2.csv if provided.
+    For other months, generates labels using our logic.
+    """
+    y, m = parse_month(expire_month)
+    target_ym = y * 100 + m
+
+    # For February 2017, try to use official labels
+    if target_ym == 201702 and official_labels_path and official_labels_path.exists():
+        print(f"  Using official labels from {official_labels_path}")
+        return pd.read_csv(official_labels_path)[["msno", "is_churn"]]
+
+    # For March 2017 expirations, we need data through April for renewals
+    # But our data ends March 31, so we can't reliably generate these labels
+    # Use the official labels if available, otherwise generate with caveat
+    if target_ym == 201703:
+        print("  WARNING: March 2017 labels may be inaccurate (limited renewal data)")
+
+    # Generate labels
+    return labels_for_expire_month(con, transactions_csv, expire_month)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--transactions", required=True)
@@ -192,7 +288,7 @@ def main():
     ap.add_argument("--features-sql", default="features/features_simple.sql")
     ap.add_argument(
         "--windows",
-        default="2017-02:2017-03,2017-03:2017-04,2017-01:2017-02",
+        default="2017-01:2017-02",
         help="Comma-separated pairs 'cutoff_YYYY-MM:expire_YYYY-MM'",
     )
     ap.add_argument("--out", default="eval/backtests.csv")
@@ -205,6 +301,9 @@ def main():
     con.execute("SET threads=4")
     con.execute("SET preserve_insertion_order=false")
     con.execute("SET memory_limit='8GB'")
+
+    # Find official labels file
+    official_labels = Path(args.train_placeholder)
 
     rows = []
     for pair in args.windows.split(","):
@@ -223,20 +322,22 @@ def main():
             members_path=Path(args.members),
         )
 
-        # Save features per window for PSI analysis
-        window_tag = f"{cutoff_ym}-{expire_ym}"
-        feats_with_window = feats.assign(window=window_tag)
-        feats_with_window.to_csv(f"eval/features_{window_tag}.csv", index=False)
-        print(f"  Features: {len(feats)} rows saved to eval/features_{window_tag}.csv")
-
-        labels = labels_for_expire_month(con, Path(args.transactions), expire_ym)
+        # Get labels (uses official for Feb 2017, generates for others)
+        labels = get_labels_for_window(
+            con, Path(args.transactions), expire_ym, official_labels
+        )
         print(f"  Labels: {len(labels)} rows, churn rate: {labels['is_churn'].mean():.3f}")
 
-        # Skip model evaluation if models don't match new features
-        # evaluate_window(Path("."), feats, labels, rows, tag=f"{cutoff_ym}->{expire_ym}")
+        # Merge features with labels
+        merged = feats.merge(labels, on="msno", how="inner")
+        print(f"  Merged: {len(merged)} rows (features with labels)")
 
-        # --- Feature file is already saved above, skip duplicate and scoring
-        # (Models will be retrained with new features)
+        # Save merged features + labels
+        window_tag = f"{cutoff_ym}-{expire_ym}"
+        merged_with_window = merged.assign(window=window_tag)
+        output_path = f"eval/features_{window_tag}.csv"
+        merged_with_window.to_csv(output_path, index=False)
+        print(f"  Saved to {output_path}")
 
     pd.DataFrame(rows).to_csv(args.out, index=False)
     print(f"Done. Wrote {args.out}")
