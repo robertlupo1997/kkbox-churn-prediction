@@ -248,6 +248,7 @@ log_features_30d AS (
     STDDEV(total_secs) AS std_secs_30d,
     SUM(num_unq) AS total_unq_30d,
     AVG(num_unq) AS avg_unq_per_day_30d,
+    STDDEV(num_unq) AS std_unq_30d,  -- Added for winner feature
     SUM(num_100) AS total_completed_30d,
     SUM(num_25) AS total_skipped_early_30d,
     SUM(total_plays) AS total_plays_30d,
@@ -563,7 +564,75 @@ SELECT
   CASE
     WHEN COALESCE(tx90.tx_count_90d, 0) > 1 AND COALESCE(tx90.cancel_count_90d, 0) = 0
     THEN 1 ELSE 0
-  END AS last_trx_gt1_no_cancel
+  END AS last_trx_gt1_no_cancel,
+
+  -- =========================================================================
+  -- ADDITIONAL WINNER FEATURES (Phase 3)
+  -- =========================================================================
+
+  -- User log trend: last 2 weeks vs prior month unique songs (TOP winner feature)
+  -- Formula: (14d_unq * 2.143) / 30d_unq - 1 (normalizes 14d to 30d equivalent)
+  CASE
+    WHEN COALESCE(log30.total_unq_30d, 0) > 0
+    THEN (COALESCE(log14.total_unq_14d, 0) * 2.143) / log30.total_unq_30d - 1
+    ELSE 0
+  END AS ul_last2wk_vs_month_unq_ratio,
+
+  -- Month-over-month listening trend (mo1 vs mo2)
+  CASE
+    WHEN (COALESCE(log60.total_secs_60d, 0) - COALESCE(log30.total_secs_30d, 0)) > 0
+    THEN COALESCE(log30.total_secs_30d, 0) / (COALESCE(log60.total_secs_60d, 0) - COALESCE(log30.total_secs_30d, 0) + 1)
+    ELSE 0
+  END AS listening_mo1_mo2_trend,
+
+  -- Standard deviation of unique songs in prior month (engagement variability)
+  COALESCE(log30.std_unq_30d, 0) AS std_unq_prev_mo,
+
+  -- Activity density: active days / total days in window
+  COALESCE(log90.active_days_90d, 0) / 90.0 AS activity_density_90d,
+  COALESCE(log30.active_days_30d, 0) / 30.0 AS activity_density_30d,
+  COALESCE(log7.active_days_7d, 0) / 7.0 AS activity_density_7d,
+
+  -- Auto-renew patterns (usually auto-renew if ratio > 0.5)
+  CASE WHEN COALESCE(tx90.auto_renew_ratio_90d, 0) > 0.5 THEN 1 ELSE 0 END AS usually_auto_renew,
+
+  -- Has cancelled before
+  CASE WHEN COALESCE(tx90.cancel_ratio_90d, 0) > 0 THEN 1 ELSE 0 END AS has_cancelled,
+
+  -- Engagement depth: seconds per unique song
+  CASE
+    WHEN COALESCE(log90.total_unq_90d, 0) > 0
+    THEN COALESCE(log90.total_secs_90d, 0) / log90.total_unq_90d
+    ELSE 0
+  END AS secs_per_unq_song,
+
+  -- Payment method stability (changed if > 1 method)
+  CASE WHEN COALESCE(tx90.unique_payment_methods_90d, 1) > 1 THEN 1 ELSE 0 END AS changed_payment_method,
+
+  -- Price sensitivity: discount ratio (discount / paid amount)
+  CASE
+    WHEN COALESCE(tx90.avg_paid_90d, 0) > 0
+    THEN COALESCE(tx90.avg_discount_90d, 0) / tx90.avg_paid_90d
+    ELSE 0
+  END AS discount_ratio,
+
+  -- Expiry urgency category
+  CASE
+    WHEN (CASE WHEN tx90.latest_expire_date IS NOT NULL THEN tx90.latest_expire_date - li.cutoff_ts ELSE 0 END) < 0 THEN -1  -- Already expired
+    WHEN (CASE WHEN tx90.latest_expire_date IS NOT NULL THEN tx90.latest_expire_date - li.cutoff_ts ELSE 0 END) <= 7 THEN 0  -- Expiring this week
+    WHEN (CASE WHEN tx90.latest_expire_date IS NOT NULL THEN tx90.latest_expire_date - li.cutoff_ts ELSE 0 END) <= 30 THEN 1  -- Expiring this month
+    ELSE 2  -- More than a month
+  END AS expiry_urgency,
+
+  -- Transaction recency vs plan length interaction
+  CASE
+    WHEN COALESCE(tx90.latest_plan_days, 30) > 0
+    THEN COALESCE(tx90.days_since_last_tx, 90) / tx90.latest_plan_days
+    ELSE 3
+  END AS tx_recency_vs_plan,
+
+  -- Listening recency: days since last listen (already in 90d features)
+  COALESCE(log90.days_since_last_listen, 90) AS last_ul_days_s
 
 FROM label_index li
 LEFT JOIN tx_features_90d tx90 ON li.msno = tx90.msno
