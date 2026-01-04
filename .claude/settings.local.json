@@ -19,7 +19,8 @@
       "Bash(powershell -Command:*)",
       "Bash(cat:*)",
       "Bash(git fetch:*)",
-      "Bash(git -C \"C:\\\\Users\\\\Trey\\\\Downloads\\\\KKBOX_PROJECT\" push origin main)"
+      "Bash(git -C \"C:\\\\Users\\\\Trey\\\\Downloads\\\\KKBOX_PROJECT\" push origin main)",
+      "Bash(powershell.exe:*)"
     ],
     "deny": [],
     "ask": []

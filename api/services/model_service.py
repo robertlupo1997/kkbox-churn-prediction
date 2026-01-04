@@ -13,8 +13,13 @@ from api.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Global cache for model and features
+# Global cache for model, features, and pre-computed member data
 _model_cache: dict[str, Any] = {}
+
+# Pre-computed member data for fast lookups
+_member_cache: dict[str, dict] = {}  # msno -> member data
+_sorted_members: list[dict] = []  # Pre-sorted by risk score
+_tier_counts: dict[str, int] = {"High": 0, "Medium": 0, "Low": 0}
 
 
 def get_cached_predictions() -> tuple[np.ndarray, list[str]] | None:
@@ -250,3 +255,146 @@ def is_model_loaded() -> bool:
 def is_features_loaded() -> bool:
     """Check if features are loaded in cache."""
     return "features" in _model_cache and not _model_cache["features"].empty
+
+
+def precompute_member_data() -> None:
+    """Pre-compute all member data for fast API responses.
+
+    This is called once at startup after features are loaded.
+    Pre-computes risk scores, tiers, and sorts by risk score.
+    """
+    global _member_cache, _sorted_members, _tier_counts
+
+    features_df = _model_cache.get("features")
+    if features_df is None or features_df.empty:
+        logger.warning("No features to precompute")
+        return
+
+    cached = get_cached_predictions()
+    if cached is None:
+        logger.warning("No predictions to precompute")
+        return
+
+    probs, feature_names = cached
+
+    # Get feature importance for risk factors (do once)
+    importance_dict = {item["name"]: item["importance"] for item in get_feature_importance()}
+    top_features_global = sorted(
+        importance_dict.keys(), key=lambda x: importance_dict.get(x, 0), reverse=True
+    )[:10]
+
+    logger.info("Pre-computing member data for %d members...", len(features_df))
+
+    # Reset caches
+    _member_cache = {}
+    _sorted_members = []
+    _tier_counts = {"High": 0, "Medium": 0, "Low": 0}
+
+    # Vectorized tier assignment
+    tiers = np.where(probs >= 0.7, "High", np.where(probs >= 0.3, "Medium", "Low"))
+
+    # Build member cache using vectorized operations
+    msno_col = features_df["msno"].values
+    is_churn_col = (
+        features_df["is_churn"].values
+        if "is_churn" in features_df.columns
+        else [None] * len(features_df)
+    )
+
+    for idx in range(len(features_df)):
+        msno = msno_col[idx]
+        score = float(probs[idx])
+        tier = tiers[idx]
+
+        # Use global top features instead of per-member calculation (much faster)
+        member_data = {
+            "msno": msno,
+            "risk_score": score,
+            "risk_tier": tier,
+            "is_churn": bool(is_churn_col[idx]) if is_churn_col[idx] is not None else None,
+            "top_risk_factors": top_features_global[:3],
+            "idx": idx,  # Store index for feature lookup
+        }
+
+        _member_cache[msno] = member_data
+        _sorted_members.append(member_data)
+        _tier_counts[tier] += 1
+
+    # Sort once by risk score descending
+    _sorted_members.sort(key=lambda x: x["risk_score"], reverse=True)
+
+    logger.info(
+        "Pre-computed %d members: High=%d, Medium=%d, Low=%d",
+        len(_member_cache),
+        _tier_counts["High"],
+        _tier_counts["Medium"],
+        _tier_counts["Low"],
+    )
+
+
+def get_sorted_members(
+    limit: int = 100,
+    offset: int = 0,
+    risk_tier: str | None = None,
+) -> tuple[list[dict], int]:
+    """Get pre-sorted members with pagination.
+
+    Args:
+        limit: Maximum members to return
+        offset: Number to skip
+        risk_tier: Optional filter by tier
+
+    Returns:
+        Tuple of (members list, total count)
+    """
+    if not _sorted_members:
+        return [], 0
+
+    if risk_tier:
+        # Filter by tier
+        filtered = [m for m in _sorted_members if m["risk_tier"] == risk_tier]
+        total = len(filtered)
+        return filtered[offset : offset + limit], total
+    else:
+        total = len(_sorted_members)
+        return _sorted_members[offset : offset + limit], total
+
+
+def get_member_by_msno(msno: str) -> dict | None:
+    """Get pre-computed member data by msno.
+
+    Args:
+        msno: Member ID
+
+    Returns:
+        Member data dict or None if not found
+    """
+    return _member_cache.get(msno)
+
+
+def get_member_features(msno: str) -> dict[str, Any] | None:
+    """Get full feature values for a member.
+
+    Args:
+        msno: Member ID
+
+    Returns:
+        Dictionary of feature name -> value
+    """
+    member = _member_cache.get(msno)
+    if member is None:
+        return None
+
+    features_df = _model_cache.get("features")
+    if features_df is None:
+        return None
+
+    idx = member["idx"]
+    row = features_df.iloc[idx]
+
+    drop_cols = {"msno", "is_churn", "cutoff_ts", "window"}
+    return {
+        k: float(v) if isinstance(v, int | float) else v
+        for k, v in row.items()
+        if k not in drop_cols
+    }

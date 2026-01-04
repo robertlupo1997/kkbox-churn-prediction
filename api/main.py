@@ -48,6 +48,8 @@ async def startup_event():
         features_df = model_service.load_features()
         if not features_df.empty:
             logger.info(f"Loaded {len(features_df):,} member features")
+            # Pre-compute member data for fast API responses
+            model_service.precompute_member_data()
         else:
             logger.warning(
                 "No features loaded - API will have limited functionality. "
