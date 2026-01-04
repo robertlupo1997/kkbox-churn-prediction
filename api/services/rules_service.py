@@ -29,7 +29,7 @@ def load_rules() -> dict[str, Any]:
         return {}
 
     try:
-        with open(rules_path, "r", encoding="utf-8") as f:
+        with open(rules_path, encoding="utf-8") as f:
             rules = yaml.safe_load(f)
         _rules_cache["rules"] = rules
         logger.info(f"Loaded business rules from {rules_path}")
@@ -40,9 +40,7 @@ def load_rules() -> dict[str, Any]:
         return {}
 
 
-def get_recommendation(
-    score: float, top_features: list[str] | None = None
-) -> dict[str, Any]:
+def get_recommendation(score: float, top_features: list[str] | None = None) -> dict[str, Any]:
     """Get action recommendation based on churn score and risk factors.
 
     Args:
@@ -94,9 +92,7 @@ def get_recommendation(
     return _get_default_recommendation(score)
 
 
-def _matches_rule(
-    score: float, top_features: list[str], rule: dict[str, Any]
-) -> bool:
+def _matches_rule(score: float, top_features: list[str], rule: dict[str, Any]) -> bool:
     """Check if a member matches a specific rule.
 
     Args:
@@ -149,8 +145,7 @@ def _get_default_recommendation(score: float) -> dict[str, Any]:
         return {
             "category": "engagement",
             "recommendation": "Engagement campaign",
-            "message": "Discover new music just for you! "
-            "Try our enhanced recommendations.",
+            "message": "Discover new music just for you! " "Try our enhanced recommendations.",
             "urgency": "medium",
             "channels": ["email", "push_notification"],
         }
@@ -158,8 +153,7 @@ def _get_default_recommendation(score: float) -> dict[str, Any]:
         return {
             "category": "experience",
             "recommendation": "Monitor engagement",
-            "message": "Keep enjoying great music! "
-            "Here are some new releases you might like.",
+            "message": "Keep enjoying great music! " "Here are some new releases you might like.",
             "urgency": "low",
             "channels": ["in_app"],
         }

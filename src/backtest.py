@@ -323,9 +323,7 @@ def main():
         )
 
         # Get labels (uses official for Feb 2017, generates for others)
-        labels = get_labels_for_window(
-            con, Path(args.transactions), expire_ym, official_labels
-        )
+        labels = get_labels_for_window(con, Path(args.transactions), expire_ym, official_labels)
         print(f"  Labels: {len(labels)} rows, churn rate: {labels['is_churn'].mean():.3f}")
 
         # Merge features with labels

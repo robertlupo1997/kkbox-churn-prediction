@@ -232,10 +232,10 @@ const Dashboard: React.FC = () => {
                 <XAxis dataKey="range" fontSize={10} fontWeight={700} tickLine={false} axisLine={false} tick={{fill: chartTextColor}} />
                 <YAxis fontSize={10} fontWeight={700} tickLine={false} axisLine={false} tick={{fill: chartTextColor}} />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(99, 102, 241, 0.05)' }} />
-                <Bar 
-                  dataKey="count" 
-                  fill="url(#barGradient)" 
-                  radius={[8, 8, 0, 0]} 
+                <Bar
+                  dataKey="count"
+                  fill="url(#barGradient)"
+                  radius={[8, 8, 0, 0]}
                   style={{ cursor: 'pointer' }}
                 />
               </BarChart>
@@ -264,9 +264,9 @@ const Dashboard: React.FC = () => {
                   className="cursor-pointer"
                 >
                   {pieData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
                       opacity={selectedTier && entry.name !== selectedTier ? 0.3 : 1}
                       stroke={entry.name === selectedTier ? '#4f46e5' : 'none'}
                       strokeWidth={2}
@@ -274,11 +274,11 @@ const Dashboard: React.FC = () => {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip unit="%" />} />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36} 
-                  iconType="circle" 
-                  wrapperStyle={{paddingTop: '20px', fontSize: '12px', fontWeight: '700', color: chartTextColor}} 
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{paddingTop: '20px', fontSize: '12px', fontWeight: '700', color: chartTextColor}}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -297,7 +297,7 @@ const Dashboard: React.FC = () => {
                 Range Explorer: <span className="text-indigo-600">{selectedRange.range}</span>
               </h3>
             </div>
-            <button 
+            <button
               onClick={() => setSelectedRange(null)}
               className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all text-slate-400"
             >
@@ -343,7 +343,7 @@ const Dashboard: React.FC = () => {
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Prioritized subscribers for churn prevention efforts.</p>
           </div>
           <div className="flex space-x-3 mt-4 md:mt-0">
-            <button 
+            <button
               onClick={exportToCSV}
               className="flex items-center space-x-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95"
             >

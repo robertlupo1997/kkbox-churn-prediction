@@ -79,7 +79,7 @@ const ModelPerformance: React.FC = () => {
           <Target size={24} className="text-indigo-600" />
           <span>Reliability & Calibration</span>
         </h3>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div className="space-y-6 min-w-0">
             <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-6 rounded-3xl border border-indigo-100/50 dark:border-indigo-900/30 flex items-start space-x-4">
@@ -91,35 +91,35 @@ const ModelPerformance: React.FC = () => {
                 <p>For a well-calibrated model, if we predict a 70% churn risk for 100 users, approximately 70 of them should actually churn. Without calibration, models often "over-confidence" or "under-confidence" predictions.</p>
               </div>
             </div>
-            
+
             <div className="h-[400px] w-full border border-slate-100 dark:border-slate-800 rounded-[2rem] p-8 bg-white/40 dark:bg-slate-950/40 shadow-inner">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center mb-8">Reliability Diagram (Binned)</h4>
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                  <XAxis 
-                    label={{ value: 'Mean Predicted Risk', position: 'bottom', offset: 0, fontSize: 10, fontWeight: 900, fill: chartTextColor }} 
-                    type="number" 
-                    domain={[0, 1]} 
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{fill: chartTextColor}}
-                  />
-                  <YAxis 
-                    label={{ value: 'Fraction of Positives', angle: -90, position: 'insideLeft', fontSize: 10, fontWeight: 900, fill: chartTextColor }} 
-                    type="number" 
+                  <XAxis
+                    label={{ value: 'Mean Predicted Risk', position: 'bottom', offset: 0, fontSize: 10, fontWeight: 900, fill: chartTextColor }}
+                    type="number"
                     domain={[0, 1]}
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
                     tick={{fill: chartTextColor}}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '20px', 
+                  <YAxis
+                    label={{ value: 'Fraction of Positives', angle: -90, position: 'insideLeft', fontSize: 10, fontWeight: 900, fill: chartTextColor }}
+                    type="number"
+                    domain={[0, 1]}
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{fill: chartTextColor}}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '20px',
                       backgroundColor: isDark ? '#0f172a' : '#fff',
-                      border: 'none', 
+                      border: 'none',
                       boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
                       fontSize: '11px',
                       fontWeight: '700'
@@ -164,10 +164,10 @@ const ModelPerformance: React.FC = () => {
                 </div>
                 <h4 className="font-black text-slate-900 dark:text-white text-xl tracking-tight">Understanding Brier Score</h4>
               </div>
-              
+
               <div className="space-y-6 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 <p className="font-medium">The <strong>Brier Score</strong> is the Mean Squared Error (MSE) applied to probability forecasts. It provides a comprehensive measure of both <span className="text-indigo-600 dark:text-indigo-400 font-black">Calibration</span> and <span className="text-indigo-600 dark:text-indigo-400 font-black">Refinement</span>.</p>
-                
+
                 <div className="bg-white dark:bg-slate-950 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-inner group">
                   <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Mathematical Formula</p>
                   <div className="font-mono text-lg text-indigo-900 dark:text-indigo-300 flex justify-center py-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">

@@ -29,9 +29,9 @@ const About: React.FC = () => {
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <DocumentationCard 
-          icon={<Layers size={24} />} 
-          title="Architecture & Modeling" 
+        <DocumentationCard
+          icon={<Layers size={24} />}
+          title="Architecture & Modeling"
           color="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300"
         >
           <p>
@@ -42,9 +42,9 @@ const About: React.FC = () => {
           </p>
         </DocumentationCard>
 
-        <DocumentationCard 
-          icon={<Database size={24} />} 
-          title="Engineered Feature Space" 
+        <DocumentationCard
+          icon={<Database size={24} />}
+          title="Engineered Feature Space"
           color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"
         >
           <p>
@@ -66,9 +66,9 @@ const About: React.FC = () => {
           </ul>
         </DocumentationCard>
 
-        <DocumentationCard 
-          icon={<Clock size={24} />} 
-          title="Temporal Windows" 
+        <DocumentationCard
+          icon={<Clock size={24} />}
+          title="Temporal Windows"
           color="bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300"
         >
           <p>
@@ -79,13 +79,13 @@ const About: React.FC = () => {
           </p>
         </DocumentationCard>
 
-        <DocumentationCard 
-          icon={<ShieldCheck size={24} />} 
-          title="Data Integrity & Safety" 
+        <DocumentationCard
+          icon={<ShieldCheck size={24} />}
+          title="Data Integrity & Safety"
           color="bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300"
         >
           <p>
-            To avoid <strong>Data Leakage</strong>, we implemented a strict temporal split. Features are calculated strictly from activity before the prediction date (Day T). 
+            To avoid <strong>Data Leakage</strong>, we implemented a strict temporal split. Features are calculated strictly from activity before the prediction date (Day T).
           </p>
           <p>
             Labels (Churn/No Churn) are then derived from activity in the following month (T+1). This ensures that the high performance metrics reported are realistic and deployable in production environments.
@@ -97,7 +97,7 @@ const About: React.FC = () => {
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
           <FileCode size={200} className="text-indigo-600" />
         </div>
-        
+
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-3 space-y-6">
             <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Project Context</h3>
@@ -105,10 +105,10 @@ const About: React.FC = () => {
               This dashboard is a visualization suite for the <strong>WSDM - KKBox's Churn Prediction Challenge</strong>. KKBox, Asia's leading music provider, faces massive churn pressure. By predicting churn 30 days in advance, the business can shift from reactive retention to proactive engagement.
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
-              <a 
-                href="https://www.kaggle.com/c/kkbox-churn-prediction-challenge" 
-                target="_blank" 
-                rel="noreferrer" 
+              <a
+                href="https://www.kaggle.com/c/kkbox-churn-prediction-challenge"
+                target="_blank"
+                rel="noreferrer"
                 className="flex items-center space-x-2 px-8 py-3 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none"
               >
                 <span>View on Kaggle</span>
@@ -120,7 +120,7 @@ const About: React.FC = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="lg:col-span-2 space-y-4">
              <div className="p-6 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Training Metrics</p>

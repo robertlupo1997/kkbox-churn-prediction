@@ -25,17 +25,12 @@ def run_command(cmd: str, description: str, timeout: int = 3600) -> bool:
     """Run a command and check for success."""
     print(f"\n{'='*60}")
     print(f"STEP: {description}")
-    print('='*60)
+    print("=" * 60)
     print(f"Running: {cmd}")
     print()
 
     try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            timeout=timeout,
-            capture_output=False
-        )
+        result = subprocess.run(cmd, shell=True, timeout=timeout, capture_output=False)
 
         if result.returncode != 0:
             print(f"\nFAILED: {description}")
@@ -102,12 +97,11 @@ def check_data_files() -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Run full KKBOX churn prediction pipeline")
-    parser.add_argument('--skip-features', action='store_true',
-                        help='Skip feature regeneration')
-    parser.add_argument('--skip-tuning', action='store_true',
-                        help='Skip hyperparameter tuning')
-    parser.add_argument('--skip-stacking', action='store_true',
-                        help='Skip stacked ensemble training')
+    parser.add_argument("--skip-features", action="store_true", help="Skip feature regeneration")
+    parser.add_argument("--skip-tuning", action="store_true", help="Skip hyperparameter tuning")
+    parser.add_argument(
+        "--skip-stacking", action="store_true", help="Skip stacked ensemble training"
+    )
     args = parser.parse_args()
 
     start_time = datetime.now()
@@ -135,7 +129,7 @@ def main():
         if run_command(
             "python src/historical_features.py",
             "Phase 2: Generate historical churn features",
-            timeout=1800
+            timeout=1800,
         ):
             completed_steps.append("historical_features")
         else:
@@ -151,7 +145,7 @@ def main():
             "--features-sql features/features_comprehensive.sql "
             "--windows '2017-01:2017-02,2017-02:2017-03,2017-03:2017-04'",
             "Phase 3: Regenerate features with winner SQL",
-            timeout=3600
+            timeout=3600,
         ):
             completed_steps.append("feature_generation")
         else:
@@ -177,7 +171,7 @@ def main():
         if run_command(
             "python src/hyperparameter_tuning.py --n-trials 50",
             "Phase 4: Hyperparameter tuning with Optuna",
-            timeout=7200
+            timeout=7200,
         ):
             completed_steps.append("hyperparameter_tuning")
         else:
@@ -192,11 +186,7 @@ def main():
 
     # Phase 5: Stacked Ensemble (optional)
     if not args.skip_stacking:
-        if run_command(
-            "python src/stacking.py",
-            "Phase 5: Train stacked ensemble",
-            timeout=3600
-        ):
+        if run_command("python src/stacking.py", "Phase 5: Train stacked ensemble", timeout=3600):
             completed_steps.append("stacked_ensemble")
         else:
             print("WARNING: Stacked ensemble training failed, continuing...")
@@ -207,7 +197,7 @@ def main():
     if run_command(
         "python train_temporal.py",
         "Phase 6: Final model training with all improvements",
-        timeout=1800
+        timeout=1800,
     ):
         completed_steps.append("final_training")
     else:

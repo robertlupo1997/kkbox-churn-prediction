@@ -43,8 +43,8 @@ def calibrate_model(model, X, y, model_name):
     n = len(y)
     np.random.seed(42)
     indices = np.random.permutation(n)
-    cal_idx = indices[:n//2]
-    test_idx = indices[n//2:]
+    cal_idx = indices[: n // 2]
+    test_idx = indices[n // 2 :]
 
     X_cal, y_cal = X.iloc[cal_idx], y.iloc[cal_idx]
     X_test, y_test = X.iloc[test_idx], y.iloc[test_idx]
@@ -123,7 +123,7 @@ def main():
             "improvement": {
                 "log_loss": r["before"]["log_loss"] - r["after"]["log_loss"],
                 "brier": r["before"]["brier"] - r["after"]["brier"],
-            }
+            },
         }
         for name, r in results.items()
     }
@@ -134,7 +134,9 @@ def main():
     print("\n" + "=" * 60)
     print("CALIBRATION COMPLETE")
     print("=" * 60)
-    print(f"Best improvement: LightGBM log loss {metrics['lightgbm']['improvement']['log_loss']:.4f}")
+    print(
+        f"Best improvement: LightGBM log loss {metrics['lightgbm']['improvement']['log_loss']:.4f}"
+    )
 
 
 if __name__ == "__main__":

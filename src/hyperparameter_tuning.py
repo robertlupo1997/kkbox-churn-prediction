@@ -55,27 +55,23 @@ def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 def objective_xgb(trial, X_train, y_train, X_val, y_val, scale_pos_weight):
     """Optuna objective for XGBoost."""
     params = {
-        'objective': 'binary:logistic',
-        'eval_metric': 'logloss',
-        'max_depth': trial.suggest_int('max_depth', 4, 10),
-        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
-        'n_estimators': trial.suggest_int('n_estimators', 100, 500),
-        'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
-        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
-        'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 10.0, log=True),
-        'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 10.0, log=True),
-        'scale_pos_weight': scale_pos_weight,
-        'random_state': 42,
-        'n_jobs': -1,
+        "objective": "binary:logistic",
+        "eval_metric": "logloss",
+        "max_depth": trial.suggest_int("max_depth", 4, 10),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
+        "subsample": trial.suggest_float("subsample", 0.6, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
+        "scale_pos_weight": scale_pos_weight,
+        "random_state": 42,
+        "n_jobs": -1,
     }
 
     model = xgb.XGBClassifier(**params)
-    model.fit(
-        X_train, y_train,
-        eval_set=[(X_val, y_val)],
-        verbose=False
-    )
+    model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
 
     y_pred = model.predict_proba(X_val)[:, 1]
     auc = roc_auc_score(y_val, y_pred)
@@ -86,28 +82,25 @@ def objective_xgb(trial, X_train, y_train, X_val, y_val, scale_pos_weight):
 def objective_lgb(trial, X_train, y_train, X_val, y_val, scale_pos_weight):
     """Optuna objective for LightGBM."""
     params = {
-        'objective': 'binary',
-        'metric': 'binary_logloss',
-        'max_depth': trial.suggest_int('max_depth', 4, 10),
-        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
-        'n_estimators': trial.suggest_int('n_estimators', 100, 500),
-        'num_leaves': trial.suggest_int('num_leaves', 31, 512),
-        'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
-        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
-        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
-        'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 10.0, log=True),
-        'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 10.0, log=True),
-        'scale_pos_weight': scale_pos_weight,
-        'random_state': 42,
-        'n_jobs': -1,
-        'verbose': -1,
+        "objective": "binary",
+        "metric": "binary_logloss",
+        "max_depth": trial.suggest_int("max_depth", 4, 10),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "num_leaves": trial.suggest_int("num_leaves", 31, 512),
+        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+        "subsample": trial.suggest_float("subsample", 0.6, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
+        "scale_pos_weight": scale_pos_weight,
+        "random_state": 42,
+        "n_jobs": -1,
+        "verbose": -1,
     }
 
     model = lgb.LGBMClassifier(**params)
-    model.fit(
-        X_train, y_train,
-        eval_set=[(X_val, y_val)]
-    )
+    model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
 
     y_pred = model.predict_proba(X_val)[:, 1]
     auc = roc_auc_score(y_val, y_pred)
@@ -135,14 +128,14 @@ def run_tuning(n_trials: int = 100):
     # Tune XGBoost
     print(f"\n{'='*60}")
     print("Tuning XGBoost...")
-    print('='*60)
+    print("=" * 60)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study_xgb = optuna.create_study(direction='maximize')
+    study_xgb = optuna.create_study(direction="maximize")
     study_xgb.optimize(
         lambda trial: objective_xgb(trial, X_train, y_train, X_val, y_val, scale_pos_weight),
         n_trials=n_trials,
-        show_progress_bar=True
+        show_progress_bar=True,
     )
 
     print(f"\nBest XGBoost AUC: {study_xgb.best_value:.4f}")
@@ -151,13 +144,13 @@ def run_tuning(n_trials: int = 100):
     # Tune LightGBM
     print(f"\n{'='*60}")
     print("Tuning LightGBM...")
-    print('='*60)
+    print("=" * 60)
 
-    study_lgb = optuna.create_study(direction='maximize')
+    study_lgb = optuna.create_study(direction="maximize")
     study_lgb.optimize(
         lambda trial: objective_lgb(trial, X_train, y_train, X_val, y_val, scale_pos_weight),
         n_trials=n_trials,
-        show_progress_bar=True
+        show_progress_bar=True,
     )
 
     print(f"\nBest LightGBM AUC: {study_lgb.best_value:.4f}")
@@ -165,15 +158,15 @@ def run_tuning(n_trials: int = 100):
 
     # Save best params
     best_params = {
-        'xgboost': study_xgb.best_params,
-        'xgboost_auc': study_xgb.best_value,
-        'lightgbm': study_lgb.best_params,
-        'lightgbm_auc': study_lgb.best_value,
+        "xgboost": study_xgb.best_params,
+        "xgboost_auc": study_xgb.best_value,
+        "lightgbm": study_lgb.best_params,
+        "lightgbm_auc": study_lgb.best_value,
     }
 
-    output_path = Path('models/best_hyperparameters.json')
+    output_path = Path("models/best_hyperparameters.json")
     output_path.parent.mkdir(exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(best_params, f, indent=2)
 
     print(f"\nSaved best parameters to {output_path}")
@@ -181,7 +174,7 @@ def run_tuning(n_trials: int = 100):
     # Summary
     print(f"\n{'='*60}")
     print("HYPERPARAMETER TUNING COMPLETE")
-    print('='*60)
+    print("=" * 60)
     print(f"XGBoost Best AUC: {study_xgb.best_value:.4f}")
     print(f"LightGBM Best AUC: {study_lgb.best_value:.4f}")
 
@@ -190,8 +183,9 @@ def run_tuning(n_trials: int = 100):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hyperparameter tuning with Optuna")
-    parser.add_argument('--n-trials', type=int, default=100,
-                        help='Number of trials for each model (default: 100)')
+    parser.add_argument(
+        "--n-trials", type=int, default=100, help="Number of trials for each model (default: 100)"
+    )
     args = parser.parse_args()
 
     run_tuning(args.n_trials)

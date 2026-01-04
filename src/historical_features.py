@@ -21,14 +21,30 @@ import numpy as np
 import pandas as pd
 
 
-def compute_all_churn_labels(con: duckdb.DuckDBPyConnection, v1_path: Path, v2_path: Path) -> pd.DataFrame:
+def compute_all_churn_labels(
+    con: duckdb.DuckDBPyConnection, v1_path: Path, v2_path: Path
+) -> pd.DataFrame:
     """
     Compute churn labels for ALL target months in a single SQL query.
     Returns DataFrame with columns: msno, target_month, is_churn
     """
-    targets = [201601, 201602, 201603, 201604, 201605, 201606,
-               201607, 201608, 201609, 201610, 201611, 201612,
-               201701, 201702, 201703]  # Skip 201704 - no renewal data
+    targets = [
+        201601,
+        201602,
+        201603,
+        201604,
+        201605,
+        201606,
+        201607,
+        201608,
+        201609,
+        201610,
+        201611,
+        201612,
+        201701,
+        201702,
+        201703,
+    ]  # Skip 201704 - no renewal data
 
     # Build a UNION query for all target months
     union_parts = []
@@ -98,7 +114,9 @@ def compute_all_churn_labels(con: duckdb.DuckDBPyConnection, v1_path: Path, v2_p
     return result
 
 
-def generate_historical_features_vectorized(churn_history: pd.DataFrame, target_month: int) -> pd.DataFrame:
+def generate_historical_features_vectorized(
+    churn_history: pd.DataFrame, target_month: int
+) -> pd.DataFrame:
     """
     Generate historical churn features using vectorized pandas operations.
     Much faster than per-user iteration.
@@ -106,39 +124,39 @@ def generate_historical_features_vectorized(churn_history: pd.DataFrame, target_
     print(f"\nGenerating features for {target_month}...")
 
     # Get chronologically sorted list of all months
-    all_months = sorted(churn_history['target_month'].unique())
+    all_months = sorted(churn_history["target_month"].unique())
     target_idx = all_months.index(target_month)
     prior_months = all_months[:target_idx]
 
     # Get users in target month
-    target_users = churn_history[churn_history['target_month'] == target_month][['msno']].copy()
+    target_users = churn_history[churn_history["target_month"] == target_month][["msno"]].copy()
     print(f"  Target users: {len(target_users):,}")
 
     if len(prior_months) == 0:
         print("  No prior months available for history")
         # Return empty features for all users
-        target_users['last_1_is_churn'] = -1
-        target_users['last_2_is_churn'] = -1
-        target_users['last_3_is_churn'] = -1
-        target_users['last_4_is_churn'] = -1
-        target_users['last_5_is_churn'] = -1
-        target_users['churn_count'] = -1
-        target_users['churn_rate'] = -1.0
-        target_users['transaction_count'] = -1
-        target_users['months_since_last_churn'] = -1
+        target_users["last_1_is_churn"] = -1
+        target_users["last_2_is_churn"] = -1
+        target_users["last_3_is_churn"] = -1
+        target_users["last_4_is_churn"] = -1
+        target_users["last_5_is_churn"] = -1
+        target_users["churn_count"] = -1
+        target_users["churn_rate"] = -1.0
+        target_users["transaction_count"] = -1
+        target_users["months_since_last_churn"] = -1
         return target_users
 
     # Filter to prior months only
-    prior_data = churn_history[churn_history['target_month'].isin(prior_months)].copy()
-    prior_data = prior_data.sort_values(['msno', 'target_month'])
+    prior_data = churn_history[churn_history["target_month"].isin(prior_months)].copy()
+    prior_data = prior_data.sort_values(["msno", "target_month"])
 
     # Pivot to get churn per month per user
     # Columns will be months, rows will be users
     pivot = prior_data.pivot_table(
-        index='msno',
-        columns='target_month',
-        values='is_churn',
-        aggfunc='max'  # In case of duplicates
+        index="msno",
+        columns="target_month",
+        values="is_churn",
+        aggfunc="max",  # In case of duplicates
     )
 
     # Reorder columns chronologically
@@ -150,14 +168,14 @@ def generate_historical_features_vectorized(churn_history: pd.DataFrame, target_
     # last_N_is_churn: take the last N columns (most recent months)
     for i in range(1, 6):
         if len(pivot.columns) >= i:
-            features[f'last_{i}_is_churn'] = pivot.iloc[:, -i].fillna(-1).astype(int)
+            features[f"last_{i}_is_churn"] = pivot.iloc[:, -i].fillna(-1).astype(int)
         else:
-            features[f'last_{i}_is_churn'] = -1
+            features[f"last_{i}_is_churn"] = -1
 
     # Count non-null observations per user
-    features['transaction_count'] = pivot.notna().sum(axis=1)
-    features['churn_count'] = pivot.sum(axis=1, skipna=True)
-    features['churn_rate'] = features['churn_count'] / features['transaction_count']
+    features["transaction_count"] = pivot.notna().sum(axis=1)
+    features["churn_count"] = pivot.sum(axis=1, skipna=True)
+    features["churn_rate"] = features["churn_count"] / features["transaction_count"]
 
     # months_since_last_churn: find the rightmost 1 in each row
     def months_since_last_churn(row):
@@ -167,21 +185,28 @@ def generate_historical_features_vectorized(churn_history: pd.DataFrame, target_
         last_churn_idx = churn_positions[-1]
         return len(row) - 1 - last_churn_idx
 
-    features['months_since_last_churn'] = pivot.apply(months_since_last_churn, axis=1)
+    features["months_since_last_churn"] = pivot.apply(months_since_last_churn, axis=1)
 
     # Reset index to get msno as column
     features = features.reset_index()
 
     # Merge with target users (left join to include all target users)
-    result = target_users.merge(features, on='msno', how='left')
+    result = target_users.merge(features, on="msno", how="left")
 
     # Fill NaN for users with no history
-    for col in ['last_1_is_churn', 'last_2_is_churn', 'last_3_is_churn',
-                'last_4_is_churn', 'last_5_is_churn', 'churn_count',
-                'transaction_count', 'months_since_last_churn']:
+    for col in [
+        "last_1_is_churn",
+        "last_2_is_churn",
+        "last_3_is_churn",
+        "last_4_is_churn",
+        "last_5_is_churn",
+        "churn_count",
+        "transaction_count",
+        "months_since_last_churn",
+    ]:
         result[col] = result[col].fillna(-1).astype(int)
 
-    result['churn_rate'] = result['churn_rate'].fillna(-1)
+    result["churn_rate"] = result["churn_rate"].fillna(-1)
 
     print(f"  Generated {len(result):,} feature rows")
     return result
@@ -192,22 +217,20 @@ def main():
     parser.add_argument(
         "--transactions-v1",
         default="kkbox-churn-prediction-challenge/transactions.csv",
-        help="Path to transactions.csv (v1)"
+        help="Path to transactions.csv (v1)",
     )
     parser.add_argument(
         "--transactions-v2",
         default="kkbox-churn-prediction-challenge/data/churn_comp_refresh/transactions_v2.csv",
-        help="Path to transactions_v2.csv"
+        help="Path to transactions_v2.csv",
     )
     parser.add_argument(
-        "--output-dir",
-        default="eval",
-        help="Output directory for historical feature files"
+        "--output-dir", default="eval", help="Output directory for historical feature files"
     )
     parser.add_argument(
         "--target-months",
         default="201702",
-        help="Comma-separated target months (YYYYMM) to generate features for"
+        help="Comma-separated target months (YYYYMM) to generate features for",
     )
     args = parser.parse_args()
 
@@ -253,12 +276,12 @@ def main():
         print(f"  Saved to {output_path}")
 
         # Show feature distribution
-        valid_churn_rate = features_df[features_df['churn_rate'] >= 0]['churn_rate']
+        valid_churn_rate = features_df[features_df["churn_rate"] >= 0]["churn_rate"]
         if len(valid_churn_rate) > 0:
             print(f"  Users with history: {len(valid_churn_rate):,}")
             print(f"  Mean churn_rate: {valid_churn_rate.mean():.3f}")
 
-        for col in ['last_1_is_churn', 'churn_count']:
+        for col in ["last_1_is_churn", "churn_count"]:
             vals = features_df[features_df[col] >= 0][col]
             if len(vals) > 0:
                 print(f"  {col} distribution: {vals.value_counts().head(5).to_dict()}")

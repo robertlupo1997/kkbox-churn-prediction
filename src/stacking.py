@@ -43,44 +43,54 @@ class StackedEnsemble:
             print("  Using default hyperparameters")
 
         # XGBoost params
-        xgb_params = tuned.get('xgboost', {
-            'max_depth': 7,
-            'learning_rate': 0.06,
-            'n_estimators': 170,
-        })
-        xgb_params.update({
-            'objective': 'binary:logistic',
-            'scale_pos_weight': scale_pos_weight,
-            'random_state': self.random_state,
-            'n_jobs': -1,
-        })
+        xgb_params = tuned.get(
+            "xgboost",
+            {
+                "max_depth": 7,
+                "learning_rate": 0.06,
+                "n_estimators": 170,
+            },
+        )
+        xgb_params.update(
+            {
+                "objective": "binary:logistic",
+                "scale_pos_weight": scale_pos_weight,
+                "random_state": self.random_state,
+                "n_jobs": -1,
+            }
+        )
 
         # LightGBM params
-        lgb_params = tuned.get('lightgbm', {
-            'max_depth': 6,
-            'learning_rate': 0.05,
-            'n_estimators': 327,
-            'num_leaves': 296,
-        })
-        lgb_params.update({
-            'objective': 'binary',
-            'scale_pos_weight': scale_pos_weight,
-            'random_state': self.random_state,
-            'n_jobs': -1,
-            'verbose': -1,
-        })
+        lgb_params = tuned.get(
+            "lightgbm",
+            {
+                "max_depth": 6,
+                "learning_rate": 0.05,
+                "n_estimators": 327,
+                "num_leaves": 296,
+            },
+        )
+        lgb_params.update(
+            {
+                "objective": "binary",
+                "scale_pos_weight": scale_pos_weight,
+                "random_state": self.random_state,
+                "n_jobs": -1,
+                "verbose": -1,
+            }
+        )
 
         # CatBoost params (not tuned, using reasonable defaults)
         cat_params = {
-            'iterations': 200,
-            'learning_rate': 0.1,
-            'depth': 6,
-            'l2_leaf_reg': 3,
-            'loss_function': 'Logloss',
-            'scale_pos_weight': scale_pos_weight,
-            'random_seed': self.random_state,
-            'verbose': False,
-            'thread_count': -1,
+            "iterations": 200,
+            "learning_rate": 0.1,
+            "depth": 6,
+            "l2_leaf_reg": 3,
+            "loss_function": "Logloss",
+            "scale_pos_weight": scale_pos_weight,
+            "random_seed": self.random_state,
+            "verbose": False,
+            "thread_count": -1,
         }
 
         return xgb_params, lgb_params, cat_params
@@ -92,12 +102,12 @@ class StackedEnsemble:
 
         n_samples = len(y)
         oof_preds = {
-            'xgb': np.zeros(n_samples),
-            'lgb': np.zeros(n_samples),
-            'cat': np.zeros(n_samples),
+            "xgb": np.zeros(n_samples),
+            "lgb": np.zeros(n_samples),
+            "cat": np.zeros(n_samples),
         }
 
-        self.base_models = {'xgb': [], 'lgb': [], 'cat': []}
+        self.base_models = {"xgb": [], "lgb": [], "cat": []}
 
         kfold = StratifiedKFold(n_splits=self.n_folds, shuffle=True, random_state=self.random_state)
 
@@ -111,46 +121,50 @@ class StackedEnsemble:
             print("  Training XGBoost...")
             xgb_model = xgb.XGBClassifier(**xgb_params)
             xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
-            oof_preds['xgb'][val_idx] = xgb_model.predict_proba(X_val)[:, 1]
-            self.base_models['xgb'].append(xgb_model)
+            oof_preds["xgb"][val_idx] = xgb_model.predict_proba(X_val)[:, 1]
+            self.base_models["xgb"].append(xgb_model)
             print(f"    XGB Fold AUC: {roc_auc_score(y_val, oof_preds['xgb'][val_idx]):.4f}")
 
             # LightGBM
             print("  Training LightGBM...")
             lgb_model = lgb.LGBMClassifier(**lgb_params)
             lgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
-            oof_preds['lgb'][val_idx] = lgb_model.predict_proba(X_val)[:, 1]
-            self.base_models['lgb'].append(lgb_model)
+            oof_preds["lgb"][val_idx] = lgb_model.predict_proba(X_val)[:, 1]
+            self.base_models["lgb"].append(lgb_model)
             print(f"    LGB Fold AUC: {roc_auc_score(y_val, oof_preds['lgb'][val_idx]):.4f}")
 
             # CatBoost
             print("  Training CatBoost...")
             cat_model = CatBoostClassifier(**cat_params)
             cat_model.fit(X_train, y_train, eval_set=(X_val, y_val))
-            oof_preds['cat'][val_idx] = cat_model.predict_proba(X_val)[:, 1]
-            self.base_models['cat'].append(cat_model)
+            oof_preds["cat"][val_idx] = cat_model.predict_proba(X_val)[:, 1]
+            self.base_models["cat"].append(cat_model)
             print(f"    CAT Fold AUC: {roc_auc_score(y_val, oof_preds['cat'][val_idx]):.4f}")
 
         # Stack OOF predictions
-        meta_features = np.column_stack([
-            oof_preds['xgb'],
-            oof_preds['lgb'],
-            oof_preds['cat'],
-        ])
+        meta_features = np.column_stack(
+            [
+                oof_preds["xgb"],
+                oof_preds["lgb"],
+                oof_preds["cat"],
+            ]
+        )
 
         # Train meta-model
         print("\n--- Training Meta-Learner ---")
         self.meta_model = LogisticRegression(random_state=self.random_state, max_iter=1000)
         self.meta_model.fit(meta_features, y)
-        print(f"  Meta-learner coefficients: XGB={self.meta_model.coef_[0][0]:.3f}, "
-              f"LGB={self.meta_model.coef_[0][1]:.3f}, CAT={self.meta_model.coef_[0][2]:.3f}")
+        print(
+            f"  Meta-learner coefficients: XGB={self.meta_model.coef_[0][0]:.3f}, "
+            f"LGB={self.meta_model.coef_[0][1]:.3f}, CAT={self.meta_model.coef_[0][2]:.3f}"
+        )
 
         # Overall OOF AUC
         meta_pred = self.meta_model.predict_proba(meta_features)[:, 1]
 
         print(f"\n{'='*60}")
         print("OUT-OF-FOLD RESULTS (Training Data)")
-        print('='*60)
+        print("=" * 60)
         print(f"  XGBoost OOF AUC:      {roc_auc_score(y, oof_preds['xgb']):.4f}")
         print(f"  LightGBM OOF AUC:     {roc_auc_score(y, oof_preds['lgb']):.4f}")
         print(f"  CatBoost OOF AUC:     {roc_auc_score(y, oof_preds['cat']):.4f}")
@@ -158,7 +172,7 @@ class StackedEnsemble:
         print(f"  Stacked OOF Log Loss: {log_loss(y, meta_pred):.4f}")
 
         # Simple average comparison
-        simple_avg = (oof_preds['xgb'] + oof_preds['lgb'] + oof_preds['cat']) / 3
+        simple_avg = (oof_preds["xgb"] + oof_preds["lgb"] + oof_preds["cat"]) / 3
         print(f"  Simple Average AUC:   {roc_auc_score(y, simple_avg):.4f}")
 
         return self
@@ -166,9 +180,9 @@ class StackedEnsemble:
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """Generate predictions using trained ensemble."""
         # Get predictions from all fold models (average across folds)
-        xgb_preds = np.mean([m.predict_proba(X)[:, 1] for m in self.base_models['xgb']], axis=0)
-        lgb_preds = np.mean([m.predict_proba(X)[:, 1] for m in self.base_models['lgb']], axis=0)
-        cat_preds = np.mean([m.predict_proba(X)[:, 1] for m in self.base_models['cat']], axis=0)
+        xgb_preds = np.mean([m.predict_proba(X)[:, 1] for m in self.base_models["xgb"]], axis=0)
+        lgb_preds = np.mean([m.predict_proba(X)[:, 1] for m in self.base_models["lgb"]], axis=0)
+        cat_preds = np.mean([m.predict_proba(X)[:, 1] for m in self.base_models["cat"]], axis=0)
 
         # Stack and predict with meta-model
         meta_features = np.column_stack([xgb_preds, lgb_preds, cat_preds])
@@ -176,7 +190,7 @@ class StackedEnsemble:
 
     def save(self, path: str = "models/stacked_ensemble.pkl"):
         """Save the ensemble to disk."""
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             pickle.dump(self, f)
         print(f"  Saved ensemble to {path}")
 
@@ -251,17 +265,25 @@ def main():
     val_logloss = log_loss(y_val, val_pred)
 
     # Also get individual model predictions on validation
-    xgb_val_pred = np.mean([m.predict_proba(X_val.values)[:, 1] for m in ensemble.base_models['xgb']], axis=0)
-    lgb_val_pred = np.mean([m.predict_proba(X_val.values)[:, 1] for m in ensemble.base_models['lgb']], axis=0)
-    cat_val_pred = np.mean([m.predict_proba(X_val.values)[:, 1] for m in ensemble.base_models['cat']], axis=0)
+    xgb_val_pred = np.mean(
+        [m.predict_proba(X_val.values)[:, 1] for m in ensemble.base_models["xgb"]], axis=0
+    )
+    lgb_val_pred = np.mean(
+        [m.predict_proba(X_val.values)[:, 1] for m in ensemble.base_models["lgb"]], axis=0
+    )
+    cat_val_pred = np.mean(
+        [m.predict_proba(X_val.values)[:, 1] for m in ensemble.base_models["cat"]], axis=0
+    )
 
     print(f"\n{'='*60}")
     print("FINAL VALIDATION RESULTS")
-    print('='*60)
+    print("=" * 60)
     print(f"  XGBoost AUC:          {roc_auc_score(y_val, xgb_val_pred):.4f}")
     print(f"  LightGBM AUC:         {roc_auc_score(y_val, lgb_val_pred):.4f}")
     print(f"  CatBoost AUC:         {roc_auc_score(y_val, cat_val_pred):.4f}")
-    print(f"  Simple Average AUC:   {roc_auc_score(y_val, (xgb_val_pred + lgb_val_pred + cat_val_pred)/3):.4f}")
+    print(
+        f"  Simple Average AUC:   {roc_auc_score(y_val, (xgb_val_pred + lgb_val_pred + cat_val_pred)/3):.4f}"
+    )
     print(f"  Stacked Ensemble AUC: {val_auc:.4f}")
     print(f"  Stacked Log Loss:     {val_logloss:.4f}")
 
@@ -270,38 +292,42 @@ def main():
     ensemble.save("models/stacked_ensemble.pkl")
 
     # Save validation predictions
-    val_preds_df = pd.DataFrame({
-        'msno': val_df['msno'],
-        'is_churn': y_val,
-        'xgb_pred': xgb_val_pred,
-        'lgb_pred': lgb_val_pred,
-        'cat_pred': cat_val_pred,
-        'stacked_pred': val_pred,
-    })
+    val_preds_df = pd.DataFrame(
+        {
+            "msno": val_df["msno"],
+            "is_churn": y_val,
+            "xgb_pred": xgb_val_pred,
+            "lgb_pred": lgb_val_pred,
+            "cat_pred": cat_val_pred,
+            "stacked_pred": val_pred,
+        }
+    )
     val_preds_df.to_csv("eval/stacked_ensemble_predictions.csv", index=False)
     print("  Saved predictions to eval/stacked_ensemble_predictions.csv")
 
     # Save metrics
     metrics = {
-        'n_folds': 5,
-        'train_samples': int(len(X_train)),
-        'val_samples': int(len(X_val)),
-        'validation_results': {
-            'xgboost_auc': float(roc_auc_score(y_val, xgb_val_pred)),
-            'lightgbm_auc': float(roc_auc_score(y_val, lgb_val_pred)),
-            'catboost_auc': float(roc_auc_score(y_val, cat_val_pred)),
-            'simple_average_auc': float(roc_auc_score(y_val, (xgb_val_pred + lgb_val_pred + cat_val_pred)/3)),
-            'stacked_ensemble_auc': float(val_auc),
-            'stacked_ensemble_logloss': float(val_logloss),
+        "n_folds": 5,
+        "train_samples": int(len(X_train)),
+        "val_samples": int(len(X_val)),
+        "validation_results": {
+            "xgboost_auc": float(roc_auc_score(y_val, xgb_val_pred)),
+            "lightgbm_auc": float(roc_auc_score(y_val, lgb_val_pred)),
+            "catboost_auc": float(roc_auc_score(y_val, cat_val_pred)),
+            "simple_average_auc": float(
+                roc_auc_score(y_val, (xgb_val_pred + lgb_val_pred + cat_val_pred) / 3)
+            ),
+            "stacked_ensemble_auc": float(val_auc),
+            "stacked_ensemble_logloss": float(val_logloss),
         },
-        'meta_learner_coefficients': {
-            'xgboost': float(ensemble.meta_model.coef_[0][0]),
-            'lightgbm': float(ensemble.meta_model.coef_[0][1]),
-            'catboost': float(ensemble.meta_model.coef_[0][2]),
-        }
+        "meta_learner_coefficients": {
+            "xgboost": float(ensemble.meta_model.coef_[0][0]),
+            "lightgbm": float(ensemble.meta_model.coef_[0][1]),
+            "catboost": float(ensemble.meta_model.coef_[0][2]),
+        },
     }
 
-    with open('models/stacked_ensemble_metrics.json', 'w') as f:
+    with open("models/stacked_ensemble_metrics.json", "w") as f:
         json.dump(metrics, f, indent=2)
     print("  Saved metrics to models/stacked_ensemble_metrics.json")
 

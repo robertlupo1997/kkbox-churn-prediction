@@ -84,8 +84,8 @@ const FeatureImportanceView: React.FC = () => {
           </div>
           <div className="relative w-full md:w-96 group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search features (e.g. 'auto', 'secs')..."
               className="w-full pl-14 pr-6 py-4 bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 focus:border-indigo-500 outline-none transition-all font-bold text-sm shadow-inner"
               value={searchTerm}
@@ -93,7 +93,7 @@ const FeatureImportanceView: React.FC = () => {
             />
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-3 h-[750px] w-full min-w-0 bg-white/40 dark:bg-slate-950/40 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-inner overflow-hidden">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -114,12 +114,12 @@ const FeatureImportanceView: React.FC = () => {
                   axisLine={false}
                   tick={{fill: chartTextColor}}
                 />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(99, 102, 241, 0.05)' }}
-                  contentStyle={{ 
-                    borderRadius: '20px', 
+                  contentStyle={{
+                    borderRadius: '20px',
                     backgroundColor: isDark ? '#0f172a' : '#fff',
-                    border: 'none', 
+                    border: 'none',
                     boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
                     padding: '15px'
                   }}
@@ -127,17 +127,17 @@ const FeatureImportanceView: React.FC = () => {
                 />
                 <Bar dataKey="importance" fill="#4f46e5" radius={[0, 10, 10, 0]} barSize={28}>
                   {filteredFeatures.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={isDark ? `rgba(129, 140, 248, ${1 - index * 0.04})` : `rgba(79, 70, 229, ${1 - index * 0.04})`} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={isDark ? `rgba(129, 140, 248, ${1 - index * 0.04})` : `rgba(79, 70, 229, ${1 - index * 0.04})`}
                     />
                   ))}
-                  <LabelList 
-                    dataKey="importance" 
-                    position="right" 
-                    formatter={(val: number) => `${(val * 100).toFixed(1)}%`} 
-                    fontSize={10} 
-                    fontWeight={900} 
+                  <LabelList
+                    dataKey="importance"
+                    position="right"
+                    formatter={(val: number) => `${(val * 100).toFixed(1)}%`}
+                    fontSize={10}
+                    fontWeight={900}
                     fill={chartTextColor}
                     offset={10}
                   />

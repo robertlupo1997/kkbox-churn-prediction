@@ -16,16 +16,14 @@ Features:
 
 import json
 import pickle
-import sys
 from pathlib import Path
 
-import numpy as np
+import lightgbm as lgb
 import pandas as pd
 import xgboost as xgb
-import lightgbm as lgb
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss
+from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
@@ -37,6 +35,7 @@ def load_tuned_params() -> dict:
             return json.load(f)
     return {}
 
+
 def load_window_features(window_files: list[str]) -> pd.DataFrame:
     """Load and concatenate multiple window feature files."""
     dfs = []
@@ -47,6 +46,7 @@ def load_window_features(window_files: list[str]) -> pd.DataFrame:
     combined = pd.concat(dfs, ignore_index=True)
     print(f"  Combined: {len(combined):,} rows")
     return combined
+
 
 def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """Prepare features, dropping metadata columns."""
@@ -61,6 +61,7 @@ def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 
     X = X.fillna(0)
     return X, y
+
 
 def train_and_evaluate():
     print("=" * 60)
@@ -142,17 +143,22 @@ def train_and_evaluate():
     print("  Training XGBoost...")
     scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
 
-    xgb_params = tuned.get('xgboost', {
-        'max_depth': 6,
-        'learning_rate': 0.1,
-        'n_estimators': 200,
-    })
-    xgb_params.update({
-        'objective': 'binary:logistic',
-        'scale_pos_weight': scale_pos_weight,
-        'random_state': 42,
-        'n_jobs': -1,
-    })
+    xgb_params = tuned.get(
+        "xgboost",
+        {
+            "max_depth": 6,
+            "learning_rate": 0.1,
+            "n_estimators": 200,
+        },
+    )
+    xgb_params.update(
+        {
+            "objective": "binary:logistic",
+            "scale_pos_weight": scale_pos_weight,
+            "random_state": 42,
+            "n_jobs": -1,
+        }
+    )
 
     xgb_model = xgb.XGBClassifier(**xgb_params)
     xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
@@ -168,19 +174,24 @@ def train_and_evaluate():
 
     # LightGBM (with tuned params if available - typically best performer)
     print("  Training LightGBM...")
-    lgb_params = tuned.get('lightgbm', {
-        'max_depth': 7,
-        'num_leaves': 256,
-        'learning_rate': 0.05,
-        'n_estimators': 240,
-    })
-    lgb_params.update({
-        'objective': 'binary',
-        'scale_pos_weight': scale_pos_weight,
-        'random_state': 42,
-        'n_jobs': -1,
-        'verbose': -1,
-    })
+    lgb_params = tuned.get(
+        "lightgbm",
+        {
+            "max_depth": 7,
+            "num_leaves": 256,
+            "learning_rate": 0.05,
+            "n_estimators": 240,
+        },
+    )
+    lgb_params.update(
+        {
+            "objective": "binary",
+            "scale_pos_weight": scale_pos_weight,
+            "random_state": 42,
+            "n_jobs": -1,
+            "verbose": -1,
+        }
+    )
 
     lgb_model = lgb.LGBMClassifier(**lgb_params)
     lgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
@@ -226,11 +237,11 @@ def train_and_evaluate():
 
     # Save XGBoost in native format using the booster
     models["xgboost"].get_booster().save_model(str(output_dir / "xgb.json"))
-    print(f"  Saved xgb.json")
+    print("  Saved xgb.json")
 
     # Save LightGBM in native format
     models["lightgbm"].booster_.save_model(str(output_dir / "lgb.txt"))
-    print(f"  Saved lgb.txt")
+    print("  Saved lgb.txt")
 
     # Save scaler
     with open(output_dir / "scaler.pkl", "wb") as f:
@@ -277,6 +288,7 @@ def train_and_evaluate():
         print(f"  {feat:35s} {imp:6.0f}")
 
     return metrics
+
 
 if __name__ == "__main__":
     train_and_evaluate()
