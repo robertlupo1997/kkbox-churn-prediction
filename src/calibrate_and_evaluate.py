@@ -12,12 +12,11 @@ This script:
 
 import json
 import pickle
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.calibration import IsotonicRegression
-from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss
+from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 
 

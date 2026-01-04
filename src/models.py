@@ -20,26 +20,26 @@ from sklearn.model_selection import train_test_split
 # Import temporal CV utilities (try both relative and absolute imports)
 HAS_TEMPORAL_CV = False
 try:
-    from src.temporal_cv import BootstrapMetrics, ChurnTemporalCV, TemporalSplit
+    from src.temporal_cv import BootstrapMetrics, TemporalSplit
 
     HAS_TEMPORAL_CV = True
 except ImportError:
     try:
-        from temporal_cv import BootstrapMetrics, ChurnTemporalCV, TemporalSplit
+        from temporal_cv import BootstrapMetrics, TemporalSplit
 
         HAS_TEMPORAL_CV = True
     except ImportError:
         pass  # Will use fallback random splits
-import xgboost as xgb
-from sklearn.dummy import DummyClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
+import xgboost as xgb  # noqa: E402
+from sklearn.dummy import DummyClassifier  # noqa: E402
+from sklearn.linear_model import LogisticRegression  # noqa: E402
+from sklearn.metrics import (  # noqa: E402
     confusion_matrix,
     log_loss,
     precision_recall_curve,
     roc_auc_score,
 )
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler  # noqa: E402
 
 warnings.filterwarnings("ignore")
 

@@ -17,9 +17,8 @@ import argparse
 from pathlib import Path
 
 import duckdb
-import pandas as pd
 import numpy as np
-from tqdm import tqdm
+import pandas as pd
 
 
 def compute_all_churn_labels(con: duckdb.DuckDBPyConnection, v1_path: Path, v2_path: Path) -> pd.DataFrame:

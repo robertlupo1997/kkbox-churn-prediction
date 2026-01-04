@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 
-def psi_expected(actual: np.ndarray, expected: np.ndarray, bins=10) -> float:
+def psi_expected(actual: np.ndarray, expected: np.ndarray, bins: int = 10) -> float:
     bins = np.linspace(0, 1, bins + 1)
     a = np.histogram(actual, bins=bins)[0] / max(1, len(actual))
     e = np.histogram(expected, bins=bins)[0] / max(1, len(expected))
@@ -24,7 +24,7 @@ def psi_expected(actual: np.ndarray, expected: np.ndarray, bins=10) -> float:
     return float(np.sum((a - e) * np.log(a / e)))
 
 
-def psi_numeric(a: np.ndarray, e: np.ndarray, bins=10) -> float:
+def psi_numeric(a: np.ndarray, e: np.ndarray, bins: int = 10) -> float:
     qs = np.linspace(0, 1, bins + 1)
     edges = np.quantile(e, qs)
     a = np.histogram(a, bins=edges, density=False)[0] / max(1, len(a))
@@ -34,7 +34,7 @@ def psi_numeric(a: np.ndarray, e: np.ndarray, bins=10) -> float:
     return float(np.sum((a - e) * np.log(a / e)))
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--features",
@@ -53,18 +53,18 @@ def main():
         if "*" in args.features
         else [Path(args.features)]
     )
-    print(f"📊 Loading features from {len(paths)} files: {[p.name for p in paths]}")
+    print(f"Loading features from {len(paths)} files: {[p.name for p in paths]}")
 
     df = pd.concat([pd.read_csv(p) for p in paths], ignore_index=True)
     assert "window" in df.columns, "features CSV must include a 'window' column"
 
     windows = sorted(df["window"].unique())
     ref_window = args.ref or windows[0]
-    print(f"📏 PSI analysis: {len(windows)} windows, reference: {ref_window}")
+    print(f"PSI analysis: {len(windows)} windows, reference: {ref_window}")
 
     feat_cols = [c for c in df.columns if c not in {"window", "msno", "is_churn", "cutoff_ts"}]
     print(
-        f"🔍 Analyzing {len(feat_cols)} features: {feat_cols[:5]}{'...' if len(feat_cols) > 5 else ''}"
+        f"Analyzing {len(feat_cols)} features: {feat_cols[:5]}{'...' if len(feat_cols) > 5 else ''}"
     )
 
     rows = []
@@ -111,7 +111,7 @@ def main():
     # Print summary
     if not result_df.empty:
         high_drift = result_df[result_df["psi"] > 0.2]
-        print("\n📈 PSI Summary:")
+        print("\nPSI Summary:")
         print(f"  Total comparisons: {len(result_df)}")
         print(f"  High drift (PSI > 0.2): {len(high_drift)} features")
         if len(high_drift) > 0:
@@ -119,7 +119,7 @@ def main():
             for _, row in high_drift.nlargest(5, "psi").iterrows():
                 print(f"    {row['feature']}: {row['psi']:.3f} ({row['window']} vs {row['ref']})")
 
-    print(f"✅ Wrote {out}")
+    print(f"Wrote {out}")
 
 
 if __name__ == "__main__":
