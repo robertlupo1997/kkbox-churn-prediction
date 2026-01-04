@@ -12,11 +12,10 @@ The full pipeline would adapt features/features_comprehensive.sql for the test p
 For now, this demonstrates the calibration application workflow.
 """
 
-import pickle
 import argparse
+import pickle
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
@@ -154,7 +153,7 @@ def main():
     print(f"Mean prediction: {submission['is_churn'].mean():.4f}")
     print(f"Median prediction: {submission['is_churn'].median():.4f}")
     print(f"Std prediction: {submission['is_churn'].std():.4f}")
-    print(f"\nPrediction distribution:")
+    print("\nPrediction distribution:")
     print(f"  < 0.1: {(submission['is_churn'] < 0.1).sum():,} ({(submission['is_churn'] < 0.1).mean():.1%})")
     print(f"  0.1-0.5: {((submission['is_churn'] >= 0.1) & (submission['is_churn'] < 0.5)).sum():,}")
     print(f"  >= 0.5: {(submission['is_churn'] >= 0.5).sum():,} ({(submission['is_churn'] >= 0.5).mean():.1%})")

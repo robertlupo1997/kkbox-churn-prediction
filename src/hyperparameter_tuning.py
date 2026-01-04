@@ -14,11 +14,10 @@ import argparse
 import json
 from pathlib import Path
 
-import numpy as np
+import lightgbm as lgb
 import optuna
 import pandas as pd
 import xgboost as xgb
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 

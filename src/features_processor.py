@@ -50,22 +50,22 @@ class FeatureProcessor:
         for var, path in data_paths.items():
             sql_query = sql_query.replace(f"${{{var}}}", path)
 
-        print("🔄 Executing feature engineering SQL...")
-        print(f"📊 Data sources: {list(data_paths.keys())}")
+        print("Executing feature engineering SQL...")
+        print(f"Data sources: {list(data_paths.keys())}")
 
         # Execute query
         try:
             result = self.conn.execute(sql_query).fetchdf()
-            print(f"✅ Features generated: {len(result)} rows, {result.shape[1]} columns")
+            print(f"Features generated: {len(result)} rows, {result.shape[1]} columns")
 
             # Save results
             result.to_csv(output_path, index=False)
-            print(f"💾 Features saved to: {output_path}")
+            print(f"Features saved to: {output_path}")
 
             return result
 
         except Exception as e:
-            print(f"❌ SQL execution failed: {str(e)}")
+            print(f"ERROR: SQL execution failed: {str(e)}")
             raise
 
     def validate_features(self, df: pd.DataFrame) -> dict[str, any]:
@@ -113,7 +113,7 @@ def prepare_synthetic_data() -> tuple[dict[str, str], Path]:
 
     # Create temporary directory
     temp_dir = Path(tempfile.mkdtemp())
-    print(f"📁 Creating synthetic data in {temp_dir}")
+    print(f"Creating synthetic data in {temp_dir}")
 
     # Generate synthetic dataset
     synthetic_data = generate_kkbox_dataset(n_samples=1000)
@@ -124,7 +124,7 @@ def prepare_synthetic_data() -> tuple[dict[str, str], Path]:
         file_path = temp_dir / f"{table_name}.csv"
         df.to_csv(file_path, index=False)
         data_paths[f"{table_name}_path"] = str(file_path)
-        print(f"✅ {table_name}: {len(df)} records")
+        print(f"{table_name}: {len(df)} records")
 
     return data_paths, temp_dir
 
@@ -145,7 +145,7 @@ def run_feature_pipeline(
     Returns:
         processed_features: Feature dataframe ready for modeling
     """
-    print("🚀 Starting KKBOX Feature Processing Pipeline")
+    print("Starting KKBOX Feature Processing Pipeline")
 
     # Initialize processor
     processor = FeatureProcessor()
@@ -167,7 +167,7 @@ def run_feature_pipeline(
 
         # Validate results
         validation = processor.validate_features(features_df)
-        print("\n📊 Feature Validation Summary:")
+        print("\nFeature Validation Summary:")
         print(f"  Rows: {validation['total_rows']}")
         print(f"  Features: {validation['total_features']}")
         print(f"  Churn Rate: {validation['churn_rate']:.3f}")
@@ -179,10 +179,10 @@ def run_feature_pipeline(
         # Cleanup temporary files
         if temp_dir is not None:
             shutil.rmtree(temp_dir, ignore_errors=True)
-            print("🧹 Cleaned up temporary files")
+            print("Cleaned up temporary files")
 
 
 if __name__ == "__main__":
     # Execute pipeline with synthetic data
     features = run_feature_pipeline()
-    print("✅ Feature processing completed!")
+    print("Feature processing completed!")

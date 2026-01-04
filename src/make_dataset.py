@@ -12,7 +12,7 @@ out_dir.mkdir(exist_ok=True)
 con = duckdb.connect()
 con.execute(f"SET threads TO {os.cpu_count() or 4}")
 
-print(f"🔄 Loading CSVs from {DATA}")
+print(f"Loading CSVs from {DATA}")
 
 # Register CSVs
 con.execute(
@@ -28,7 +28,7 @@ con.execute(
     f"CREATE OR REPLACE VIEW logs AS SELECT * FROM read_csv_auto('{DATA}/user_logs_v2.csv', IGNORE_ERRORS=TRUE)"
 )
 
-print("📊 Creating leak-safe feature dataset...")
+print("Creating leak-safe feature dataset...")
 
 # Cohort split: Train on Mar 2017, Validate on Apr 2017 (data-driven split)
 con.execute(
@@ -114,7 +114,7 @@ WHERE e.label_date IS NOT NULL
 )
 
 # Write train/val with cohort split: Mar = train, Apr = val
-print("💾 Writing train.parquet (Mar 2017 cohort)")
+print("Writing train.parquet (Mar 2017 cohort)")
 con.execute(
     """
 COPY (
@@ -125,7 +125,7 @@ COPY (
 """
 )
 
-print("💾 Writing val.parquet (Apr 2017 cohort)")
+print("Writing val.parquet (Apr 2017 cohort)")
 con.execute(
     """
 COPY (
@@ -141,7 +141,7 @@ total_rows = con.execute("SELECT COUNT(*) FROM joined").fetchone()[0]
 assert total_rows > 0, "No rows in joined dataset - check CSV paths and data"
 
 # Sanity checks: rows per month and base rates
-print("📈 Cohort Analysis:")
+print("Cohort Analysis:")
 cohort_analysis = con.execute(
     """
 SELECT strftime(label_date, '%Y-%m') AS ym,
@@ -170,9 +170,9 @@ WHERE l.log_date >= j.label_date
 ).fetchone()[0]
 
 if leaks > 0:
-    print(f"⚠️  WARNING: {leaks:,} log entries found on/after label_date (data leakage!)")
+    print(f"WARNING: {leaks:,} log entries found on/after label_date (data leakage!)")
 else:
-    print("✅ No data leakage detected in logs")
+    print("No data leakage detected in logs")
 
 # Transaction leakage guard: expire dates should not be on/after label_date
 tx_leaks = con.execute(
@@ -189,9 +189,9 @@ WHERE t.expire_date >= j.label_date
 ).fetchone()[0]
 
 if tx_leaks > 0:
-    print(f"⚠️  WARNING: {tx_leaks:,} transaction expire dates found on/after label_date!")
+    print(f"WARNING: {tx_leaks:,} transaction expire dates found on/after label_date!")
 else:
-    print("✅ No transaction leakage detected")
+    print("No transaction leakage detected")
 
 # Basic report
 stats = con.execute("SELECT COUNT(*) n, AVG(is_churn) AS pos_rate FROM joined").fetchone()
@@ -216,7 +216,7 @@ summary = {
 
 pathlib.Path("eval/dataset_summary.json").write_text(json.dumps(summary, indent=2))
 
-print("✅ Dataset creation complete!")
-print(f"📈 Total: {summary['total_rows']:,} rows, {summary['total_pos_rate']:.3f} churn rate")
-print(f"🚂 Train: {summary['train_rows']:,} rows, {summary['train_pos_rate']:.3f} churn rate")
-print(f"🎯 Val: {summary['val_rows']:,} rows, {summary['val_pos_rate']:.3f} churn rate")
+print("Dataset creation complete!")
+print(f"Total: {summary['total_rows']:,} rows, {summary['total_pos_rate']:.3f} churn rate")
+print(f"Train: {summary['train_rows']:,} rows, {summary['train_pos_rate']:.3f} churn rate")
+print(f"Val: {summary['val_rows']:,} rows, {summary['val_pos_rate']:.3f} churn rate")

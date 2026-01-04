@@ -219,7 +219,7 @@ def mismatch_audit(labels_df: pd.DataFrame, max_examples: int = 50) -> pd.DataFr
     mismatches = comparable[comparable["is_churn"] != comparable["official_is_churn"]]
 
     if len(mismatches) == 0:
-        print("✅ No mismatches found!")
+        print("No mismatches found!")
         return pd.DataFrame()
 
     # Create detailed audit report
@@ -247,7 +247,7 @@ def mismatch_audit(labels_df: pd.DataFrame, max_examples: int = 50) -> pd.DataFr
 
     audit_df = audit_df.sort_values(["mismatch_type", "days_to_next"], ascending=[True, True])
 
-    print("\n🔍 MISMATCH AUDIT REPORT:")
+    print("\nMISMATCH AUDIT REPORT:")
     print(f"Total mismatches: {len(mismatches):,}")
     print(
         f"False negatives (Generated=0, Official=1): {len(audit_df[audit_df['mismatch_type']=='false_negative']):,}"
@@ -285,10 +285,10 @@ def analyze_mismatches(labels_df: pd.DataFrame, max_examples: int = 10):
     mismatches = comparable[comparable["is_churn"] != comparable["official_is_churn"]]
 
     if len(mismatches) == 0:
-        print("✅ No mismatches found!")
+        print("No mismatches found!")
         return
 
-    print(f"\n⚠️ Found {len(mismatches):,} mismatches:")
+    print(f"\nWARNING: Found {len(mismatches):,} mismatches:")
     print(
         f"Generated=1, Official=0: {len(mismatches[mismatches['is_churn'] > mismatches['official_is_churn']]):,}"
     )
@@ -338,7 +338,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        print(f"🔄 Generating labels using {args.window_days}-day rule...")
+        print(f"Generating labels using {args.window_days}-day rule...")
         print(f"   Transactions: {args.transactions}")
         print(f"   Official labels: {args.train_labels}")
         print(f"   Cutoff date: {args.cutoff_date}")
@@ -350,7 +350,7 @@ def main():
             window_days=args.window_days,
         )
 
-        print(f"📊 Generated {len(labels_df):,} labels")
+        print(f"Generated {len(labels_df):,} labels")
         print(f"   Churn rate: {labels_df['is_churn'].mean():.3f}")
 
         # Validate against official labels
@@ -358,25 +358,25 @@ def main():
             accuracy, matches, total = validate_labels(labels_df, args.min_accuracy)
 
             # If accuracy is good, proceed normally
-            print(f"✅ Validation passed: {accuracy:.4f} accuracy")
+            print(f"Validation passed: {accuracy:.4f} accuracy")
 
             # Still generate audit for any remaining mismatches
             mismatch_df = mismatch_audit(labels_df, max_examples=50)
             if len(mismatch_df) > 0:
                 audit_path = args.output.replace(".csv", "_mismatches.csv")
                 mismatch_df.to_csv(audit_path, index=False)
-                print(f"📝 Mismatch audit saved to: {audit_path}")
+                print(f"Mismatch audit saved to: {audit_path}")
 
         except ValueError as e:
             # Accuracy below threshold - generate detailed audit and stop
-            print(f"❌ {e}")
+            print(f"ERROR: {e}")
 
             mismatch_df = mismatch_audit(labels_df, max_examples=50)
             if len(mismatch_df) > 0:
                 audit_path = args.output.replace(".csv", "_mismatches.csv")
                 mismatch_df.to_csv(audit_path, index=False)
-                print(f"📝 Mismatch audit saved to: {audit_path}")
-                print("🛑 STOP RULE: Fix label accuracy to ≥99% before proceeding")
+                print(f"Mismatch audit saved to: {audit_path}")
+                print("STOP RULE: Fix label accuracy to >=99% before proceeding")
                 sys.exit(1)
 
         # Save results
@@ -384,11 +384,11 @@ def main():
         output_cols = ["msno", "is_churn", "last_expire_date", "next_txn_date"]
         labels_df[output_cols].to_csv(args.output, index=False)
 
-        print(f"✅ Labels saved to: {args.output}")
-        print(f"✅ Validation passed: {accuracy:.4f} accuracy")
+        print(f"Labels saved to: {args.output}")
+        print(f"Validation passed: {accuracy:.4f} accuracy")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"ERROR: {e}")
         sys.exit(1)
 
 

@@ -2,7 +2,24 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose up:*)",
+      "WebSearch",
+      "Bash(wsl ls -la eval/features_2017-*.csv)",
+      "Bash(wsl bash:*)",
+      "Bash(wsl --cd /mnt/c/Users/Trey/Downloads/KKBOX_PROJECT ls:*)",
+      "Bash(wsl -e bash -c \"cd /mnt/c/Users/Trey/Downloads/KKBOX_PROJECT && ls -la .venv/\")",
+      "Bash(wsl -e bash -c \"python3 -c ''import pandas; import xgboost; print\\(\"\"packages ok\"\"\\)''\")",
+      "Bash(wsl -e bash -c \"cd /mnt/c/Users/Trey/Downloads/KKBOX_PROJECT && free -h\")",
+      "Bash(powershell -Command \"Set-Location ''C:\\\\Users\\\\Trey\\\\Downloads\\\\KKBOX_PROJECT''; .\\\\.venv\\\\Scripts\\\\python.exe train_temporal.py\")",
+      "WebFetch(domain:www.amazon.com)",
+      "WebFetch(domain:www.microcenter.com)",
+      "Bash(powershell -Command \"[math]::Round\\(\\(Get-CimInstance Win32_ComputerSystem\\).TotalPhysicalMemory/1GB, 2\\)\")",
+      "Bash(powershell -Command:*)",
+      "Bash(cat:*)",
+      "Bash(git fetch:*)",
+      "Bash(git -C \"C:\\\\Users\\\\Trey\\\\Downloads\\\\KKBOX_PROJECT\" push origin main)"
     ],
     "deny": [],
     "ask": []

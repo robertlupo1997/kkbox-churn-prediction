@@ -80,7 +80,7 @@ def main():
         f"CREATE VIEW logs AS SELECT * FROM read_csv_auto('{args.data_dir}/user_logs_v2.csv', IGNORE_ERRORS=TRUE)"
     )
 
-    print(f"🔄 Building features for test period {args.start} to {args.end}")
+    print(f"Building features for test period {args.start} to {args.end}")
 
     con.execute(
         f"""
@@ -146,7 +146,7 @@ def main():
     tbl = con.execute("SELECT * FROM to_pred").fetch_arrow_table()
     df = tbl.to_pandas()
 
-    print(f"📊 Built features for {len(df):,} users")
+    print(f"Built features for {len(df):,} users")
 
     # fill NAs for unseen users gracefully
     for c in [
@@ -164,7 +164,7 @@ def main():
     df = prep(df)
 
     # 2) Predict with XGB
-    print("🔮 Generating predictions...")
+    print("Generating predictions...")
     bst = xgb.Booster(model_file=args.model)
     dva = xgb.DMatrix(df[FEATS].fillna(0), feature_names=FEATS)
     p = bst.predict(dva)
@@ -172,21 +172,21 @@ def main():
     # 3) Optional isotonic calibration
     cal = load_calibrator(args.cal)
     if cal is not None:
-        print("📐 Applying isotonic calibration...")
+        print("Applying isotonic calibration...")
         p = cal(p)
     else:
-        print("⚠️  No calibration file found, using raw predictions")
+        print("WARNING: No calibration file found, using raw predictions")
 
     # Clip to [0,1] and write CSV
     p = np.clip(p, 0.0, 1.0)
     out = pd.DataFrame({"msno": df["msno"].values, "is_churn": p})
     out.to_csv(args.out, index=False)
 
-    print("📈 Prediction stats:")
+    print("Prediction stats:")
     print(f"  Min: {p.min():.4f}")
     print(f"  Max: {p.max():.4f}")
     print(f"  Mean: {p.mean():.4f}")
-    print(f"✅ Saved {len(out):,} predictions → {args.out}")
+    print(f"Saved {len(out):,} predictions to {args.out}")
 
 
 if __name__ == "__main__":

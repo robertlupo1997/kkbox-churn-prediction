@@ -9,11 +9,10 @@ This script:
 4. Outputs detailed report on model weaknesses
 """
 
-import pickle
 import argparse
+import pickle
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
