@@ -314,7 +314,7 @@ class ModelCalibrator:
 
 
 def run_calibration_pipeline(
-    features_path: str = "features/features_comprehensive.csv", models_dir: str = "models"
+    features_path: str = "features/features_processed.csv", models_dir: str = "models"
 ) -> dict[str, Any]:
     """
     Execute complete model calibration pipeline.
@@ -368,6 +368,23 @@ def run_calibration_pipeline(
 
 
 if __name__ == "__main__":
-    # Execute calibration pipeline
-    results = run_calibration_pipeline()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Calibrate trained KKBOX churn models")
+    parser.add_argument(
+        "--features",
+        type=str,
+        default="features/features_processed.csv",
+        help="Path to features CSV file (default: features/features_processed.csv)",
+    )
+    parser.add_argument(
+        "--models-dir",
+        type=str,
+        default="models",
+        help="Directory containing trained models (default: models)",
+    )
+    args = parser.parse_args()
+
+    # Execute calibration pipeline with CLI arguments
+    results = run_calibration_pipeline(features_path=args.features, models_dir=args.models_dir)
     print(" Calibration pipeline completed!")
