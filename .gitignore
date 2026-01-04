@@ -70,6 +70,16 @@ submissions/
 # Large eval outputs (keep app_features.csv for demo)
 eval/labels_*.csv
 eval/features_*.csv
+eval/historical_features_*.csv
+eval/churn_history_all.csv
+eval/scores_*.csv
+eval/stacked_ensemble_predictions.csv
+
+# Training artifacts
+catboost_info/
+
+# Internal docs (archived)
+docs/internal/
 
 # Synthetic test fixtures (regenerate with make fixtures)
 tests/fixtures/*.csv
