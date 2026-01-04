@@ -7,6 +7,11 @@ Trains models with proper temporal splits:
 - Validation: Mar 2017 data (cutoff: 2017-03-31)
 
 This ensures no future data leaks into training.
+
+Features:
+- Loads tuned hyperparameters from models/best_hyperparameters.json if available
+- Trains XGBoost, LightGBM, and ensemble models
+- Outputs feature importance for best model
 """
 
 import json
@@ -22,6 +27,15 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, roc_auc_score, brier_score_loss
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+
+def load_tuned_params() -> dict:
+    """Load tuned hyperparameters if available."""
+    params_path = Path("models/best_hyperparameters.json")
+    if params_path.exists():
+        with open(params_path) as f:
+            return json.load(f)
+    return {}
 
 def load_window_features(window_files: list[str]) -> pd.DataFrame:
     """Load and concatenate multiple window feature files."""
@@ -78,11 +92,19 @@ def train_and_evaluate():
     print(f"  Train churn rate: {y_train.mean():.3f}")
     print(f"  Val churn rate:   {y_val.mean():.3f}")
 
+    # Load tuned hyperparameters
+    tuned = load_tuned_params()
+    if tuned:
+        print("\n  Using tuned hyperparameters from models/best_hyperparameters.json")
+    else:
+        print("\n  Using default hyperparameters")
+
     # Train models
     print("\n4. Training Models")
 
     models = {}
     metrics = {}
+    feature_names = X_train.columns.tolist()
 
     # Logistic Regression
     print("  Training Logistic Regression...")
@@ -116,19 +138,23 @@ def train_and_evaluate():
     }
     print(f"    AUC: {metrics['random_forest']['auc']:.4f}")
 
-    # XGBoost
+    # XGBoost (with tuned params if available)
     print("  Training XGBoost...")
     scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
 
-    xgb_model = xgb.XGBClassifier(
-        objective="binary:logistic",
-        max_depth=6,
-        learning_rate=0.1,
-        n_estimators=200,
-        scale_pos_weight=scale_pos_weight,
-        random_state=42,
-        n_jobs=-1,
-    )
+    xgb_params = tuned.get('xgboost', {
+        'max_depth': 6,
+        'learning_rate': 0.1,
+        'n_estimators': 200,
+    })
+    xgb_params.update({
+        'objective': 'binary:logistic',
+        'scale_pos_weight': scale_pos_weight,
+        'random_state': 42,
+        'n_jobs': -1,
+    })
+
+    xgb_model = xgb.XGBClassifier(**xgb_params)
     xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
     xgb_pred = xgb_model.predict_proba(X_val)[:, 1]
 
@@ -140,19 +166,23 @@ def train_and_evaluate():
     }
     print(f"    AUC: {metrics['xgboost']['auc']:.4f}")
 
-    # LightGBM (Bryan Gregory used 12% LightGBM in winning ensemble)
+    # LightGBM (with tuned params if available - typically best performer)
     print("  Training LightGBM...")
-    lgb_model = lgb.LGBMClassifier(
-        objective="binary",
-        max_depth=7,
-        num_leaves=256,
-        learning_rate=0.05,
-        n_estimators=240,
-        scale_pos_weight=scale_pos_weight,
-        random_state=42,
-        n_jobs=-1,
-        verbose=-1,
-    )
+    lgb_params = tuned.get('lightgbm', {
+        'max_depth': 7,
+        'num_leaves': 256,
+        'learning_rate': 0.05,
+        'n_estimators': 240,
+    })
+    lgb_params.update({
+        'objective': 'binary',
+        'scale_pos_weight': scale_pos_weight,
+        'random_state': 42,
+        'n_jobs': -1,
+        'verbose': -1,
+    })
+
+    lgb_model = lgb.LGBMClassifier(**lgb_params)
     lgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
     lgb_pred = lgb_model.predict_proba(X_val)[:, 1]
 
@@ -232,10 +262,19 @@ def train_and_evaluate():
     print()
     print("Model Performance (Validation):")
     print("-" * 40)
-    for name, m in metrics.items():
+    for name, m in sorted(metrics.items(), key=lambda x: -x[1]["auc"]):
         print(f"  {name:20s} AUC: {m['auc']:.4f}  LogLoss: {m['log_loss']:.4f}")
     print()
-    print("Best model by AUC:", max(metrics, key=lambda k: metrics[k]["auc"]))
+    best_model = max(metrics, key=lambda k: metrics[k]["auc"])
+    print(f"Best model by AUC: {best_model} ({metrics[best_model]['auc']:.4f})")
+
+    # Feature importance for LightGBM (typically best model)
+    print("\n" + "-" * 40)
+    print("Top 10 Feature Importances (LightGBM):")
+    print("-" * 40)
+    lgb_importance = dict(zip(feature_names, lgb_model.feature_importances_))
+    for feat, imp in sorted(lgb_importance.items(), key=lambda x: -x[1])[:10]:
+        print(f"  {feat:35s} {imp:6.0f}")
 
     return metrics
 
