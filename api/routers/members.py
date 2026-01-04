@@ -21,6 +21,8 @@ async def list_members(
 ) -> MemberListResponse:
     """List all members with risk scores.
 
+    Uses pre-computed member data for instant response times.
+
     Args:
         limit: Maximum number of members to return
         offset: Number of members to skip
@@ -29,51 +31,30 @@ async def list_members(
     Returns:
         Paginated list of members with risk scores
     """
-    features_df = model_service.load_features()
+    # Use pre-computed sorted members (O(1) lookup)
+    member_data, total = model_service.get_sorted_members(
+        limit=limit,
+        offset=offset,
+        risk_tier=risk_tier,
+    )
 
-    if features_df.empty:
+    if not member_data:
         return MemberListResponse(members=[], total=0, limit=limit, offset=offset)
 
-    # Use cached predictions if available
-    cached = model_service.get_cached_predictions()
-    if cached is not None:
-        probs, feature_names = cached
-    else:
-        probs, feature_names = model_service.predict(features_df)
-
-    # Build member list
-    members = []
-    for idx, row in features_df.iterrows():
-        score = float(probs[idx])
-        tier = rules_service.get_risk_tier(score)
-
-        # Apply risk_tier filter if specified
-        if risk_tier and tier != risk_tier:
-            continue
-
-        # Get top risk factors
-        top_features = model_service.get_top_features_for_member(row[feature_names], top_n=3)
-
-        # Get recommendation
-        recommendation = rules_service.get_recommendation(score, top_features)
-
-        members.append(
-            MemberResponse(
-                msno=row["msno"],
-                risk_score=score,
-                risk_tier=tier,
-                is_churn=bool(row.get("is_churn")) if "is_churn" in row else None,
-                top_risk_factors=top_features,
-                action_recommendation=recommendation.get("recommendation", ""),
-            )
+    # Convert to response format
+    members = [
+        MemberResponse(
+            msno=m["msno"],
+            risk_score=m["risk_score"],
+            risk_tier=m["risk_tier"],
+            is_churn=m["is_churn"],
+            top_risk_factors=m["top_risk_factors"],
+            action_recommendation=rules_service.get_recommendation(
+                m["risk_score"], m["top_risk_factors"]
+            ).get("recommendation", ""),
         )
-
-    # Sort by risk score descending
-    members.sort(key=lambda m: m.risk_score, reverse=True)
-
-    # Apply pagination
-    total = len(members)
-    members = members[offset : offset + limit]
+        for m in member_data
+    ]
 
     return MemberListResponse(
         members=members,
@@ -87,43 +68,29 @@ async def list_members(
 async def get_member(msno: str) -> MemberDetail:
     """Get single member details with prediction.
 
+    Uses pre-computed member data for O(1) lookup.
+
     Args:
         msno: Member ID
 
     Returns:
         Member details with features, risk score, and recommendations
     """
-    features_df = model_service.load_features()
+    # O(1) lookup from pre-computed cache
+    member = model_service.get_member_by_msno(msno)
 
-    if features_df.empty:
-        raise HTTPException(status_code=404, detail="No feature data available")
-
-    # Find member
-    member_row = features_df[features_df["msno"] == msno]
-
-    if member_row.empty:
+    if member is None:
         raise HTTPException(status_code=404, detail=f"Member {msno} not found")
 
-    member_row = member_row.iloc[0]
-
-    # Get prediction
-    probs, feature_names = model_service.predict(features_df[features_df["msno"] == msno])
-    score = float(probs[0])
-    tier = rules_service.get_risk_tier(score)
-
-    # Get top risk factors
-    top_features = model_service.get_top_features_for_member(member_row[feature_names], top_n=5)
+    # Get features for this member
+    features = model_service.get_member_features(msno)
+    if features is None:
+        raise HTTPException(status_code=404, detail="No feature data available")
 
     # Get recommendation
-    recommendation = rules_service.get_recommendation(score, top_features)
-
-    # Build feature dict (exclude metadata columns)
-    drop_cols = {"msno", "is_churn", "cutoff_ts", "window"}
-    features = {
-        k: float(v) if isinstance(v, int | float) else v
-        for k, v in member_row.items()
-        if k not in drop_cols
-    }
+    recommendation = rules_service.get_recommendation(
+        member["risk_score"], member["top_risk_factors"]
+    )
 
     action = ActionRecommendation(
         category=recommendation.get("category", "engagement"),
@@ -135,9 +102,9 @@ async def get_member(msno: str) -> MemberDetail:
 
     return MemberDetail(
         msno=msno,
-        risk_score=score,
-        risk_tier=tier,
-        is_churn=bool(member_row.get("is_churn")) if "is_churn" in member_row else None,
+        risk_score=member["risk_score"],
+        risk_tier=member["risk_tier"],
+        is_churn=member["is_churn"],
         features=features,
         action=action,
     )
