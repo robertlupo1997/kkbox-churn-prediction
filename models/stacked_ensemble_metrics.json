@@ -1,0 +1,18 @@
+{
+  "n_folds": 5,
+  "train_samples": 1929125,
+  "val_samples": 970960,
+  "validation_results": {
+    "xgboost_auc": 0.96326661133709,
+    "lightgbm_auc": 0.9666347907482324,
+    "catboost_auc": 0.9605025545830211,
+    "simple_average_auc": 0.9654380676236244,
+    "stacked_ensemble_auc": 0.9637549319898823,
+    "stacked_ensemble_logloss": 0.14317636528089922
+  },
+  "meta_learner_coefficients": {
+    "xgboost": 4.963901218471971,
+    "lightgbm": 3.554593728014631,
+    "catboost": -2.333140570219213
+  }
+}
