@@ -1,4 +1,5 @@
 """SHAP explanation endpoints."""
+
 from fastapi import APIRouter, HTTPException
 
 from api.services import model_service, shap_service

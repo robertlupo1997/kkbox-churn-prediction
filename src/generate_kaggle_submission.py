@@ -68,26 +68,26 @@ def load_test_features(features_path: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Kaggle submission with calibrated predictions")
+    parser = argparse.ArgumentParser(
+        description="Generate Kaggle submission with calibrated predictions"
+    )
     parser.add_argument(
         "--features",
         default="eval/features_2017-03-2017-04.csv",
-        help="Path to test features CSV (default: validation set for demo)"
+        help="Path to test features CSV (default: validation set for demo)",
     )
     parser.add_argument(
         "--sample",
         default="kkbox-churn-prediction-challenge/data/churn_comp_refresh/sample_submission_v2.csv",
-        help="Path to sample submission for format reference"
+        help="Path to sample submission for format reference",
     )
     parser.add_argument(
         "--out",
         default="submissions/calibrated_submission.csv",
-        help="Output path for submission file"
+        help="Output path for submission file",
     )
     parser.add_argument(
-        "--no-calibration",
-        action="store_true",
-        help="Skip calibration (use raw predictions)"
+        "--no-calibration", action="store_true", help="Skip calibration (use raw predictions)"
     )
     args = parser.parse_args()
 
@@ -124,7 +124,9 @@ def main():
     if calibrator is not None:
         print("\n4. Applying calibration...")
         calibrated_predictions = calibrator.transform(raw_predictions)
-        print(f"   Calibrated range: [{calibrated_predictions.min():.4f}, {calibrated_predictions.max():.4f}]")
+        print(
+            f"   Calibrated range: [{calibrated_predictions.min():.4f}, {calibrated_predictions.max():.4f}]"
+        )
         print(f"   Calibrated mean: {calibrated_predictions.mean():.4f}")
         final_predictions = calibrated_predictions
     else:
@@ -132,10 +134,7 @@ def main():
         final_predictions = raw_predictions
 
     # Create submission dataframe
-    submission = pd.DataFrame({
-        "msno": msno,
-        "is_churn": final_predictions
-    })
+    submission = pd.DataFrame({"msno": msno, "is_churn": final_predictions})
 
     # Ensure predictions are in valid range
     submission["is_churn"] = submission["is_churn"].clip(0.0, 1.0)
@@ -154,9 +153,15 @@ def main():
     print(f"Median prediction: {submission['is_churn'].median():.4f}")
     print(f"Std prediction: {submission['is_churn'].std():.4f}")
     print("\nPrediction distribution:")
-    print(f"  < 0.1: {(submission['is_churn'] < 0.1).sum():,} ({(submission['is_churn'] < 0.1).mean():.1%})")
-    print(f"  0.1-0.5: {((submission['is_churn'] >= 0.1) & (submission['is_churn'] < 0.5)).sum():,}")
-    print(f"  >= 0.5: {(submission['is_churn'] >= 0.5).sum():,} ({(submission['is_churn'] >= 0.5).mean():.1%})")
+    print(
+        f"  < 0.1: {(submission['is_churn'] < 0.1).sum():,} ({(submission['is_churn'] < 0.1).mean():.1%})"
+    )
+    print(
+        f"  0.1-0.5: {((submission['is_churn'] >= 0.1) & (submission['is_churn'] < 0.5)).sum():,}"
+    )
+    print(
+        f"  >= 0.5: {(submission['is_churn'] >= 0.5).sum():,} ({(submission['is_churn'] >= 0.5).mean():.1%})"
+    )
     print(f"\nSaved to: {args.out}")
 
 

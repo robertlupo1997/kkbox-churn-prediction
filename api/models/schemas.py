@@ -30,12 +30,8 @@ class MemberResponse(BaseModel):
     risk_score: float = Field(..., description="Churn probability (0-1)")
     risk_tier: str = Field(..., description="Risk tier: High, Medium, Low")
     is_churn: bool | None = Field(None, description="Actual churn label if available")
-    top_risk_factors: list[str] = Field(
-        ..., description="Top features driving the risk score"
-    )
-    action_recommendation: str = Field(
-        ..., description="Recommended retention action"
-    )
+    top_risk_factors: list[str] = Field(..., description="Top features driving the risk score")
+    action_recommendation: str = Field(..., description="Recommended retention action")
 
 
 class MemberDetail(BaseModel):
@@ -76,9 +72,7 @@ class MetricsResponse(BaseModel):
     brier_score: float | None = Field(None, description="Brier score")
     ece: float | None = Field(None, description="Expected calibration error")
     training_samples: int | None = Field(None, description="Number of training samples")
-    validation_samples: int | None = Field(
-        None, description="Number of validation samples"
-    )
+    validation_samples: int | None = Field(None, description="Number of validation samples")
 
 
 class FeatureImportanceItem(BaseModel):
@@ -93,9 +87,7 @@ class FeatureImportanceItem(BaseModel):
 class FeatureImportanceResponse(BaseModel):
     """List of feature importances."""
 
-    features: list[FeatureImportanceItem] = Field(
-        ..., description="Ranked feature importances"
-    )
+    features: list[FeatureImportanceItem] = Field(..., description="Ranked feature importances")
 
 
 class CalibrationPoint(BaseModel):
@@ -108,9 +100,5 @@ class CalibrationPoint(BaseModel):
 class CalibrationResponse(BaseModel):
     """Calibration curve data."""
 
-    uncalibrated: list[CalibrationPoint] = Field(
-        ..., description="Uncalibrated predictions"
-    )
-    calibrated: list[CalibrationPoint] = Field(
-        ..., description="Calibrated predictions"
-    )
+    uncalibrated: list[CalibrationPoint] = Field(..., description="Uncalibrated predictions")
+    calibrated: list[CalibrationPoint] = Field(..., description="Calibrated predictions")

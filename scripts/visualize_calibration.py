@@ -6,7 +6,6 @@ Run: python scripts/visualize_calibration.py
 Output: saves PNG files to eval/ directory
 """
 
-import json
 import pickle
 import sys
 from pathlib import Path
@@ -14,7 +13,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.calibration import calibration_curve
 from sklearn.metrics import brier_score_loss, log_loss
 
 # Add src to path
@@ -49,6 +47,7 @@ def load_data_and_models():
 
     try:
         import xgboost as xgb
+
         xgb_path = models_dir / "xgboost.json"
         if xgb_path.exists():
             model = xgb.XGBClassifier()
@@ -267,8 +266,12 @@ def plot_probability_distributions(y_true, y_prob_uncal, y_prob_cal, save_path):
     churned_uncal = y_prob_uncal[y_true == 1]
     stayed_uncal = y_prob_uncal[y_true == 0]
 
-    ax1.hist(stayed_uncal, bins=50, alpha=0.6, label="Actually Stayed", color="#3498db", density=True)
-    ax1.hist(churned_uncal, bins=50, alpha=0.6, label="Actually Churned", color="#e74c3c", density=True)
+    ax1.hist(
+        stayed_uncal, bins=50, alpha=0.6, label="Actually Stayed", color="#3498db", density=True
+    )
+    ax1.hist(
+        churned_uncal, bins=50, alpha=0.6, label="Actually Churned", color="#e74c3c", density=True
+    )
     ax1.set_xlabel("Predicted Probability")
     ax1.set_ylabel("Density")
     ax1.set_title("BEFORE Calibration: Predictions by Outcome")
@@ -284,7 +287,9 @@ def plot_probability_distributions(y_true, y_prob_uncal, y_prob_cal, save_path):
     stayed_cal = y_prob_cal[y_true == 0]
 
     ax2.hist(stayed_cal, bins=50, alpha=0.6, label="Actually Stayed", color="#3498db", density=True)
-    ax2.hist(churned_cal, bins=50, alpha=0.6, label="Actually Churned", color="#e74c3c", density=True)
+    ax2.hist(
+        churned_cal, bins=50, alpha=0.6, label="Actually Churned", color="#e74c3c", density=True
+    )
     ax2.set_xlabel("Predicted Probability")
     ax2.set_ylabel("Density")
     ax2.set_title("AFTER Calibration: Predictions by Outcome")
@@ -318,6 +323,12 @@ def plot_probability_distributions(y_true, y_prob_uncal, y_prob_cal, save_path):
     above_line = (y_prob_cal > y_prob_uncal).mean() * 100
     below_line = (y_prob_cal < y_prob_uncal).mean() * 100
     ax3.annotate(
+        f"{above_line:.0f}% moved UP\n(more confident)",
+        xy=(0.3, 0.7),
+        fontsize=10,
+        color="#27ae60",
+    )
+    ax3.annotate(
         f"{below_line:.0f}% moved DOWN\n(less confident)",
         xy=(0.7, 0.3),
         fontsize=10,
@@ -331,7 +342,10 @@ def plot_probability_distributions(y_true, y_prob_uncal, y_prob_cal, save_path):
 
     metrics = {
         "Log Loss": [log_loss(y_true, y_prob_uncal), log_loss(y_true, y_prob_cal)],
-        "Brier Score": [brier_score_loss(y_true, y_prob_uncal), brier_score_loss(y_true, y_prob_cal)],
+        "Brier Score": [
+            brier_score_loss(y_true, y_prob_uncal),
+            brier_score_loss(y_true, y_prob_cal),
+        ],
     }
 
     x = np.arange(len(metrics))
@@ -340,8 +354,8 @@ def plot_probability_distributions(y_true, y_prob_uncal, y_prob_cal, save_path):
     before_vals = [m[0] for m in metrics.values()]
     after_vals = [m[1] for m in metrics.values()]
 
-    bars1 = ax4.bar(x - width/2, before_vals, width, label="Before", color="#e74c3c", alpha=0.8)
-    bars2 = ax4.bar(x + width/2, after_vals, width, label="After", color="#27ae60", alpha=0.8)
+    bars1 = ax4.bar(x - width / 2, before_vals, width, label="Before", color="#e74c3c", alpha=0.8)
+    bars2 = ax4.bar(x + width / 2, after_vals, width, label="After", color="#27ae60", alpha=0.8)
 
     ax4.set_ylabel("Score (lower is better)")
     ax4.set_title("Metrics Improvement")
@@ -352,11 +366,21 @@ def plot_probability_distributions(y_true, y_prob_uncal, y_prob_cal, save_path):
 
     # Add value labels
     for bar, val in zip(bars1, before_vals):
-        ax4.annotate(f"{val:.3f}", xy=(bar.get_x() + bar.get_width()/2, bar.get_height()),
-                     ha="center", va="bottom", fontsize=10)
+        ax4.annotate(
+            f"{val:.3f}",
+            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
     for bar, val in zip(bars2, after_vals):
-        ax4.annotate(f"{val:.3f}", xy=(bar.get_x() + bar.get_width()/2, bar.get_height()),
-                     ha="center", va="bottom", fontsize=10)
+        ax4.annotate(
+            f"{val:.3f}",
+            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
@@ -458,19 +482,16 @@ def main():
     print("\nGenerating visualizations...")
 
     plot_reliability_diagram(
-        y, y_prob_uncal, y_prob_cal,
-        output_dir / "calibration_reliability_diagram.png"
+        y, y_prob_uncal, y_prob_cal, output_dir / "calibration_reliability_diagram.png"
     )
 
     plot_probability_distributions(
-        y, y_prob_uncal, y_prob_cal,
-        output_dir / "calibration_distributions.png"
+        y, y_prob_uncal, y_prob_cal, output_dir / "calibration_distributions.png"
     )
 
     if calibrator is not None:
         plot_isotonic_mapping(
-            y_prob_uncal, calibrator,
-            output_dir / "calibration_isotonic_mapping.png"
+            y_prob_uncal, calibrator, output_dir / "calibration_isotonic_mapping.png"
         )
 
     print("\n" + "=" * 60)

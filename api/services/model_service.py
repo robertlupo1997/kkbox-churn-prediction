@@ -76,10 +76,7 @@ def load_features() -> pd.DataFrame:
 
     features_path = Path(settings.FEATURES_PATH)
     if not features_path.exists():
-        logger.warning(
-            f"Features file not found: {features_path}. "
-            "Returning empty DataFrame."
-        )
+        logger.warning(f"Features file not found: {features_path}. " "Returning empty DataFrame.")
         return pd.DataFrame()
 
     try:
@@ -113,7 +110,7 @@ def load_metrics() -> dict[str, Any]:
         return {}
 
     try:
-        with open(metrics_path, "r") as f:
+        with open(metrics_path) as f:
             metrics = json.load(f)
         _model_cache["metrics"] = metrics
         logger.info(f"Loaded metrics from {metrics_path}")
@@ -139,7 +136,7 @@ def load_calibration_data() -> dict[str, Any]:
         return {}
 
     try:
-        with open(calibration_path, "r") as f:
+        with open(calibration_path) as f:
             calibration = json.load(f)
         _model_cache["calibration"] = calibration
         logger.info(f"Loaded calibration data from {calibration_path}")
@@ -217,9 +214,7 @@ def get_feature_importance(top_n: int | None = None) -> list[dict[str, Any]]:
     return importance_list
 
 
-def get_top_features_for_member(
-    feature_values: pd.Series, top_n: int = 5
-) -> list[str]:
+def get_top_features_for_member(feature_values: pd.Series, top_n: int = 5) -> list[str]:
     """Get top risk factors for a specific member.
 
     Args:
@@ -230,9 +225,7 @@ def get_top_features_for_member(
         List of feature names that contribute most to risk
     """
     # Get global feature importance
-    importance_dict = {
-        item["name"]: item["importance"] for item in get_feature_importance()
-    }
+    importance_dict = {item["name"]: item["importance"] for item in get_feature_importance()}
 
     # Calculate weighted impact for this member
     # Higher feature value * higher importance = higher contribution

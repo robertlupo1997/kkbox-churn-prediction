@@ -25,9 +25,9 @@ const CustomROITooltip = ({ active, payload, label }: any) => {
 
 const ROICalculator: React.FC = () => {
   const [subs, setSubs] = useState(100000);
-  const [arpu, setArpu] = useState(149); 
-  const [churn, setChurn] = useState(5.5); 
-  const [reduction, setReduction] = useState(15); 
+  const [arpu, setArpu] = useState(149);
+  const [churn, setChurn] = useState(5.5);
+  const [reduction, setReduction] = useState(15);
 
   const results = useMemo(() => {
     const monthlyChurnCount = subs * (churn / 100);
@@ -74,7 +74,7 @@ const ROICalculator: React.FC = () => {
                   <span className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Total Subscriber Base</span>
                   <span className="text-indigo-600 dark:text-indigo-400 font-black text-xl">{subs.toLocaleString()}</span>
                 </div>
-                <input 
+                <input
                   type="range" min="10000" max="1000000" step="10000"
                   className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   value={subs} onChange={(e) => setSubs(Number(e.target.value))}
@@ -86,8 +86,8 @@ const ROICalculator: React.FC = () => {
                   <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Monthly ARPU (NTD)</span>
                   <div className="relative">
                     <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={16} />
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       className="w-full pl-10 pr-4 py-4 bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 font-black text-slate-700 dark:text-slate-200 shadow-inner transition-all"
                       value={arpu} onChange={(e) => setArpu(Number(e.target.value))}
                     />
@@ -96,7 +96,7 @@ const ROICalculator: React.FC = () => {
                 <label className="block">
                   <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Monthly Churn (%)</span>
                   <div className="flex items-center space-x-3 h-[52px]">
-                    <input 
+                    <input
                       type="range" min="0.5" max="25" step="0.1"
                       className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                       value={churn} onChange={(e) => setChurn(Number(e.target.value))}
@@ -113,7 +113,7 @@ const ROICalculator: React.FC = () => {
                   </span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-black text-xl">{reduction}% Saving</span>
                 </div>
-                <input 
+                <input
                   type="range" min="1" max="50" step="1"
                   className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                   value={reduction} onChange={(e) => setReduction(Number(e.target.value))}

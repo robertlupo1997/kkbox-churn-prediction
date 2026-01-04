@@ -52,9 +52,7 @@ async def list_members(
             continue
 
         # Get top risk factors
-        top_features = model_service.get_top_features_for_member(
-            row[feature_names], top_n=3
-        )
+        top_features = model_service.get_top_features_for_member(row[feature_names], top_n=3)
 
         # Get recommendation
         recommendation = rules_service.get_recommendation(score, top_features)
@@ -114,9 +112,7 @@ async def get_member(msno: str) -> MemberDetail:
     tier = rules_service.get_risk_tier(score)
 
     # Get top risk factors
-    top_features = model_service.get_top_features_for_member(
-        member_row[feature_names], top_n=5
-    )
+    top_features = model_service.get_top_features_for_member(member_row[feature_names], top_n=5)
 
     # Get recommendation
     recommendation = rules_service.get_recommendation(score, top_features)
@@ -124,7 +120,7 @@ async def get_member(msno: str) -> MemberDetail:
     # Build feature dict (exclude metadata columns)
     drop_cols = {"msno", "is_churn", "cutoff_ts", "window"}
     features = {
-        k: float(v) if isinstance(v, (int, float)) else v
+        k: float(v) if isinstance(v, int | float) else v
         for k, v in member_row.items()
         if k not in drop_cols
     }

@@ -129,7 +129,7 @@ const MemberLookup: React.FC = () => {
                       <Cell fill={getGaugeColor(selectedMember.risk_score)} />
                       <Cell fill="rgba(148, 163, 184, 0.1)" />
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       content={({ active, payload }: any) => {
                         if (active && payload && payload.length) {
                           return (

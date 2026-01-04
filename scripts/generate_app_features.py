@@ -1,6 +1,8 @@
 """Generate app_features.csv from comprehensive features."""
-import pandas as pd
+
 from pathlib import Path
+
+import pandas as pd
 
 
 def main():
@@ -9,7 +11,11 @@ def main():
     if not features_path.exists():
         features_path = Path("features/features_comprehensive.csv")
 
-    df = pd.read_csv(features_path) if features_path.suffix == ".csv" else pd.read_parquet(features_path)
+    df = (
+        pd.read_csv(features_path)
+        if features_path.suffix == ".csv"
+        else pd.read_parquet(features_path)
+    )
 
     # Sample 10,000 users stratified by churn
     # Ensure mix of high/medium/low risk users
@@ -24,10 +30,12 @@ def main():
         n_churned = min(2000, len(churned))
         n_retained = min(n_samples - n_churned, len(retained))
 
-        sampled = pd.concat([
-            churned.sample(n=n_churned, random_state=42),
-            retained.sample(n=n_retained, random_state=42)
-        ])
+        sampled = pd.concat(
+            [
+                churned.sample(n=n_churned, random_state=42),
+                retained.sample(n=n_retained, random_state=42),
+            ]
+        )
     else:
         sampled = df.sample(n=n_samples, random_state=42)
 

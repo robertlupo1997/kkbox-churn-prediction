@@ -1,11 +1,11 @@
 """SHAP explanation service."""
+
 import logging
 from typing import Any
 
 import numpy as np
 import pandas as pd
 import shap
-import xgboost as xgb
 
 from api.services import model_service
 
@@ -68,7 +68,9 @@ def explain_prediction(member_features: pd.DataFrame) -> dict[str, Any]:
     # Handle expected_value format
     expected_value = explainer.expected_value
     if isinstance(expected_value, np.ndarray):
-        base_value = float(expected_value[1]) if len(expected_value) > 1 else float(expected_value[0])
+        base_value = (
+            float(expected_value[1]) if len(expected_value) > 1 else float(expected_value[0])
+        )
     else:
         base_value = float(expected_value)
 

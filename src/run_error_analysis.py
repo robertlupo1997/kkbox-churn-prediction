@@ -41,35 +41,19 @@ def main():
     parser.add_argument(
         "--features",
         default="eval/features_2017-03-2017-04.csv",
-        help="Path to validation features CSV"
+        help="Path to validation features CSV",
     )
-    parser.add_argument(
-        "--model",
-        default="models/lightgbm.pkl",
-        help="Path to trained model"
-    )
-    parser.add_argument(
-        "--calibrate",
-        action="store_true",
-        help="Apply calibration to predictions"
-    )
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=0.5,
-        help="Classification threshold"
-    )
+    parser.add_argument("--model", default="models/lightgbm.pkl", help="Path to trained model")
+    parser.add_argument("--calibrate", action="store_true", help="Apply calibration to predictions")
+    parser.add_argument("--threshold", type=float, default=0.5, help="Classification threshold")
     parser.add_argument(
         "--fp-cost",
         type=float,
         default=10.0,
-        help="Cost of false positive (wasted retention spend)"
+        help="Cost of false positive (wasted retention spend)",
     )
     parser.add_argument(
-        "--fn-cost",
-        type=float,
-        default=50.0,
-        help="Cost of false negative (lost customer LTV)"
+        "--fn-cost", type=float, default=50.0, help="Cost of false negative (lost customer LTV)"
     )
     args = parser.parse_args()
 
@@ -113,7 +97,7 @@ def main():
         features_df=val_df,
         threshold=args.threshold,
         fp_cost=args.fp_cost,
-        fn_cost=args.fn_cost
+        fn_cost=args.fn_cost,
     )
 
     # Return results for programmatic use

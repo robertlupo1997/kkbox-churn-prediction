@@ -25,8 +25,8 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string; acti
     to={to}
     onClick={onClick}
     className={`flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
-      active 
-        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 translate-x-1' 
+      active
+        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 translate-x-1'
         : 'text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-indigo-600 hover:shadow-sm'
     }`}
   >
@@ -43,7 +43,7 @@ const Sidebar: React.FC<{ isOpen: boolean; toggle: () => void; isDark: boolean; 
 
   return (
     <>
-      <div 
+      <div
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={toggle}
       />
@@ -60,7 +60,7 @@ const Sidebar: React.FC<{ isOpen: boolean; toggle: () => void; isDark: boolean; 
               <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Analysis Suite</p>
             </div>
           </div>
-          
+
           <nav className="space-y-2 flex-1 overflow-y-auto custom-scrollbar pr-2">
             <NavItem to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" active={currentPath === '/'} onClick={toggle} />
             <NavItem to="/lookup" icon={<UserSearch size={20} />} label="Member Lookup" active={currentPath === '/lookup'} onClick={toggle} />
@@ -71,7 +71,7 @@ const Sidebar: React.FC<{ isOpen: boolean; toggle: () => void; isDark: boolean; 
           </nav>
 
           <div className="mt-auto pt-6 space-y-4">
-            <button 
+            <button
               onClick={toggleTheme}
               className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-300 transition-all hover:ring-2 hover:ring-indigo-100 dark:hover:ring-indigo-900"
             >
@@ -126,13 +126,13 @@ function AppContent() {
   return (
     <div className="min-h-screen flex selection:bg-indigo-100 dark:selection:bg-indigo-900/50">
       <LoadingBar active={isLoading} />
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        toggle={() => setIsSidebarOpen(!isSidebarOpen)} 
-        isDark={isDark} 
+      <Sidebar
+        isOpen={isSidebarOpen}
+        toggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        isDark={isDark}
         toggleTheme={toggleTheme}
       />
-      
+
       <main className="flex-1 lg:ml-72 p-4 md:p-10 transition-all duration-500">
         <header className="flex items-center justify-between mb-10 lg:hidden">
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 glass rounded-xl text-slate-600 dark:text-slate-300 hover:text-indigo-600">
@@ -181,11 +181,11 @@ export default function App() {
   }, [isDark]);
 
   return (
-    <AppContext.Provider value={{ 
-      isDark, 
-      toggleTheme: () => setIsDark(prev => !prev), 
-      isLoading, 
-      setLoading: setIsLoading 
+    <AppContext.Provider value={{
+      isDark,
+      toggleTheme: () => setIsDark(prev => !prev),
+      isLoading,
+      setLoading: setIsLoading
     }}>
       <HashRouter>
         <AppContent />
