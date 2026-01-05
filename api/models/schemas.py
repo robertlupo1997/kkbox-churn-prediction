@@ -102,3 +102,31 @@ class CalibrationResponse(BaseModel):
 
     uncalibrated: list[CalibrationPoint] = Field(..., description="Uncalibrated predictions")
     calibrated: list[CalibrationPoint] = Field(..., description="Calibrated predictions")
+    n_bins: int | None = Field(None, description="Number of calibration bins")
+    bin_counts: list[int] | None = Field(None, description="Sample count per bin")
+    ece_before: float | None = Field(None, description="ECE before calibration")
+    ece_after: float | None = Field(None, description="ECE after calibration")
+
+
+class BatchPredictionRequest(BaseModel):
+    """Request for batch predictions."""
+
+    msnos: list[str] = Field(..., description="List of member IDs", max_length=1000)
+
+
+class BatchPredictionItem(BaseModel):
+    """Single item in batch prediction response."""
+
+    msno: str = Field(..., description="Member ID")
+    churn_probability: float = Field(..., description="Predicted churn probability")
+    risk_tier: str = Field(..., description="Risk tier: High, Medium, Low")
+    found: bool = Field(True, description="Whether member was found in data")
+
+
+class BatchPredictionResponse(BaseModel):
+    """Batch prediction response."""
+
+    predictions: list[BatchPredictionItem] = Field(..., description="List of predictions")
+    total_requested: int = Field(..., description="Total members requested")
+    total_found: int = Field(..., description="Total members found")
+    processing_time_ms: float = Field(..., description="Processing time in milliseconds")

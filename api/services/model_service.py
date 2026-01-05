@@ -21,6 +21,10 @@ _member_cache: dict[str, dict] = {}  # msno -> member data
 _sorted_members: list[dict] = []  # Pre-sorted by risk score
 _tier_counts: dict[str, int] = {"High": 0, "Medium": 0, "Low": 0}
 
+# Pre-computed predictions cache for batch lookups
+_predictions_cache: pd.DataFrame | None = None
+_predictions_index: dict[str, int] = {}  # msno -> row index
+
 
 def get_cached_predictions() -> tuple[np.ndarray, list[str]] | None:
     """Get cached predictions if available."""
@@ -88,9 +92,16 @@ def load_features() -> pd.DataFrame:
         df = pd.read_csv(features_path)
         _model_cache["features"] = df
 
-        # Pre-compute and cache predictions for all members at load time
-        probs, feats = predict(df)
-        cache_predictions(probs, feats)
+        # Try to pre-compute predictions, but don't fail if features don't match
+        # (we can fall back to pre-computed predictions from CSV)
+        try:
+            probs, feats = predict(df)
+            cache_predictions(probs, feats)
+        except Exception as pred_err:
+            logger.warning(
+                f"Could not generate predictions from features (may have feature mismatch): {pred_err}"
+            )
+            logger.info("Will rely on pre-computed predictions from CSV instead")
 
         logger.info(f"Loaded {len(df):,} members from {features_path}")
         return df
@@ -262,6 +273,7 @@ def precompute_member_data() -> None:
 
     This is called once at startup after features are loaded.
     Pre-computes risk scores, tiers, and sorts by risk score.
+    Uses stacked_ensemble_predictions.csv if model predictions unavailable.
     """
     global _member_cache, _sorted_members, _tier_counts
 
@@ -270,12 +282,29 @@ def precompute_member_data() -> None:
         logger.warning("No features to precompute")
         return
 
+    # Try to get predictions from cache (model-generated)
     cached = get_cached_predictions()
-    if cached is None:
-        logger.warning("No predictions to precompute")
-        return
 
-    probs, feature_names = cached
+    if cached is None:
+        # Fall back to stacked ensemble predictions from CSV
+        logger.info("Using stacked_ensemble_predictions.csv for member risk scores")
+        predictions_df = load_predictions()
+        if predictions_df.empty:
+            logger.warning("No predictions available - cannot precompute member data")
+            return
+
+        # Merge predictions with features on msno
+        merged = features_df.merge(
+            predictions_df[["msno", "stacked_pred", "is_churn"]],
+            on="msno",
+            how="left",
+        )
+        probs = merged["stacked_pred"].fillna(0.5).values
+        feature_names = [
+            c for c in features_df.columns if c not in {"msno", "is_churn", "cutoff_ts", "window"}
+        ]
+    else:
+        probs, feature_names = cached
 
     # Get feature importance for risk factors (do once)
     importance_dict = {item["name"]: item["importance"] for item in get_feature_importance()}
@@ -398,3 +427,87 @@ def get_member_features(msno: str) -> dict[str, Any] | None:
         for k, v in row.items()
         if k not in drop_cols
     }
+
+
+def load_predictions() -> pd.DataFrame:
+    """Load pre-computed predictions from CSV.
+
+    Returns:
+        DataFrame with columns: msno, is_churn, xgb_pred, lgb_pred, cat_pred, stacked_pred
+    """
+    global _predictions_cache, _predictions_index
+
+    if _predictions_cache is not None:
+        return _predictions_cache
+
+    predictions_path = Path(settings.PREDICTIONS_PATH)
+    if not predictions_path.exists():
+        logger.warning(f"Predictions file not found: {predictions_path}")
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(predictions_path)
+        _predictions_cache = df
+
+        # Build index for O(1) lookup
+        _predictions_index = {msno: idx for idx, msno in enumerate(df["msno"])}
+
+        logger.info(f"Loaded {len(df):,} pre-computed predictions from {predictions_path}")
+        return df
+
+    except Exception as e:
+        logger.error(f"Failed to load predictions: {e}")
+        return pd.DataFrame()
+
+
+def get_prediction_by_msno(msno: str) -> dict | None:
+    """Get pre-computed prediction for a member.
+
+    Args:
+        msno: Member ID
+
+    Returns:
+        Dict with xgb_pred, lgb_pred, cat_pred, stacked_pred or None if not found
+    """
+    global _predictions_cache, _predictions_index
+
+    if _predictions_cache is None:
+        load_predictions()
+
+    if _predictions_cache is None or msno not in _predictions_index:
+        return None
+
+    idx = _predictions_index[msno]
+    row = _predictions_cache.iloc[idx]
+
+    return {
+        "xgb_pred": float(row["xgb_pred"]),
+        "lgb_pred": float(row["lgb_pred"]),
+        "cat_pred": float(row["cat_pred"]),
+        "stacked_pred": float(row["stacked_pred"]),
+        "is_churn": bool(row["is_churn"]) if pd.notna(row["is_churn"]) else None,
+    }
+
+
+def get_batch_predictions(msnos: list[str]) -> list[dict]:
+    """Get predictions for multiple members efficiently.
+
+    Args:
+        msnos: List of member IDs
+
+    Returns:
+        List of prediction dicts, preserving order. Missing members have found=False.
+    """
+    results = []
+    for msno in msnos:
+        pred = get_prediction_by_msno(msno)
+        if pred:
+            results.append({"msno": msno, "found": True, **pred})
+        else:
+            results.append({"msno": msno, "found": False})
+    return results
+
+
+def is_predictions_loaded() -> bool:
+    """Check if predictions are loaded in cache."""
+    return _predictions_cache is not None and not _predictions_cache.empty
