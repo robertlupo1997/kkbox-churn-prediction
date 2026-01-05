@@ -1,52 +1,32 @@
-// Backend API types
-export interface Member {
-  msno: string;
-  risk_score: number;
-  risk_tier: 'Low' | 'Medium' | 'High';
-  is_churn: boolean | null;
-  top_risk_factors: string[];
-  action_recommendation: string;
-}
+/**
+ * Re-export all types from backendService to maintain backward compatibility
+ * and provide a single source of truth for type definitions.
+ */
+export type {
+  Member,
+  MemberDetail,
+  MemberListResponse,
+  MemberQueryParams,
+  ActionRecommendation,
+  ModelMetrics,
+  FeatureImportanceItem,
+  FeatureImportanceResponse,
+  CalibrationPoint,
+  CalibrationData,
+  PredictionResult,
+  ShapValue,
+  ShapExplanation,
+  HealthResponse,
+} from './services/backendService';
 
-export interface ActionRecommendation {
-  category: string;
-  recommendation: string;
-  message: string;
-  urgency: string;
-  channels: string[];
-}
+export { ApiError } from './services/backendService';
 
-export interface MemberDetail {
-  msno: string;
-  risk_score: number;
-  risk_tier: 'Low' | 'Medium' | 'High';
-  is_churn: boolean | null;
-  features: Record<string, any>;
-  action: ActionRecommendation;
-}
-
-export interface MemberListResponse {
-  members: Member[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
+// Additional UI-specific types
 export interface Metric {
   name: string;
   value: number;
   benchmark?: number;
   description: string;
-}
-
-export interface ModelMetrics {
-  model_name: string;
-  log_loss: number;
-  auc: number;
-  brier_score: number | null;
-  ece: number | null;
-  training_samples: number | null;
-  validation_samples: number | null;
 }
 
 export interface FeatureImportance {
@@ -55,43 +35,18 @@ export interface FeatureImportance {
   description: string;
 }
 
-export interface FeatureImportanceItem {
-  name: string;
-  importance: number;
-  description: string | null;
-  rank: number;
-}
-
-export interface FeatureImportanceResponse {
-  features: FeatureImportanceItem[];
-}
-
 export interface ReliabilityPoint {
   mean_predicted: number;
   fraction_of_positives: number;
 }
 
-export interface CalibrationPoint {
-  mean_predicted: number;
-  fraction_of_positives: number;
-}
+// Risk tier type for convenience
+export type RiskTier = 'Low' | 'Medium' | 'High';
 
-export interface CalibrationData {
-  uncalibrated: CalibrationPoint[];
-  calibrated: CalibrationPoint[];
-}
-
-export interface ShapValue {
-  feature: string;
-  impact: number;
-}
-
-export interface ShapExplanation {
-  msno: string;
-  explanation: {
-    base_value: number;
-    shap_values: Record<string, number>;
-    top_risk_factors: ShapValue[];
-    top_protective_factors: ShapValue[];
-  };
+// KPI data interface for dashboard
+export interface KPIData {
+  total: string;
+  highRisk: string;
+  avgRisk: string;
+  revenueAtRisk: string;
 }

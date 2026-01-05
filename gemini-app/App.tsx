@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UserSearch, BarChart3, Target, Calculator, BookOpen, Menu, X, Sun, Moon, Loader2 } from 'lucide-react';
+import { LayoutDashboard, UserSearch, BarChart3, Target, Calculator, BookOpen, Menu, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QueryProvider } from './providers/QueryProvider';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import Dashboard from './components/Dashboard';
 import MemberLookup from './components/MemberLookup';
 import ModelPerformance from './components/ModelPerformance';
@@ -181,25 +183,29 @@ export default function App() {
   }, [isDark]);
 
   return (
-    <AppContext.Provider value={{
-      isDark,
-      toggleTheme: () => setIsDark(prev => !prev),
-      isLoading,
-      setLoading: setIsLoading
-    }}>
-      <HashRouter>
-        <AppContent />
-      </HashRouter>
-      <style>{`
-        @keyframes progress {
-          0% { transform: scaleX(0); }
-          50% { transform: scaleX(0.5); }
-          100% { transform: scaleX(1); }
-        }
-        .animate-progress {
-          animation: progress 1s infinite linear;
-        }
-      `}</style>
-    </AppContext.Provider>
+    <QueryProvider>
+      <AppContext.Provider value={{
+        isDark,
+        toggleTheme: () => setIsDark(prev => !prev),
+        isLoading,
+        setLoading: setIsLoading
+      }}>
+        <ErrorBoundary>
+          <HashRouter>
+            <AppContent />
+          </HashRouter>
+        </ErrorBoundary>
+        <style>{`
+          @keyframes progress {
+            0% { transform: scaleX(0); }
+            50% { transform: scaleX(0.5); }
+            100% { transform: scaleX(1); }
+          }
+          .animate-progress {
+            animation: progress 1s infinite linear;
+          }
+        `}</style>
+      </AppContext.Provider>
+    </QueryProvider>
   );
 }

@@ -1,46 +1,37 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Info, Book, Target, Loader2, AlertTriangle } from 'lucide-react';
-import { fetchMetrics, fetchCalibrationData } from '../services/backendService';
-import type { ModelMetrics, CalibrationData } from '../types';
+import { Info, Book, Target, Loader2 } from 'lucide-react';
+import { useMetrics, useCalibration } from '../hooks/useApi';
 import { useApp } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { Progress } from './ui/progress';
+import { QueryErrorFallback } from './ui/ErrorBoundary';
 
 const ModelPerformance: React.FC = () => {
   const { isDark } = useApp();
-  const [metrics, setMetrics] = useState<ModelMetrics | null>(null);
-  const [calibration, setCalibration] = useState<CalibrationData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const chartTextColor = isDark ? '#94a3b8' : '#64748b';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [metricsData, calibrationData] = await Promise.all([
-          fetchMetrics(),
-          fetchCalibrationData()
-        ]);
-        setMetrics(metricsData);
-        setCalibration(calibrationData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load performance data');
-        console.error('Failed to load performance data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Use TanStack Query hooks for data fetching
+  const {
+    data: metrics,
+    isLoading: metricsLoading,
+    error: metricsError,
+    refetch: refetchMetrics
+  } = useMetrics();
 
-    loadData();
-  }, []);
+  const {
+    data: calibration,
+    isLoading: calibrationLoading,
+    error: calibrationError,
+    refetch: refetchCalibration
+  } = useCalibration();
+
+  const loading = metricsLoading || calibrationLoading;
+  const error = metricsError || calibrationError;
 
   if (loading) {
     return (
@@ -66,17 +57,16 @@ const ModelPerformance: React.FC = () => {
   }
 
   if (error || !metrics || !calibration) {
+    const handleRetry = () => {
+      refetchMetrics();
+      refetchCalibration();
+    };
     return (
-      <Card className="glass p-10 rounded-[2.5rem] shadow-xl border-0">
-        <CardContent className="p-0 flex flex-col items-center justify-center space-y-4">
-          <AlertTriangle size={48} className="text-rose-500" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Failed to Load Data</h3>
-          <p className="text-slate-500 dark:text-slate-400">{error || 'No data available'}</p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <QueryErrorFallback
+        error={error || new Error('No data available')}
+        onRetry={handleRetry}
+        title="Failed to Load Performance Data"
+      />
     );
   }
 

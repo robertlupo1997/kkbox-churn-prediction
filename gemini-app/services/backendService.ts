@@ -1,10 +1,24 @@
 /**
  * Backend API service for KKBOX Churn Prediction
- * Handles all API calls to FastAPI backend at localhost:8000
+ * Handles all API calls to FastAPI backend
+ * Enhanced with AbortController support and typed error handling
  */
 
 const API_BASE = '/api';
 
+// Custom error class for API errors
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+// Type definitions
 export interface MemberQueryParams {
   limit?: number;
   offset?: number;
@@ -34,7 +48,7 @@ export interface MemberDetail {
   risk_score: number;
   risk_tier: 'Low' | 'Medium' | 'High';
   is_churn: boolean | null;
-  features: Record<string, any>;
+  features: Record<string, unknown>;
   action: ActionRecommendation;
 }
 
@@ -98,10 +112,64 @@ export interface ShapExplanation {
   };
 }
 
+export interface HealthResponse {
+  status: string;
+  model_loaded: boolean;
+  features_loaded: boolean;
+}
+
+/**
+ * Generic fetch wrapper with error handling and AbortController support
+ */
+async function apiFetch<T>(
+  url: string,
+  options: RequestInit = {},
+  signal?: AbortSignal
+): Promise<T> {
+  const fetchOptions: RequestInit = {
+    ...options,
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  };
+
+  try {
+    const response = await fetch(url, fetchOptions);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(
+        errorData.detail || `Request failed: ${response.statusText}`,
+        response.status,
+        errorData.code
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error; // Let TanStack Query handle abort errors
+    }
+    throw new ApiError(
+      error instanceof Error ? error.message : 'Network error',
+      0,
+      'NETWORK_ERROR'
+    );
+  }
+}
+
 /**
  * Fetch paginated list of members with risk scores
  */
-export async function fetchMembers(params?: MemberQueryParams): Promise<MemberListResponse> {
+export async function fetchMembers(
+  params?: MemberQueryParams,
+  signal?: AbortSignal
+): Promise<MemberListResponse> {
   const queryParams = new URLSearchParams();
 
   if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -110,84 +178,74 @@ export async function fetchMembers(params?: MemberQueryParams): Promise<MemberLi
   if (params?.min_risk !== undefined) queryParams.append('min_risk', params.min_risk.toString());
 
   const url = `${API_BASE}/members${queryParams.toString() ? `?${queryParams}` : ''}`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch members: ${response.statusText}`);
-  }
-
-  return response.json();
+  return apiFetch<MemberListResponse>(url, {}, signal);
 }
 
 /**
  * Fetch detailed information for a specific member
  */
-export async function fetchMember(msno: string): Promise<MemberDetail> {
-  const response = await fetch(`${API_BASE}/members/${msno}`);
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Member ${msno} not found`);
-    }
-    throw new Error(`Failed to fetch member: ${response.statusText}`);
-  }
-
-  return response.json();
+export async function fetchMember(
+  msno: string,
+  signal?: AbortSignal
+): Promise<MemberDetail> {
+  return apiFetch<MemberDetail>(
+    `${API_BASE}/members/${encodeURIComponent(msno)}`,
+    {},
+    signal
+  );
 }
 
 /**
  * Fetch model performance metrics
  */
-export async function fetchMetrics(): Promise<ModelMetrics> {
-  const response = await fetch(`${API_BASE}/metrics`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch metrics: ${response.statusText}`);
-  }
-
-  return response.json();
+export async function fetchMetrics(signal?: AbortSignal): Promise<ModelMetrics> {
+  return apiFetch<ModelMetrics>(`${API_BASE}/metrics`, {}, signal);
 }
 
 /**
  * Fetch feature importance rankings
  */
-export async function fetchFeatureImportance(): Promise<FeatureImportanceResponse> {
-  const response = await fetch(`${API_BASE}/features/importance`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch feature importance: ${response.statusText}`);
-  }
-
-  return response.json();
+export async function fetchFeatureImportance(
+  signal?: AbortSignal
+): Promise<FeatureImportanceResponse> {
+  return apiFetch<FeatureImportanceResponse>(
+    `${API_BASE}/features/importance`,
+    {},
+    signal
+  );
 }
 
 /**
  * Fetch calibration curve data
  */
-export async function fetchCalibrationData(): Promise<CalibrationData> {
-  const response = await fetch(`${API_BASE}/calibration`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch calibration data: ${response.statusText}`);
-  }
-
-  return response.json();
+export async function fetchCalibrationData(
+  signal?: AbortSignal
+): Promise<CalibrationData> {
+  return apiFetch<CalibrationData>(`${API_BASE}/calibration`, {}, signal);
 }
 
 /**
  * Upload predictions CSV file
  */
-export async function uploadPredictions(file: File): Promise<PredictionResult[]> {
+export async function uploadPredictions(
+  file: File,
+  signal?: AbortSignal
+): Promise<PredictionResult[]> {
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch(`${API_BASE}/predictions/upload`, {
     method: 'POST',
     body: formData,
+    signal,
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to upload predictions: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.detail || `Upload failed: ${response.statusText}`,
+      response.status
+    );
   }
 
   return response.json();
@@ -196,28 +254,20 @@ export async function uploadPredictions(file: File): Promise<PredictionResult[]>
 /**
  * Check API health status
  */
-export async function checkHealth(): Promise<{ status: string; model_loaded: boolean; features_loaded: boolean }> {
-  const response = await fetch(`${API_BASE}/health`);
-
-  if (!response.ok) {
-    throw new Error(`Health check failed: ${response.statusText}`);
-  }
-
-  return response.json();
+export async function checkHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  return apiFetch<HealthResponse>(`${API_BASE}/health`, {}, signal);
 }
 
 /**
  * Fetch SHAP explanation for a specific member
  */
-export async function fetchShapExplanation(msno: string): Promise<ShapExplanation> {
-  const response = await fetch(`${API_BASE}/shap/${encodeURIComponent(msno)}`);
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`SHAP explanation not available for ${msno}`);
-    }
-    throw new Error(`Failed to fetch SHAP explanation: ${response.statusText}`);
-  }
-
-  return response.json();
+export async function fetchShapExplanation(
+  msno: string,
+  signal?: AbortSignal
+): Promise<ShapExplanation> {
+  return apiFetch<ShapExplanation>(
+    `${API_BASE}/shap/${encodeURIComponent(msno)}`,
+    {},
+    signal
+  );
 }
