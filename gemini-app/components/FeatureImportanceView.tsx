@@ -1,44 +1,26 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { Search, Info, SlidersHorizontal, Loader2, AlertTriangle } from 'lucide-react';
-import { fetchFeatureImportance } from '../services/backendService';
-import type { FeatureImportanceItem } from '../types';
+import { Search, Info, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { useFeatureImportance } from '../hooks/useApi';
 import { useApp } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Skeleton } from './ui/skeleton';
 import { Progress } from './ui/progress';
+import { QueryErrorFallback } from './ui/ErrorBoundary';
 
 const FeatureImportanceView: React.FC = () => {
   const { isDark } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
-  const [features, setFeatures] = useState<FeatureImportanceItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const chartTextColor = isDark ? '#94a3b8' : '#64748b';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
-  useEffect(() => {
-    const loadFeatures = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetchFeatureImportance();
-        setFeatures(response.features);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load feature importance');
-        console.error('Failed to load feature importance:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadFeatures();
-  }, []);
+  // Use TanStack Query hook for data fetching
+  const { data: featuresResponse, isLoading: loading, error, refetch } = useFeatureImportance();
+  const features = featuresResponse?.features ?? [];
 
   const filteredFeatures = features
     .filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -69,16 +51,11 @@ const FeatureImportanceView: React.FC = () => {
 
   if (error) {
     return (
-      <Card className="glass p-10 rounded-[2.5rem] shadow-xl border-0">
-        <CardContent className="p-0 flex flex-col items-center justify-center space-y-4">
-          <AlertTriangle size={48} className="text-rose-500" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Failed to Load Data</h3>
-          <p className="text-slate-500 dark:text-slate-400">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <QueryErrorFallback
+        error={error}
+        onRetry={() => refetch()}
+        title="Failed to Load Feature Importance"
+      />
     );
   }
 

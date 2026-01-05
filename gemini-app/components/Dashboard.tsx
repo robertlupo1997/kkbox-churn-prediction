@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Users, AlertTriangle, Activity, DollarSign, ArrowUpRight, ArrowDownRight, Download, X, Search, Filter, Info, ChevronRight, Loader2 } from 'lucide-react';
-import { fetchMembers } from '../services/backendService';
-import { Member } from '../types';
+import { useMembers } from '../hooks/useApi';
+import type { Member } from '../types';
 import { useApp } from '../App';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
@@ -10,6 +10,7 @@ import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Progress } from './ui/progress';
+import { QueryErrorFallback } from './ui/ErrorBoundary';
 
 const COLORS = ['#6366f1', '#f59e0b', '#ef4444'];
 
@@ -75,33 +76,14 @@ const Dashboard: React.FC = () => {
   const { isDark } = useApp();
   const [selectedRange, setSelectedRange] = useState<{range: string, min: number, max: number} | null>(null);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [totalMembers, setTotalMembers] = useState(0);
 
   const chartTextColor = isDark ? '#94a3b8' : '#64748b';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
-  // Load members from API on mount
-  useEffect(() => {
-    const loadMembers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetchMembers({ limit: 1000 });
-        setMembers(response.members);
-        setTotalMembers(response.total);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load members');
-        console.error('Failed to load members:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMembers();
-  }, []);
+  // Load members from API using TanStack Query
+  const { data: membersResponse, isLoading: loading, error, refetch } = useMembers({ limit: 1000 });
+  const members = membersResponse?.members ?? [];
+  const totalMembers = membersResponse?.total ?? 0;
 
   // Calculate KPI values from real data
   const kpiData = useMemo(() => {
@@ -208,16 +190,11 @@ const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <Card className="glass p-10 rounded-[2.5rem] shadow-xl">
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <AlertTriangle size={48} className="text-rose-500" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Failed to Load Data</h3>
-          <p className="text-slate-500 dark:text-slate-400">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </div>
-      </Card>
+      <QueryErrorFallback
+        error={error}
+        onRetry={() => refetch()}
+        title="Failed to Load Dashboard Data"
+      />
     );
   }
 

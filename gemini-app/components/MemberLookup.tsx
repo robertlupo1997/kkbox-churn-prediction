@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Loader2, AlertCircle, UserSearch, Sparkles, BrainCircuit } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { fetchMember, fetchShapExplanation, ShapExplanation } from '../services/backendService';
+import { useMember, useShapExplanation } from '../hooks/useApi';
 import { getRiskExplanation } from '../services/geminiService';
-import { MemberDetail } from '../types';
 import { useApp } from '../App';
 import ShapWaterfall from './ShapWaterfall';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -16,50 +15,63 @@ import { Skeleton } from './ui/skeleton';
 const MemberLookup: React.FC = () => {
   const { setLoading: setGlobalLoading } = useApp();
   const [searchId, setSearchId] = useState('');
-  const [selectedMember, setSelectedMember] = useState<MemberDetail | null>(null);
+  const [searchedMsno, setSearchedMsno] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
-  const [shapData, setShapData] = useState<ShapExplanation | null>(null);
-  const [localLoading, setLocalLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  // Use TanStack Query hooks for data fetching
+  const {
+    data: selectedMember,
+    isLoading: memberLoading,
+    error: memberError,
+    isFetching: memberFetching
+  } = useMember(searchedMsno);
+
+  const {
+    data: shapData,
+    isLoading: shapLoading
+  } = useShapExplanation(searchedMsno);
+
+  const localLoading = memberLoading || memberFetching || shapLoading || isLoadingExplanation;
+  const error = memberError?.message || null;
+
+  // Update global loading state
+  useEffect(() => {
+    setGlobalLoading(localLoading);
+  }, [localLoading, setGlobalLoading]);
+
+  // Fetch Gemini explanation when member data is loaded
+  useEffect(() => {
+    if (selectedMember && !explanation) {
+      const fetchExplanation = async () => {
+        setIsLoadingExplanation(true);
+        try {
+          const riskText = await getRiskExplanation({
+            msno: selectedMember.msno,
+            risk_score: selectedMember.risk_score,
+            risk_tier: selectedMember.risk_tier,
+            is_churn: selectedMember.is_churn,
+            top_risk_factors: [],
+            action_recommendation: selectedMember.action.recommendation
+          });
+          setExplanation(riskText || null);
+        } catch (err) {
+          console.warn('Failed to get AI explanation:', err);
+          setExplanation(null);
+        } finally {
+          setIsLoadingExplanation(false);
+        }
+      };
+      fetchExplanation();
+    }
+  }, [selectedMember, explanation]);
+
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      setLocalLoading(true);
-      setGlobalLoading(true);
-      setError(null);
-
-      // Fetch member details from API
-      const memberData = await fetchMember(searchId.trim());
-      setSelectedMember(memberData);
-
-      // Fetch SHAP explanation
-      try {
-        const shap = await fetchShapExplanation(searchId.trim());
-        setShapData(shap);
-      } catch (shapErr) {
-        console.warn('SHAP explanation not available:', shapErr);
-        setShapData(null);
-      }
-
-      // Get Gemini AI explanation
-      const riskText = await getRiskExplanation({
-        msno: memberData.msno,
-        risk_score: memberData.risk_score,
-        risk_tier: memberData.risk_tier,
-        is_churn: memberData.is_churn,
-        top_risk_factors: [],
-        action_recommendation: memberData.action.recommendation
-      });
-      setExplanation(riskText || null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch member');
-      setSelectedMember(null);
-      setExplanation(null);
-      setShapData(null);
-    } finally {
-      setLocalLoading(false);
-      setGlobalLoading(false);
+    const trimmedId = searchId.trim();
+    if (trimmedId) {
+      setExplanation(null); // Reset explanation for new search
+      setSearchedMsno(trimmedId);
     }
   };
 
