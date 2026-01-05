@@ -36,7 +36,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    """Load model and features on startup."""
+    """Load model, features, and predictions on startup."""
     logger.info("Starting KKBOX Churn API...")
 
     try:
@@ -56,10 +56,20 @@ async def startup_event():
                 "Please ensure eval/app_features.csv exists."
             )
 
+        # Load pre-computed predictions for batch lookups
+        predictions_df = model_service.load_predictions()
+        if not predictions_df.empty:
+            logger.info(f"Loaded {len(predictions_df):,} pre-computed predictions")
+
         # Load metrics
         metrics = model_service.load_metrics()
         if metrics:
             logger.info("Training metrics loaded successfully")
+
+        # Load calibration data
+        calibration = model_service.load_calibration_data()
+        if calibration:
+            logger.info("Calibration metrics loaded successfully")
 
         # Load rules
         from api.services import rules_service
