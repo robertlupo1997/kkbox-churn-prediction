@@ -1,3 +1,4 @@
+# Ignore large data directories
 kkbox-churn-prediction-challenge/
 data/
 venv/
@@ -5,5 +6,29 @@ venv/
 __pycache__/
 *.pyc
 .git/
-eval/
-models/
+
+# Ignore most eval files but keep app_features.csv
+eval/*
+!eval/app_features.csv
+
+# Ignore most model files but keep production files
+models/*
+!models/xgb.json
+!models/training_metrics.json
+!models/calibration_metrics.json
+
+# Ignore thoughts and internal docs
+thoughts/
+docs/internal/
+
+# Ignore test fixtures (regenerated)
+tests/fixtures/
+
+# Ignore IDE and local settings
+.idea/
+.vscode/
+.claude/
+
+# Ignore local notes
+*.log
+*.tmp

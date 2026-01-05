@@ -1,3 +1,14 @@
+---
+title: KKBOX Churn Prediction
+emoji: "🎵"
+colorFrom: purple
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # KKBOX Churn Prediction
 
 > **0.97 AUC with honest temporal validation** - A production-ready churn prediction pipeline achieving near-winner performance without data leakage.
