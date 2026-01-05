@@ -1,7 +1,24 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Calculator, TrendingUp, DollarSign, Users, Target, BarChart as ChartIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Slider } from './ui/slider';
+
+// Zod schema for form validation
+const roiFormSchema = z.object({
+  subs: z.number().min(10000).max(1000000),
+  arpu: z.number().min(1).max(10000),
+  churn: z.number().min(0.5).max(25),
+  reduction: z.number().min(1).max(50)
+});
+
+type ROIFormData = z.infer<typeof roiFormSchema>;
 
 const CustomROITooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -24,10 +41,20 @@ const CustomROITooltip = ({ active, payload, label }: any) => {
 };
 
 const ROICalculator: React.FC = () => {
-  const [subs, setSubs] = useState(100000);
-  const [arpu, setArpu] = useState(149);
-  const [churn, setChurn] = useState(5.5);
-  const [reduction, setReduction] = useState(15);
+  const { watch, setValue } = useForm<ROIFormData>({
+    resolver: zodResolver(roiFormSchema),
+    defaultValues: {
+      subs: 100000,
+      arpu: 149,
+      churn: 5.5,
+      reduction: 15
+    }
+  });
+
+  const subs = watch('subs');
+  const arpu = watch('arpu');
+  const churn = watch('churn');
+  const reduction = watch('reduction');
 
   const results = useMemo(() => {
     const monthlyChurnCount = subs * (churn / 100);
@@ -61,73 +88,85 @@ const ROICalculator: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass p-10 rounded-[3rem] shadow-xl shadow-slate-200/50 dark:shadow-none">
+      <Card className="glass p-10 rounded-[3rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           <div className="space-y-8">
-            <h3 className="text-2xl font-bold flex items-center space-x-3 text-slate-900 dark:text-white">
-               <Calculator className="text-indigo-600" />
-               <span>Simulated Parameters</span>
-            </h3>
-            <div className="space-y-8">
-              <label className="block">
+            <CardHeader className="p-0">
+              <CardTitle className="text-2xl flex items-center space-x-3">
+                 <Calculator className="text-indigo-600" />
+                 <span>Simulated Parameters</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 space-y-8">
+              <div className="block">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Total Subscriber Base</span>
+                  <Label className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Total Subscriber Base</Label>
                   <span className="text-indigo-600 dark:text-indigo-400 font-black text-xl">{subs.toLocaleString()}</span>
                 </div>
-                <input
-                  type="range" min="10000" max="1000000" step="10000"
-                  className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  value={subs} onChange={(e) => setSubs(Number(e.target.value))}
+                <Slider
+                  value={[subs]}
+                  min={10000}
+                  max={1000000}
+                  step={10000}
+                  onValueChange={(value) => setValue('subs', value[0])}
+                  className="w-full"
                 />
-              </label>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <label className="block">
-                  <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Monthly ARPU (NTD)</span>
+                <div className="block">
+                  <Label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Monthly ARPU (NTD)</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={16} />
-                    <input
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 z-10" size={16} />
+                    <Input
                       type="number"
-                      className="w-full pl-10 pr-4 py-4 bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 font-black text-slate-700 dark:text-slate-200 shadow-inner transition-all"
-                      value={arpu} onChange={(e) => setArpu(Number(e.target.value))}
+                      className="w-full pl-10 pr-4 py-4 h-auto bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 font-black text-slate-700 dark:text-slate-200 shadow-inner"
+                      value={arpu}
+                      onChange={(e) => setValue('arpu', Number(e.target.value))}
                     />
                   </div>
-                </label>
-                <label className="block">
-                  <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Monthly Churn (%)</span>
+                </div>
+                <div className="block">
+                  <Label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">Monthly Churn (%)</Label>
                   <div className="flex items-center space-x-3 h-[52px]">
-                    <input
-                      type="range" min="0.5" max="25" step="0.1"
-                      className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      value={churn} onChange={(e) => setChurn(Number(e.target.value))}
+                    <Slider
+                      value={[churn]}
+                      min={0.5}
+                      max={25}
+                      step={0.1}
+                      onValueChange={(value) => setValue('churn', value[0])}
+                      className="flex-1"
                     />
                     <span className="text-indigo-600 dark:text-indigo-400 font-black min-w-[3.5rem] text-lg">{churn}%</span>
                   </div>
-                </label>
+                </div>
               </div>
 
-              <label className="block p-6 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20">
+              <Card className="p-6 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-black text-emerald-900 dark:text-emerald-100 uppercase tracking-widest flex items-center">
+                  <Label className="text-sm font-black text-emerald-900 dark:text-emerald-100 uppercase tracking-widest flex items-center">
                     <Target size={16} className="mr-2" /> Model Precision Impact
-                  </span>
+                  </Label>
                   <span className="text-emerald-600 dark:text-emerald-400 font-black text-xl">{reduction}% Saving</span>
                 </div>
-                <input
-                  type="range" min="1" max="50" step="1"
-                  className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                  value={reduction} onChange={(e) => setReduction(Number(e.target.value))}
+                <Slider
+                  value={[reduction]}
+                  min={1}
+                  max={50}
+                  step={1}
+                  onValueChange={(value) => setValue('reduction', value[0])}
+                  className="w-full [&_[role=slider]]:bg-emerald-500"
                 />
-              </label>
-            </div>
+              </Card>
+            </CardContent>
           </div>
 
           <div className="space-y-8">
-            <div className="bg-slate-900 dark:bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+            <Card className="bg-slate-900 dark:bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group border-0">
               <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-700">
                 <TrendingUp size={140} />
               </div>
-              <div className="relative z-10 space-y-10">
+              <CardContent className="p-0 relative z-10 space-y-10">
                 <div>
                   <p className="text-indigo-300 text-[10px] font-black uppercase tracking-[0.2em] mb-3">Projected Annual Saved Revenue</p>
                   <p className="text-6xl font-black tracking-tighter text-indigo-50 leading-none">${results.yearlySavings.toLocaleString()}</p>
@@ -150,15 +189,17 @@ const ROICalculator: React.FC = () => {
                     <p className="text-[10px] text-slate-500 font-bold">recovered monthly</p>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="bg-white/40 dark:bg-slate-900/40 border border-white/60 dark:border-slate-800/60 p-8 rounded-[3rem] shadow-xl">
-               <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8 flex items-center space-x-2">
+            <Card className="bg-white/40 dark:bg-slate-900/40 border border-white/60 dark:border-slate-800/60 p-8 rounded-[3rem] shadow-xl">
+              <CardHeader className="p-0 pb-8">
+                <CardTitle className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
                   <ChartIcon size={14} className="text-indigo-600" />
                   <span>Before vs After Churn Impact</span>
-               </h4>
-               <div className="h-48 w-full">
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <XAxis dataKey="name" fontSize={10} fontWeight={900} tickLine={false} axisLine={false} tick={{fill: '#94a3b8'}} />
@@ -171,11 +212,11 @@ const ROICalculator: React.FC = () => {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-               </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

@@ -5,6 +5,12 @@ import { Search, Info, SlidersHorizontal, Loader2, AlertTriangle } from 'lucide-
 import { fetchFeatureImportance } from '../services/backendService';
 import type { FeatureImportanceItem } from '../types';
 import { useApp } from '../App';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Skeleton } from './ui/skeleton';
+import { Progress } from './ui/progress';
 
 const FeatureImportanceView: React.FC = () => {
   const { isDark } = useApp();
@@ -40,28 +46,39 @@ const FeatureImportanceView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <Loader2 size={48} className="animate-spin text-indigo-600" />
-        <p className="text-slate-500 dark:text-slate-400 font-medium">Loading feature importance...</p>
+      <div className="space-y-8 pb-12">
+        <div>
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <Card className="glass p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-12 w-96 rounded-2xl" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+            <Skeleton className="lg:col-span-3 h-[750px] rounded-[2.5rem]" />
+            <div className="lg:col-span-2 space-y-4">
+              {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-32 rounded-[2rem]" />)}
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="glass p-10 rounded-[2.5rem] shadow-xl">
-        <div className="flex flex-col items-center justify-center space-y-4">
+      <Card className="glass p-10 rounded-[2.5rem] shadow-xl border-0">
+        <CardContent className="p-0 flex flex-col items-center justify-center space-y-4">
           <AlertTriangle size={48} className="text-rose-500" />
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">Failed to Load Data</h3>
           <p className="text-slate-500 dark:text-slate-400">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all"
-          >
+          <Button onClick={() => window.location.reload()}>
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -74,25 +91,28 @@ const FeatureImportanceView: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass p-8 rounded-[2.5rem] shadow-xl shadow-xl shadow-slate-200/50 dark:shadow-none">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
-          <div className="flex items-center space-x-3">
-             <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-                <SlidersHorizontal size={20} />
-             </div>
-             <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Predictor Rankings</h3>
+      <Card className="glass p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-0">
+        <CardHeader className="p-0 pb-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <CardTitle className="text-2xl flex items-center space-x-3">
+               <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                  <SlidersHorizontal size={20} />
+               </div>
+               <span>Predictor Rankings</span>
+            </CardTitle>
+            <div className="relative w-full md:w-96 group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-10" size={20} />
+              <Input
+                type="text"
+                placeholder="Search features (e.g. 'auto', 'secs')..."
+                className="w-full pl-14 pr-6 py-4 h-auto bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 focus:border-indigo-500 font-bold text-sm shadow-inner"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="relative w-full md:w-96 group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-            <input
-              type="text"
-              placeholder="Search features (e.g. 'auto', 'secs')..."
-              className="w-full pl-14 pr-6 py-4 bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 focus:border-indigo-500 outline-none transition-all font-bold text-sm shadow-inner"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
+        </CardHeader>
+        <CardContent className="p-0">
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-3 h-[750px] w-full min-w-0 bg-white/40 dark:bg-slate-950/40 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-inner overflow-hidden">
@@ -153,19 +173,17 @@ const FeatureImportanceView: React.FC = () => {
             </div>
             <div className="space-y-4 max-h-[680px] overflow-y-auto pr-3 custom-scrollbar">
               {filteredFeatures.length > 0 ? filteredFeatures.map((f, i) => (
-                <div key={i} className="group p-6 bg-white/60 dark:bg-slate-900/60 rounded-[2rem] border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                <Card key={i} className="group p-6 bg-white/60 dark:bg-slate-900/60 rounded-[2rem] border border-slate-50 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                   <div className="flex justify-between items-start mb-2">
                     <p className="text-sm font-black text-indigo-600 dark:text-indigo-400 tracking-tight">{f.name}</p>
-                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-600">RANK #{f.rank}</span>
+                    <Badge variant="secondary" className="text-[10px] font-black">RANK #{f.rank}</Badge>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-4">{f.description || 'No description available'}</p>
                   <div className="flex items-center space-x-3">
-                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 dark:from-indigo-500 dark:to-indigo-300 rounded-full transition-all duration-1000" style={{ width: `${f.importance * 100}%` }} />
-                    </div>
+                    <Progress value={f.importance * 100} className="flex-1 h-1.5" indicatorClassName="bg-gradient-to-r from-indigo-400 to-indigo-600 dark:from-indigo-500 dark:to-indigo-300" />
                     <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black font-mono">{(f.importance * 100).toFixed(1)}%</span>
                   </div>
-                </div>
+                </Card>
               )) : (
                 <div className="p-20 text-center space-y-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-slate-800">
                    <Search size={40} className="mx-auto text-slate-200 dark:text-slate-700" />
@@ -175,7 +193,8 @@ const FeatureImportanceView: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

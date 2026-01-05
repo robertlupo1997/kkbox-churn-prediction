@@ -5,6 +5,10 @@ import { Info, Book, Target, Loader2, AlertTriangle } from 'lucide-react';
 import { fetchMetrics, fetchCalibrationData } from '../services/backendService';
 import type { ModelMetrics, CalibrationData } from '../types';
 import { useApp } from '../App';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Skeleton } from './ui/skeleton';
+import { Progress } from './ui/progress';
 
 const ModelPerformance: React.FC = () => {
   const { isDark } = useApp();
@@ -40,28 +44,39 @@ const ModelPerformance: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <Loader2 size={48} className="animate-spin text-indigo-600" />
-        <p className="text-slate-500 dark:text-slate-400 font-medium">Loading performance metrics...</p>
+      <div className="space-y-8 pb-12">
+        <div>
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <Card className="glass p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-0">
+          <Skeleton className="h-8 w-48 mb-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <Skeleton className="h-[400px] w-full rounded-[2rem]" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-[2rem]" />)}
+              </div>
+              <Skeleton className="h-64 rounded-[2.5rem]" />
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }
 
   if (error || !metrics || !calibration) {
     return (
-      <div className="glass p-10 rounded-[2.5rem] shadow-xl">
-        <div className="flex flex-col items-center justify-center space-y-4">
+      <Card className="glass p-10 rounded-[2.5rem] shadow-xl border-0">
+        <CardContent className="p-0 flex flex-col items-center justify-center space-y-4">
           <AlertTriangle size={48} className="text-rose-500" />
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">Failed to Load Data</h3>
           <p className="text-slate-500 dark:text-slate-400">{error || 'No data available'}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all"
-          >
+          <Button onClick={() => window.location.reload()}>
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -74,11 +89,14 @@ const ModelPerformance: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none">
-        <h3 className="text-2xl font-black mb-6 flex items-center space-x-3 text-slate-900 dark:text-white">
-          <Target size={24} className="text-indigo-600" />
-          <span>Reliability & Calibration</span>
-        </h3>
+      <Card className="glass p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-0">
+        <CardHeader className="p-0 pb-6">
+          <CardTitle className="text-2xl flex items-center space-x-3">
+            <Target size={24} className="text-indigo-600" />
+            <span>Reliability & Calibration</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div className="space-y-6 min-w-0">
@@ -142,18 +160,16 @@ const ModelPerformance: React.FC = () => {
           <div className="space-y-8">
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: 'Log Loss', val: metrics.log_loss.toFixed(4), color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-                { label: 'AUC Score', val: metrics.auc.toFixed(4), color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/30' },
-                { label: 'ECE Error', val: metrics.ece?.toFixed(4) || 'N/A', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
-                { label: 'Brier Score', val: metrics.brier_score?.toFixed(4) || 'N/A', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' }
+                { label: 'Log Loss', val: metrics.log_loss.toFixed(4), color: 'text-indigo-600 dark:text-indigo-400', indicatorClass: 'bg-indigo-500', progress: Math.max(0, 100 - metrics.log_loss * 100) },
+                { label: 'AUC Score', val: metrics.auc.toFixed(4), color: 'text-violet-600 dark:text-violet-400', indicatorClass: 'bg-violet-500', progress: metrics.auc * 100 },
+                { label: 'ECE Error', val: metrics.ece?.toFixed(4) || 'N/A', color: 'text-emerald-600 dark:text-emerald-400', indicatorClass: 'bg-emerald-500', progress: metrics.ece ? Math.max(0, 100 - metrics.ece * 100) : 70 },
+                { label: 'Brier Score', val: metrics.brier_score?.toFixed(4) || 'N/A', color: 'text-amber-600 dark:text-amber-400', indicatorClass: 'bg-amber-500', progress: metrics.brier_score ? Math.max(0, 100 - metrics.brier_score * 100) : 70 }
               ].map((m, i) => (
-                <div key={i} className="p-7 bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow group">
+                <Card key={i} className="p-7 bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow group">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{m.label}</p>
                   <p className={`text-4xl font-black ${m.color} tracking-tighter`}>{m.val}</p>
-                  <div className="mt-4 w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                     <div className={`h-full ${m.bg.replace('bg-', 'bg-')} opacity-60`} style={{width: '70%'}} />
-                  </div>
-                </div>
+                  <Progress value={m.progress} className="mt-4 h-1" indicatorClassName={m.indicatorClass} />
+                </Card>
               ))}
             </div>
 
@@ -204,7 +220,8 @@ const ModelPerformance: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
