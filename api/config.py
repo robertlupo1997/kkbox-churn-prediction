@@ -16,8 +16,14 @@ class Settings(BaseSettings):
     CALIBRATION_PATH: str = "models/calibration_metrics.json"
     PREDICTIONS_PATH: str = "eval/stacked_ensemble_predictions.csv"
 
-    # CORS settings
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # CORS settings - includes HF Spaces and local development
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:7860",
+        "http://127.0.0.1:7860",
+        "https://*.hf.space",  # Hugging Face Spaces
+    ]
 
     # API settings
     API_TITLE: str = "KKBOX Churn API"

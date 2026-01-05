@@ -1,40 +1,68 @@
-# KKBOX Churn Prediction - Production Docker Image
-FROM python:3.11-slim
+# =============================================================================
+# KKBOX Churn Prediction - Multi-stage Dockerfile for Hugging Face Spaces
+# Stage 1: Build React frontend
+# Stage 2: Python runtime with FastAPI serving static files
+# =============================================================================
 
-# Set working directory
+# -----------------------------------------------------------------------------
+# Stage 1: Build Frontend
+# -----------------------------------------------------------------------------
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy package files first for better layer caching
+COPY gemini-app/package.json gemini-app/package-lock.json* ./
+
+# Install dependencies
+RUN npm ci --legacy-peer-deps
+
+# Copy frontend source
+COPY gemini-app/ ./
+
+# Build production bundle
+RUN npm run build
+
+# -----------------------------------------------------------------------------
+# Stage 2: Python Runtime
+# -----------------------------------------------------------------------------
+FROM python:3.11-slim AS runtime
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=7860
+
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    make \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt requirements-dev.txt ./
+# Copy API requirements and install Python dependencies
+COPY api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
-COPY . .
+# Copy application code
+COPY api/ ./api/
+COPY rules.yaml ./
 
-# Install project in development mode
-RUN pip install -e .
+# Copy model and data files (these must be committed for HF Spaces)
+COPY models/xgb.json ./models/
+COPY models/training_metrics.json ./models/
+COPY models/calibration_metrics.json ./models/
+COPY eval/app_features.csv ./eval/
 
-# Create necessary directories
-RUN mkdir -p data models features eval plots logs
+# Copy built frontend from Stage 1
+COPY --from=frontend-builder /app/frontend/dist ./static
 
-# Set Python path
-ENV PYTHONPATH=/app:$PYTHONPATH
-
-# Default command runs the full pipeline
-CMD ["make", "all"]
+# Expose port for Hugging Face Spaces
+EXPOSE 7860
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import pandas, duckdb, sklearn, xgboost; print('All dependencies available')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/api/health')" || exit 1
 
-# Labels for better container management
-LABEL maintainer="Portfolio Showcase"
-LABEL version="1.0.0"
-LABEL description="KKBOX churn prediction with temporal safeguards"
+# Run the application
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
