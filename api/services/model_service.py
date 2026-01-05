@@ -401,6 +401,21 @@ def get_member_by_msno(msno: str) -> dict | None:
     return _member_cache.get(msno)
 
 
+def _convert_to_native(value: Any) -> Any:
+    """Convert numpy/pandas types to Python native types for JSON serialization."""
+    if isinstance(value, np.integer | np.int64 | np.int32):
+        return int(value)
+    elif isinstance(value, np.floating | np.float64 | np.float32):
+        return float(value)
+    elif isinstance(value, np.bool_):
+        return bool(value)
+    elif isinstance(value, np.ndarray):
+        return value.tolist()
+    elif pd.isna(value):
+        return None
+    return value
+
+
 def get_member_features(msno: str) -> dict[str, Any] | None:
     """Get full feature values for a member.
 
@@ -422,11 +437,7 @@ def get_member_features(msno: str) -> dict[str, Any] | None:
     row = features_df.iloc[idx]
 
     drop_cols = {"msno", "is_churn", "cutoff_ts", "window"}
-    return {
-        k: float(v) if isinstance(v, int | float) else v
-        for k, v in row.items()
-        if k not in drop_cols
-    }
+    return {k: _convert_to_native(v) for k, v in row.items() if k not in drop_cols}
 
 
 def load_predictions() -> pd.DataFrame:
