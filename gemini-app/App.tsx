@@ -3,6 +3,8 @@ import { HashRouter, Routes, Route, useLocation } from "react-router-dom"
 import { QueryProvider } from "./providers/QueryProvider"
 import { ErrorBoundary } from "./components/ui/ErrorBoundary"
 import { AppSidebar } from "./components/AppSidebar"
+import { CommandMenu } from "./components/CommandMenu"
+import { Toaster } from "@/components/ui/sonner"
 import {
   SidebarProvider,
   SidebarInset,
@@ -78,10 +80,13 @@ function AppContent() {
       <AppSidebar isDark={isDark} toggleTheme={toggleTheme} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <AppBreadcrumb />
+          <div className="flex items-center justify-between w-full px-4">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              <AppBreadcrumb />
+            </div>
+            <CommandMenu isDark={isDark} toggleTheme={toggleTheme} />
           </div>
         </header>
 
@@ -136,6 +141,7 @@ export default function App() {
             <AppContent />
           </HashRouter>
         </ErrorBoundary>
+        <Toaster richColors position="bottom-right" />
       </AppContext.Provider>
     </QueryProvider>
   )
