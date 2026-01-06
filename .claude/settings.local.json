@@ -20,7 +20,16 @@
       "Bash(cat:*)",
       "Bash(git fetch:*)",
       "Bash(git -C \"C:\\\\Users\\\\Trey\\\\Downloads\\\\KKBOX_PROJECT\" push origin main)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Skill(create_plan)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(docker build:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
