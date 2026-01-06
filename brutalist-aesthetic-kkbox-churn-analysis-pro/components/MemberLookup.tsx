@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Loader2, Sparkles, BrainCircuit, Zap, ArrowRight, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Search, Loader2, Sparkles, Zap, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { sampleMembers } from '../data/realData';
-import { getRiskExplanation } from '../services/geminiService';
-import { getMemberPrediction, generateMockSHAPFactors, checkAPIStatus, type PredictionResponse, type SHAPFactor } from '../services/apiService';
+import { getMemberPrediction, generateMockSHAPFactors, checkAPIStatus, type SHAPFactor } from '../services/apiService';
 import { SampleMember } from '../types';
 import ShapWaterfall from './ShapWaterfall';
 
@@ -39,7 +38,6 @@ const MemberLookup: React.FC = () => {
 
   const [searchId, setSearchId] = useState(initialId);
   const [selectedMember, setSelectedMember] = useState<SampleMember | null>(null);
-  const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [riskFactors, setRiskFactors] = useState<SHAPFactor[]>([]);
@@ -92,34 +90,6 @@ const MemberLookup: React.FC = () => {
         setRiskFactors(mockFactors.riskFactors);
         setProtectiveFactors(mockFactors.protectiveFactors);
       }
-
-      // Get AI explanation
-      const memberForExplanation = {
-        msno: found.msno,
-        risk_score: found.risk_score,
-        risk_tier: found.risk_tier,
-        is_churn: found.is_churn,
-        city: found.city,
-        bd: found.age,
-        gender: 'unknown',
-        registered_via: 0,
-        registration_init_time: '',
-        payment_method_id: 0,
-        payment_plan_days: 30,
-        plan_list_price: 149,
-        actual_amount_paid: 149,
-        is_auto_renew: found.is_auto_renew ? 1 : 0,
-        last_transaction_date: 'N/A',
-        num_25: 0,
-        num_50: 0,
-        num_75: 0,
-        num_985: 0,
-        num_100: 0,
-        num_unq: 0,
-        total_secs: found.total_secs_30d,
-      };
-      const riskText = await getRiskExplanation(memberForExplanation);
-      setExplanation(riskText || null);
     } else {
       setSelectedMember(null);
       setSearchError(`Member "${id}" not found. Try searching for a partial ID from the sample data.`);
@@ -239,14 +209,33 @@ const MemberLookup: React.FC = () => {
               <div className="brutalist-border dark:border-white bg-white dark:bg-zinc-900 p-8 brutalist-shadow min-h-[300px]">
                 <div className="flex items-center space-x-2 mb-8">
                   <div className="bg-brand p-1 brutalist-border dark:border-white"><Sparkles size={16} /></div>
-                  <h3 className="text-xl font-black uppercase tracking-tight dark:text-white">AI Strategic Synthesis</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tight dark:text-white">Risk Analysis</h3>
                 </div>
 
                 <div className="prose prose-sm max-w-none text-black dark:text-white font-medium leading-relaxed">
-                  {explanation ? (
-                    <div className="whitespace-pre-wrap">{explanation}</div>
-                  ) : (
-                    <p className="italic opacity-30">Awaiting data fetch...</p>
+                  <p className="mb-4">
+                    This member has a <strong>{selectedMember.risk_score}%</strong> probability of churning,
+                    placing them in the <strong>{selectedMember.risk_tier} Risk</strong> tier.
+                  </p>
+                  {riskFactors.length > 0 && (
+                    <div className="mb-4">
+                      <p className="font-bold text-red-600 dark:text-red-400 mb-2">Top Risk Drivers:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {riskFactors.slice(0, 3).map((f, i) => (
+                          <li key={i}><strong>{f.feature}</strong>: {f.description}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {protectiveFactors.length > 0 && (
+                    <div>
+                      <p className="font-bold text-green-600 dark:text-green-400 mb-2">Protective Factors:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {protectiveFactors.slice(0, 3).map((f, i) => (
+                          <li key={i}><strong>{f.feature}</strong>: {f.description}</li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
               </div>
