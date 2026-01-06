@@ -155,8 +155,22 @@ def run_feature_pipeline(
     if use_synthetic:
         data_paths, temp_dir = prepare_synthetic_data()
     else:
-        # Production data paths (would be provided)
-        raise NotImplementedError("Production data paths not configured")
+        # Production data paths for real KKBOX Kaggle data
+        data_root = Path("kkbox-churn-prediction-challenge/data/churn_comp_refresh")
+        members_path = Path("kkbox-churn-prediction-challenge/members_v3.csv")
+
+        if not data_root.exists():
+            raise FileNotFoundError(
+                f"KKBOX data directory not found: {data_root}\n"
+                "Download the Kaggle dataset and extract to 'kkbox-churn-prediction-challenge/'"
+            )
+
+        data_paths = {
+            "transactions_path": str(data_root / "transactions_v2.csv"),
+            "user_logs_path": str(data_root / "user_logs_v2.csv"),
+            "members_path": str(members_path),
+            "train_path": str(data_root / "train_v2.csv"),
+        }
 
     # Ensure output directory exists
     Path(output_file).parent.mkdir(exist_ok=True, parents=True)
