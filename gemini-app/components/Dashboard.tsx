@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import {
   Bar,
   BarChart,
@@ -24,8 +24,10 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react"
+import { toast } from "sonner"
 import { useMembers } from "../hooks/useApi"
 import type { Member } from "../types"
+import { EnhancedKPICard } from "./EnhancedKPICard"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
@@ -75,68 +77,6 @@ const pieChartConfig = {
   },
 } satisfies ChartConfig
 
-interface KPICardProps {
-  label: string
-  value: string | number
-  icon: React.ReactNode
-  trend: string
-  isPositive: boolean
-  loading?: boolean
-}
-
-const KPICard: React.FC<KPICardProps> = ({
-  label,
-  value,
-  icon,
-  trend,
-  isPositive,
-  loading,
-}) => {
-  if (loading) {
-    return (
-      <Card className="relative overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-4" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-32 mb-1" />
-          <Skeleton className="h-3 w-20" />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className="relative overflow-hidden group hover:shadow-md transition-shadow duration-200">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground/80">
-          {label}
-        </CardTitle>
-        <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground">
-          {icon}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-1">
-        <div className="text-2xl font-semibold tracking-tight">{value}</div>
-        <div className="flex items-center gap-1.5 text-xs">
-          <span className={`inline-flex items-center gap-0.5 font-medium ${
-            isPositive ? "text-emerald-500" : "text-rose-500"
-          }`}>
-            {isPositive ? (
-              <ArrowUpRight className="h-3 w-3" />
-            ) : (
-              <ArrowDownRight className="h-3 w-3" />
-            )}
-            {trend}
-          </span>
-          <span className="text-muted-foreground/70">from last month</span>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 const Dashboard: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<{
     range: string
@@ -144,6 +84,8 @@ const Dashboard: React.FC = () => {
     max: number
   } | null>(null)
   const [selectedTier, setSelectedTier] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Load members from API using TanStack Query
   const {
@@ -194,7 +136,18 @@ const Dashboard: React.FC = () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+
+    toast.success("Export complete", {
+      description: `${highRiskMembers.length} high-risk members exported to CSV`,
+    })
   }
+
+  // Listen for export command from CommandMenu
+  useEffect(() => {
+    const handleExportCommand = () => exportToCSV()
+    window.addEventListener("export-csv", handleExportCommand)
+    return () => window.removeEventListener("export-csv", handleExportCommand)
+  }, [members])
 
   const handleBarClick = (data: any) => {
     if (data && data.activePayload && data.activePayload.length > 0) {
@@ -224,8 +177,21 @@ const Dashboard: React.FC = () => {
         (m) => m.risk_tier === selectedTier.split(" ")[0]
       )
     }
-    return filtered.slice(0, 50)
+    return filtered
   }, [members, selectedTier])
+
+  // Paginated members for the table
+  const paginatedMembers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return priorityMembers.slice(start, start + itemsPerPage)
+  }, [priorityMembers, currentPage])
+
+  const totalPages = Math.ceil(priorityMembers.length / itemsPerPage)
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedTier])
 
   // Calculate risk distribution from real data
   const riskDistData = useMemo(() => {
@@ -311,36 +277,44 @@ const Dashboard: React.FC = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
+        <EnhancedKPICard
           label="Total Subscribers"
           value={kpiData?.total || "—"}
           icon={<Users className="h-4 w-4" />}
-          trend="+2.4%"
-          isPositive={true}
+          trend={{ value: "+2.4%", isPositive: true }}
+          vsTarget="+1.2% vs target"
+          sparklineData={[42, 45, 48, 47, 52, 55, 58, 56, 62, 65, 68, 72, 75, 78]}
+          status="on-track"
           loading={loading}
         />
-        <KPICard
+        <EnhancedKPICard
           label="High Risk Users"
           value={kpiData?.highRisk || "—"}
           icon={<AlertTriangle className="h-4 w-4" />}
-          trend="+1.2%"
-          isPositive={false}
+          trend={{ value: "+1.2%", isPositive: false }}
+          vsTarget="-0.8% vs target"
+          sparklineData={[35, 38, 36, 42, 45, 48, 52, 55, 53, 58, 62, 60, 65, 68]}
+          status="at-risk"
           loading={loading}
         />
-        <KPICard
+        <EnhancedKPICard
           label="Avg Risk Score"
           value={kpiData?.avgRisk || "—"}
           icon={<Activity className="h-4 w-4" />}
-          trend="-0.5%"
-          isPositive={true}
+          trend={{ value: "-0.5%", isPositive: true }}
+          vsTarget="On target"
+          sparklineData={[55, 52, 50, 48, 45, 43, 42, 40, 38, 36, 35, 33, 32, 30]}
+          status="on-track"
           loading={loading}
         />
-        <KPICard
+        <EnhancedKPICard
           label="Revenue at Risk"
           value={kpiData?.revenueAtRisk || "—"}
           icon={<DollarSign className="h-4 w-4" />}
-          trend="+3.1%"
-          isPositive={false}
+          trend={{ value: "+3.1%", isPositive: false }}
+          vsTarget="+$2.1K vs budget"
+          sparklineData={[25, 28, 32, 35, 38, 42, 45, 48, 52, 55, 58, 62, 65, 70]}
+          status="critical"
           loading={loading}
         />
       </div>
@@ -371,24 +345,45 @@ const Dashboard: React.FC = () => {
                   data={riskDistData}
                   onClick={handleBarClick}
                   accessibilityLayer
-                  margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
+                  margin={{ top: 16, right: 8, bottom: 0, left: -16 }}
                 >
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1} />
+                      <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.6} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    vertical={false}
+                    strokeDasharray="4 4"
+                    stroke="var(--border)"
+                    strokeOpacity={0.5}
+                  />
                   <XAxis
                     dataKey="range"
                     tickLine={false}
-                    tickMargin={8}
+                    tickMargin={10}
                     axisLine={false}
                     fontSize={10}
                     tick={{ fill: 'var(--muted-foreground)' }}
+                    interval="preserveStartEnd"
                   />
-                  <YAxis tickLine={false} axisLine={false} fontSize={10} tick={{ fill: 'var(--muted-foreground)' }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={10}
+                    tick={{ fill: 'var(--muted-foreground)' }}
+                    width={35}
+                  />
+                  <ChartTooltip
+                    cursor={{ fill: "var(--muted)", opacity: 0.2 }}
+                    content={<ChartTooltipContent />}
+                  />
                   <Bar
                     dataKey="count"
-                    fill="var(--color-count)"
-                    radius={[3, 3, 0, 0]}
-                    className="cursor-pointer transition-opacity hover:opacity-80"
+                    fill="url(#barGradient)"
+                    radius={[4, 4, 0, 0]}
+                    className="cursor-pointer transition-opacity"
                   />
                 </BarChart>
               </ChartContainer>
@@ -420,7 +415,7 @@ const Dashboard: React.FC = () => {
                   <Pie
                     data={pieData}
                     cx="50%"
-                    cy="45%"
+                    cy="42%"
                     innerRadius={55}
                     outerRadius={85}
                     paddingAngle={2}
@@ -440,6 +435,25 @@ const Dashboard: React.FC = () => {
                       />
                     ))}
                   </Pie>
+                  {/* Center label showing total */}
+                  <text
+                    x="50%"
+                    y="38%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-foreground text-xl font-semibold"
+                  >
+                    {members.length.toLocaleString()}
+                  </text>
+                  <text
+                    x="50%"
+                    y="48%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-muted-foreground text-[10px]"
+                  >
+                    Total Members
+                  </text>
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Legend
                     verticalAlign="bottom"
@@ -515,6 +529,16 @@ const Dashboard: React.FC = () => {
         </Card>
       )}
 
+      {/* Data Freshness Indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Live data</span>
+          <span className="text-muted-foreground/50">|</span>
+          <span>Updated {new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+
       {/* Intervention List */}
       <Card>
         <CardHeader className="pb-3">
@@ -569,18 +593,18 @@ const Dashboard: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {priorityMembers.map((member) => (
-                    <TableRow key={member.msno}>
+                  {paginatedMembers.map((member) => (
+                    <TableRow key={member.msno} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="font-mono text-xs">
                         {member.msno.slice(0, 16)}...
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`text-sm font-bold ${
+                            className={`text-sm font-bold tabular-nums ${
                               member.risk_score > 0.7
                                 ? "text-destructive"
-                                : "text-yellow-600"
+                                : "text-yellow-600 dark:text-yellow-500"
                             }`}
                           >
                             {(member.risk_score * 100).toFixed(1)}%
@@ -616,6 +640,40 @@ const Dashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && priorityMembers.length > 0 && (
+            <div className="flex items-center justify-between px-2 pt-4">
+              <p className="text-xs text-muted-foreground tabular-nums">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, priorityMembers.length)} of{" "}
+                {priorityMembers.length} members
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 text-xs"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="h-8 text-xs"
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
