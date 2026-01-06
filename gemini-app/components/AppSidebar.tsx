@@ -56,7 +56,7 @@ export function AppSidebar({ isDark, toggleTheme }: AppSidebarProps) {
   const currentPath = location.pathname || "/"
 
   return (
-    <Sidebar variant="inset">
+    <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

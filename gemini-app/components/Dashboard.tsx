@@ -340,7 +340,7 @@ const Dashboard: React.FC = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
               </div>
             ) : (
-              <ChartContainer config={barChartConfig} className="h-64 w-full">
+              <ChartContainer config={barChartConfig} className="h-64 w-full min-h-[256px]">
                 <BarChart
                   data={riskDistData}
                   onClick={handleBarClick}
@@ -410,7 +410,7 @@ const Dashboard: React.FC = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
               </div>
             ) : (
-              <ChartContainer config={pieChartConfig} className="h-64 w-full">
+              <ChartContainer config={pieChartConfig} className="h-64 w-full min-h-[256px]">
                 <PieChart>
                   <Pie
                     data={pieData}
