@@ -11,11 +11,22 @@ license: mit
 
 # KKBOX Churn Prediction
 
-> **0.97 AUC with honest temporal validation** - A production-ready churn prediction pipeline achieving near-winner performance without data leakage.
+> **0.97 AUC with honest temporal validation** - A production-ready churn prediction pipeline with React dashboard, FastAPI backend, and SHAP explanations.
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![React](https://img.shields.io/badge/frontend-React_19-61dafb.svg)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/api-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
 [![LightGBM](https://img.shields.io/badge/model-LightGBM-green.svg)](https://lightgbm.readthedocs.io/)
-[![Calibrated](https://img.shields.io/badge/calibration-isotonic-orange.svg)](src/calibrate_and_evaluate.py)
+
+## Live Demo
+
+Run the full stack locally:
+
+```bash
+make app  # Starts API on :8000, Dashboard on :3000
+```
+
+Or visit the [Hugging Face Space](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction).
 
 ## Results
 
@@ -36,6 +47,7 @@ license: mit
 - **Perfect calibration** - predicted probabilities match actual churn rates
 - **135 engineered features** including winner-inspired patterns
 - **Zero data leakage** - all features use only past information
+- **Full-stack application** - React dashboard + FastAPI + SHAP explanations
 
 ## The Problem
 
@@ -71,6 +83,106 @@ KKBOX, Asia's leading music streaming service, needed to predict which users wou
 │  │     Isotonic Calibration (Log Loss: 0.11)       │           │
 │  └─────────────────────────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      APPLICATION STACK                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │   FastAPI    │  │    React     │  │     SHAP     │          │
+│  │   Backend    │  │  Dashboard   │  │ Explanations │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Quick Start
+
+### Option 1: Full Stack (Recommended)
+
+```bash
+# Clone and start everything with Docker
+git clone https://github.com/robertlupo1997/kkbox-churn-prediction.git
+cd kkbox-churn-prediction
+make app
+
+# Visit http://localhost:3000 for the dashboard
+# API available at http://localhost:8000/api/health
+```
+
+### Option 2: ML Pipeline Only
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run with synthetic data (no Kaggle download needed)
+make test      # Run tests
+make features  # Generate features
+make models    # Train models
+make calibrate # Calibrate predictions
+```
+
+### Option 3: Frontend Development
+
+```bash
+cd brutalist-aesthetic-kkbox-churn-analysis-pro
+npm install
+npm run dev    # http://localhost:3000
+```
+
+## Project Structure
+
+```
+kkbox-churn-prediction/
+├── src/                          # ML Pipeline
+│   ├── features_processor.py     # Feature engineering
+│   ├── models.py                 # Model training
+│   ├── calibration.py            # Isotonic calibration
+│   ├── temporal_cv.py            # Temporal validation
+│   └── backtest.py               # Rolling backtests
+├── api/                          # FastAPI Backend
+│   ├── main.py                   # App entry point
+│   ├── routers/                  # API endpoints
+│   │   ├── predictions.py        # /predictions
+│   │   ├── members.py            # /members
+│   │   ├── metrics.py            # /metrics
+│   │   └── shap.py               # /shap explanations
+│   └── services/                 # Business logic
+├── brutalist-aesthetic-.../      # React Dashboard
+│   ├── components/
+│   │   ├── Dashboard.tsx         # KPI overview
+│   │   ├── MemberLookup.tsx      # Individual predictions
+│   │   ├── ModelPerformance.tsx  # Model metrics
+│   │   ├── FeatureImportanceView.tsx
+│   │   └── ROICalculator.tsx     # Business impact
+│   └── data/                     # Visualization data
+├── features/                     # SQL feature definitions
+│   └── features_comprehensive.sql
+├── models/                       # Trained models
+├── eval/                         # Evaluation outputs
+└── tests/                        # Test suite
+```
+
+## Dashboard Features
+
+| Page | Description |
+|------|-------------|
+| **Dashboard** | KPI cards, risk distribution, member filtering, CSV export |
+| **Member Lookup** | Search members, view predictions, SHAP waterfall charts |
+| **Model Performance** | AUC/Log Loss metrics, calibration curves, lift charts |
+| **Feature Importance** | Grouped feature analysis, SHAP beeswarm plots |
+| **ROI Calculator** | Business impact modeling for retention campaigns |
+
+## API Endpoints
+
+```
+GET  /api/health              # Health check
+GET  /api/members             # List members with predictions
+GET  /api/members/{id}        # Member detail + recommendations
+POST /api/predictions         # Single prediction
+POST /api/predictions/batch   # Batch predictions (max 1000)
+GET  /api/metrics             # Model performance metrics
+GET  /api/metrics/features    # Feature importance
+GET  /api/metrics/calibration # Calibration curves
+GET  /api/shap/{member_id}    # SHAP explanations
 ```
 
 ## Feature Engineering
@@ -107,54 +219,31 @@ After calibration:   Mean prediction = 0.09, Actual churn = 9%  (GOOD)
 
 **Impact**: Log loss dropped from 0.41 to 0.11 while AUC slightly improved.
 
-```python
-# Calibration in action
-from sklearn.calibration import IsotonicRegression
+## Tech Stack
 
-calibrator = IsotonicRegression(out_of_bounds="clip")
-calibrator.fit(raw_predictions, actual_labels)
-calibrated = calibrator.transform(test_predictions)
-```
+| Layer | Technologies |
+|-------|--------------|
+| **ML** | XGBoost, LightGBM, CatBoost, scikit-learn, SHAP |
+| **Data** | DuckDB, pandas, numpy, Optuna |
+| **API** | FastAPI, uvicorn, Pydantic |
+| **Frontend** | React 19, TypeScript, Vite, Recharts, Tailwind |
+| **Infrastructure** | Docker, GitHub Actions, Hugging Face Spaces |
 
-## Quick Start
+## Development
 
 ```bash
-# Clone repository
-git clone https://github.com/robertlupo1997/kkbox-churn-prediction.git
-cd kkbox-churn-prediction
+# Install dev dependencies
+make dev
 
-# Install dependencies
-pip install -r requirements.txt
+# Run tests
+make test
 
-# Run calibration (uses pre-trained models)
-python src/calibrate_and_evaluate.py
+# Code quality
+make lint    # Check
+make format  # Auto-fix
 
-# Generate predictions
-python src/generate_kaggle_submission.py
-
-# Run error analysis
-python src/run_error_analysis.py --calibrate
-```
-
-## Project Structure
-
-```
-kkbox-churn-prediction/
-├── src/
-│   ├── calibrate_and_evaluate.py  # Isotonic calibration pipeline
-│   ├── generate_kaggle_submission.py  # Submission generation
-│   ├── run_error_analysis.py      # Model diagnostics
-│   ├── hyperparameter_tuning.py   # Optuna optimization
-│   ├── stacking.py                # Ensemble methods
-│   └── error_analysis.py          # Segment analysis
-├── features/
-│   └── features_comprehensive.sql # 135 feature definitions
-├── models/
-│   ├── lightgbm.pkl              # Best model (0.97 AUC)
-│   ├── calibrator_lightgbm.pkl   # Isotonic calibrator
-│   └── calibration_metrics.json  # Performance metrics
-├── LEARNERS_GUIDE.md             # How winners solved this
-└── MODEL_CARD.md                 # Model documentation
+# Full pipeline with real Kaggle data
+make all-real
 ```
 
 ## What I Learned
@@ -168,14 +257,6 @@ This project taught me the difference between **ranking** (AUC) and **calibratio
 
 See [LEARNERS_GUIDE.md](LEARNERS_GUIDE.md) for the full learning journey.
 
-## Technical Highlights
-
-- **Temporal validation**: Train on Jan-Feb 2017, validate on Mar 2017
-- **No data leakage**: All features strictly use past information
-- **Hyperparameter tuning**: Optuna with 50 trials per model
-- **Ensemble exploration**: Stacking tested but single LightGBM performed best
-- **Business-ready**: Error analysis identifies high-value intervention segments
-
 ## References
 
 - [WSDM KKBox Churn Prediction Challenge](https://www.kaggle.com/c/kkbox-churn-prediction-challenge)
@@ -184,4 +265,4 @@ See [LEARNERS_GUIDE.md](LEARNERS_GUIDE.md) for the full learning journey.
 
 ---
 
-**Built as a portfolio project demonstrating end-to-end ML engineering**: feature engineering, model training, calibration, and business-ready deployment.
+**Built as a portfolio project demonstrating end-to-end ML engineering**: feature engineering, model training, calibration, API development, and interactive dashboard.
