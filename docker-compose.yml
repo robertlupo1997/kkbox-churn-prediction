@@ -40,7 +40,7 @@ services:
 
   frontend:
     build:
-      context: ./gemini-app
+      context: ./brutalist-aesthetic-kkbox-churn-analysis-pro
       dockerfile: Dockerfile
     container_name: kkbox-frontend
     ports:
