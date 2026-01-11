@@ -13,6 +13,8 @@ license: mit
 
 > **0.97 AUC with honest temporal validation** - A production-ready churn prediction pipeline with React dashboard, FastAPI backend, and SHAP explanations.
 
+![Dashboard Preview](assets/dashboard.gif)
+
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![React](https://img.shields.io/badge/frontend-React_19-61dafb.svg)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/api-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
@@ -26,7 +28,7 @@ Run the full stack locally:
 make app  # Starts API on :8000, Dashboard on :3000
 ```
 
-Or visit the [Hugging Face Space](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction).
+<!-- Or visit the [Hugging Face Space](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction) when deployed. -->
 
 ## Results
 
@@ -45,7 +47,7 @@ Or visit the [Hugging Face Space](https://huggingface.co/spaces/robertlupo1997/k
 - **14% above target AUC** (0.97 vs 0.85 target)
 - **Within 0.03 log loss of winning solution** (0.11 vs 0.08)
 - **Perfect calibration** - predicted probabilities match actual churn rates
-- **135 engineered features** including winner-inspired patterns
+- **131 engineered features** including winner-inspired patterns
 - **Zero data leakage** - all features use only past information
 - **Full-stack application** - React dashboard + FastAPI + SHAP explanations
 
@@ -68,15 +70,15 @@ KKBOX, Asia's leading music streaming service, needed to predict which users wou
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 │         ↓                  ↓                  ↓                 │
 │  ┌─────────────────────────────────────────────────┐           │
-│  │           135 Features (SQL + Python)           │           │
+│  │           131 Features (SQL + Python)           │           │
 │  └─────────────────────────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                      MODEL TRAINING                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   LightGBM   │  │   XGBoost    │  │   CatBoost   │          │
-│  │  AUC: 0.9696 │  │  AUC: 0.9642 │  │  AUC: 0.9605 │          │
+│  │   LightGBM   │  │   XGBoost    │  │   Ensemble   │          │
+│  │  AUC: 0.9696 │  │  AUC: 0.9642 │  │  AUC: 0.9680 │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 │         ↓                                                       │
 │  ┌─────────────────────────────────────────────────┐           │
@@ -183,11 +185,11 @@ kkbox-churn-prediction/
 GET  /api/health              # Health check
 GET  /api/members             # List members with predictions
 GET  /api/members/{id}        # Member detail + recommendations
-POST /api/predictions         # Single prediction
-POST /api/predictions/batch   # Batch predictions (max 1000)
+POST /api/predictions/single  # Single prediction
+POST /api/predictions         # Batch predictions (max 1000)
 GET  /api/metrics             # Model performance metrics
-GET  /api/metrics/features    # Feature importance
-GET  /api/metrics/calibration # Calibration curves
+GET  /api/features/importance # Feature importance
+GET  /api/calibration         # Calibration curves
 GET  /api/shap/{member_id}    # SHAP explanations
 ```
 
@@ -199,13 +201,13 @@ Features were designed based on [Bryan Gregory's 1st place solution](https://arx
 
 | Feature | Importance | Description |
 |---------|------------|-------------|
-| `membership_days_remaining` | 1373 | Days until subscription expires |
-| `tenure_days` | 872 | How long user has been a member |
-| `transaction_count` | 753 | Historical transaction frequency |
-| `days_since_last_tx` | 743 | Recency of last payment |
-| `total_secs_90d` | 698 | Listening time in last 90 days |
+| `auto_renew_ratio_30d` | 1.000 | Ratio of auto-renew transactions (30 days) |
+| `auto_renew_ratio_60d` | 0.222 | Ratio of auto-renew transactions (60 days) |
+| `cancel_count_30d` | 0.107 | Number of cancellations (30 days) |
+| `latest_auto_renew` | 0.055 | Whether latest transaction was auto-renewed |
+| `tx_count_60d` | 0.037 | Transaction count (60 days) |
 
-### Feature Categories (135 total)
+### Feature Categories (131 total)
 
 - **Transaction features** (35): Payment patterns across 5 time windows
 - **User log features** (50): Listening behavior, completion rates

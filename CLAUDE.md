@@ -91,7 +91,7 @@ KKBOX_PROJECT/
 │   │   └── About.tsx
 │   └── data/               # JSON data files for visualizations
 ├── features/               # SQL feature definitions
-│   ├── features_comprehensive.sql  # 135 features
+│   ├── features_comprehensive.sql  # 131 features
 │   └── features_simple.sql
 ├── sql/                    # Data pipeline SQL scripts
 │   ├── 00_create_staging_tables.sql
@@ -159,11 +159,11 @@ Base URL: `http://localhost:8000/api`
 - `GET /health` - Health check
 - `GET /members` - List members with predictions
 - `GET /members/{id}` - Member details with SHAP explanations
-- `POST /predictions` - Single prediction
-- `POST /predictions/batch` - Batch predictions
+- `POST /predictions/single` - Single prediction
+- `POST /predictions` - Batch predictions
 - `GET /metrics` - Model performance metrics
-- `GET /metrics/features` - Feature importance
-- `GET /metrics/calibration` - Calibration data
+- `GET /features/importance` - Feature importance
+- `GET /calibration` - Calibration data
 - `GET /shap/{member_id}` - SHAP explanations
 
 ## Testing
@@ -194,7 +194,7 @@ Key test files:
 
 1. **Raw Data** (KKBOX Kaggle competition data)
 2. **SQL Processing** (`sql/00-08_*.sql`) - Staging, core tables, feature engineering
-3. **Feature Generation** (`src/features_processor.py`) - 135 features via DuckDB
+3. **Feature Generation** (`src/features_processor.py`) - 131 features via DuckDB
 4. **Model Training** (`src/models.py`, `train_models.py`) - LightGBM, XGBoost, CatBoost
 5. **Calibration** (`src/calibration.py`) - Isotonic regression
 6. **API Serving** (`api/`) - FastAPI with cached predictions
@@ -211,7 +211,7 @@ User churns if no new subscription within 30 days after expiration (official KKB
 ### Isotonic Calibration
 Transforms model confidence scores into true probabilities. Preserves ranking (AUC) while fixing calibration (log loss).
 
-### Feature Categories (135 total)
+### Feature Categories (131 total)
 - Transaction features (35): Payment patterns across 5 time windows
 - User log features (50): Listening behavior, completion rates
 - Trend features (10): Week-over-week, month-over-month changes

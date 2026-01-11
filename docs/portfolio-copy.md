@@ -15,7 +15,7 @@
 
 ## Project Summary (Short)
 
-Built a production-ready machine learning pipeline to predict customer churn for KKBOX, Asia's leading music streaming service. The system achieves 0.97 AUC with strict temporal validation, processing millions of transaction and listening behavior records to generate 135 predictive features. Includes a full-stack dashboard for exploring predictions and model explanations.
+Built a production-ready machine learning pipeline to predict customer churn for KKBOX, Asia's leading music streaming service. The system achieves 0.97 AUC with strict temporal validation, processing millions of transaction and listening behavior records to generate 131 predictive features. Includes a full-stack dashboard for exploring predictions and model explanations.
 
 ---
 
@@ -35,7 +35,7 @@ Key constraint: strict temporal validation ensures no future data leaks into pre
 |--------|-------|
 | **AUC-ROC** | 0.97 |
 | **Log Loss (calibrated)** | 0.11 |
-| **Features Engineered** | 135 |
+| **Features Engineered** | 131 |
 | **Training Samples** | 1.9M users |
 | **Validation** | Temporal (no leakage) |
 
@@ -44,14 +44,14 @@ Key constraint: strict temporal validation ensures no future data leaks into pre
 ## Technical Highlights
 
 ### Feature Engineering
-- 135 features across 5 time windows (7d, 14d, 30d, 60d, 90d)
+- 131 features across 5 time windows (7d, 14d, 30d, 60d, 90d)
 - Transaction patterns: payment frequency, discount usage, cancellation history
 - Listening behavior: session duration, completion rates, unique tracks
 - Trend features: week-over-week and month-over-month changes
 - Historical churn indicators for repeat behavior detection
 
 ### Model Pipeline
-- Ensemble of XGBoost, LightGBM, and CatBoost
+- Ensemble of XGBoost and LightGBM (0.9680 AUC)
 - Isotonic calibration reduces log loss by 73% while preserving ranking
 - Temporal cross-validation prevents data leakage
 - Population Stability Index (PSI) monitoring for drift detection
@@ -99,5 +99,5 @@ Infrastructure:   Docker, GitHub Actions CI/CD
 
 ## Links
 
-- **GitHub**: [View Source Code →](https://github.com/YOUR_USERNAME/kkbox-churn-prediction)
-- **Live Demo**: [Explore Dashboard →](YOUR_DEMO_URL)
+- **GitHub**: [View Source Code →](https://github.com/robertlupo1997/kkbox-churn-prediction)
+- **Live Demo**: Coming soon (HuggingFace Spaces)

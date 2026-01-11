@@ -56,7 +56,7 @@
 
 A user churns if they do NOT renew within 30 days after membership expiration.
 
-## Features (135 total)
+## Features (131 total)
 
 ### Transaction Features (35)
 - Multi-window aggregations (7/14/30/60/90 days)
@@ -86,7 +86,7 @@ A user churns if they do NOT renew within 30 days after membership expiration.
 ## Model Architecture
 
 ```
-Raw Features (135)
+Raw Features (131)
        ↓
 LightGBM Classifier
   - max_depth: 7

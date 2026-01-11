@@ -10,7 +10,7 @@ This guide documents my learning journey from 0.77 AUC to **0.97 AUC** by studyi
 |--------|----------|-------|--------|-------|
 | **AUC** | 0.7755 | **0.9696** | ~0.99 | Ours uses temporal validation |
 | **Log Loss** | 0.41 | **0.1127** | 0.08 | Within 0.03 of winner |
-| **Features** | 108 | **135** | 76-258 | Including historical churn |
+| **Features** | 108 | **131** | 76-258 | Including historical churn |
 
 ---
 
@@ -130,11 +130,11 @@ actual_amount_paid / payment_plan_days AS amt_per_day
 | Approach | AUC | Notes |
 |----------|-----|-------|
 | **LightGBM** | 0.9696 | Best single model |
-| XGBoost | 0.9642 | Close second |
-| CatBoost | 0.9605 | Slightly worse |
-| Stacked Ensemble | 0.9638 | Worse than LightGBM alone! |
+| XGB+LGB Ensemble | 0.9680 | 50/50 blend |
+| XGBoost | 0.9642 | Close third |
+| Stacked Ensemble | 0.9653 | Worse than LightGBM alone! |
 
-**Lesson**: More complex isn't always better. Single LightGBM beat stacking.
+**Lesson**: More complex isn't always better. Single LightGBM beat stacking and ensembles.
 
 ### Hyperparameter Tuning
 
@@ -159,7 +159,7 @@ lgb_params = {
 | **Validation** | Temporal splits (**honest**) | Random splits (leaky) |
 | **AUC** | 0.9696 | 0.99 (but leaked) |
 | **Log Loss** | 0.1127 | 0.08 |
-| **Features** | 135 | 76-258 |
+| **Features** | 131 | 76-258 |
 | **Churn History** | ✅ Implemented | Central to success |
 | **Models** | LightGBM best | XGB + LGB ensemble |
 | **Calibration** | ✅ Isotonic | Clipping + rate scaling |
@@ -267,7 +267,7 @@ final_preds = calibrator.transform(raw_preds_test)
 - But temporal safety must come first
 
 ### 4. Simpler Often Wins
-- LightGBM alone beat XGB+LGB+CatBoost stacking
+- LightGBM alone beat XGB+LGB stacking and ensembles
 - Focus on features before complex ensembles
 - Calibration is more impactful than stacking
 
@@ -281,7 +281,7 @@ final_preds = calibrator.transform(raw_preds_test)
 ### Code Reference
 - `src/calibrate_and_evaluate.py` - Calibration pipeline
 - `src/historical_features.py` - Churn history features
-- `features/features_comprehensive.sql` - 135 feature definitions
+- `features/features_comprehensive.sql` - 131 feature definitions
 
 ### External
 - [Kaggle Competition](https://www.kaggle.com/c/kkbox-churn-prediction-challenge)
