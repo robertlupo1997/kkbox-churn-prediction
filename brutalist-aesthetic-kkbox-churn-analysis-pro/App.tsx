@@ -9,6 +9,7 @@ import ModelPerformance from './components/ModelPerformance';
 import FeatureImportanceView from './components/FeatureImportanceView';
 import ROICalculator from './components/ROICalculator';
 import About from './components/About';
+import Soundwave from './components/Soundwave';
 
 const AppContext = createContext({
   isLoading: false,
@@ -156,10 +157,8 @@ const Footer = () => (
         <p className="text-[10px] opacity-50">Built with React, FastAPI, LightGBM, and SHAP</p>
         <p className="text-[10px] opacity-50">2024 Robert Lupo</p>
       </div>
-      <div className="mt-12 opacity-10">
-        <h2 className="text-[12vw] font-black tracking-tighter leading-none whitespace-nowrap">
-          CHURN.ANALYSIS
-        </h2>
+      <div className="mt-12 opacity-70 hover:opacity-100 transition-opacity duration-300">
+        <Soundwave numBars={80} barWidth={3} gap={3} maxHeight={50} />
       </div>
     </div>
   </footer>
