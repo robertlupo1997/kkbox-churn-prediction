@@ -26,9 +26,10 @@ const BrutalistCard = ({ children, title, className = "" }: { children?: React.R
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
+    whileHover={{ y: -4, boxShadow: '8px 8px 0px #000' }}
     viewport={{ once: true }}
-    transition={{ duration: 0.4 }}
-    className={`brutalist-border p-6 bg-white dark:bg-zinc-900 hover:bg-light dark:hover:bg-zinc-800 transition-colors ${className}`}
+    transition={{ duration: 0.2 }}
+    className={`brutalist-border p-6 bg-white dark:bg-zinc-900 hover:bg-light dark:hover:bg-zinc-800 transition-colors cursor-pointer ${className}`}
   >
     {title && <h3 className="text-[10px] font-black uppercase tracking-widest mb-4 border-b-2 border-black dark:border-white/20 pb-2 flex items-center dark:text-white">
       <Zap size={10} className="mr-1 fill-black dark:fill-brand" /> {title}
