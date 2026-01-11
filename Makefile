@@ -65,7 +65,7 @@ calibrate:
 
 evaluate:
 	@echo "📊 Evaluating models..."
-	@echo "Evaluation pipeline to be implemented"
+	python3 src/evaluate.py
 
 backtest:
 	@echo "⏱ Rolling backtests (requires real KKBOX data)..."

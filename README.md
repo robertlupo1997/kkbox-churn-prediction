@@ -85,6 +85,12 @@ KKBOX, Asia's leading music streaming service, needed to predict which users wou
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
+│                      MODEL SELECTION                            │
+│  LightGBM chosen for: Best AUC (0.9696), fastest training,     │
+│  lowest memory usage, native categorical support                │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
 │                      APPLICATION STACK                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
 │  │   FastAPI    │  │    React     │  │     SHAP     │          │
