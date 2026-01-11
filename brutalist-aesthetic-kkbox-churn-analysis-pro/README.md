@@ -1,20 +1,42 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# KKBOX Churn Analysis Dashboard
 
-# Run and deploy your AI Studio app
+Brutalist-aesthetic React dashboard for visualizing churn predictions and model performance.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1zMU6hONqdQJjVSealJlVcs4AFA0ZU7qr
+- **Dashboard**: KPI cards, risk distribution charts, member monitoring table
+- **Member Lookup**: Search members, view SHAP explanations for predictions
+- **Model Performance**: AUC comparison, calibration curves, lift/gains charts
+- **Feature Importance**: SHAP beeswarm plots, grouped feature analysis
+- **ROI Calculator**: Interactive business impact projections
 
-## Run Locally
+## Quick Start
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+npm run dev    # http://localhost:3000
+```
 
+## Tech Stack
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- React 19 + TypeScript 5.8
+- Vite 6 (build tool)
+- Tailwind CSS (styling)
+- Recharts (visualizations)
+- Framer Motion (animations)
+
+## API Integration
+
+The dashboard can run standalone with sample data or connect to the FastAPI backend:
+
+- **Standalone**: Uses 200 sample members from `data/sampleMembers.json`
+- **With API**: Connects to `http://localhost:8000` for live predictions
+
+Set `VITE_API_URL` environment variable to configure the backend URL.
+
+## Build
+
+```bash
+npm run build    # Output to dist/
+npm run preview  # Preview production build
+```

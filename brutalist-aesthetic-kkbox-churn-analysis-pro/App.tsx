@@ -39,7 +39,7 @@ const Ticker = () => (
       {[...Array(10)].map((_, i) => (
         <span key={i} className="mx-8 text-[14px] font-black uppercase tracking-widest flex items-center inline-flex text-black">
           <Zap size={16} className="mr-2 fill-black" />
-          CHURN ANALYSIS SUITE • PREDICTIVE MODELING • XGBOOST ENSEMBLE • GEMINI AI • KKBOX DATASET
+          CHURN ANALYSIS SUITE • PREDICTIVE MODELING • LIGHTGBM • SHAP EXPLANATIONS • KKBOX DATASET
         </span>
       ))}
     </div>
@@ -91,7 +91,7 @@ const Header = () => {
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <div className="text-right hidden sm:block">
-              <span className="text-[10px] font-black uppercase tracking-widest mb-1 dark:text-white">KKBOX_DSGN@2024</span>
+              <span className="text-[10px] font-black uppercase tracking-widest mb-1 dark:text-white">R.LUPO@2024</span>
               <div className="w-32 h-8 barcode-bg border-2 border-black dark:border-white opacity-20"></div>
             </div>
           </div>
@@ -144,20 +144,20 @@ const Footer = () => (
     <div className="bg-black text-brand p-20 dark:bg-zinc-950 dark:text-brand border-t-2 border-black dark:border-white">
       <div className="flex flex-col md:flex-row justify-between items-end gap-12">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">Say hello</p>
-          <a href="mailto:data@churnpro.ai" className="text-4xl font-black underline hover:text-white transition-colors">
-            data@churnpro.ai
-          </a>
+          <p className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-50">Portfolio Project by</p>
+          <span className="text-4xl font-black">Robert Lupo</span>
         </div>
         <div className="text-right text-[10px] font-black uppercase tracking-widest space-y-2">
-          <p className="hover:text-white cursor-pointer">Instagram</p>
-          <p className="hover:text-white cursor-pointer">Twitter</p>
-          <p className="hover:text-white cursor-pointer">LinkedIn</p>
-          <p className="hover:text-white cursor-pointer">GitHub</p>
+          <a href="https://github.com/robertlupo1997/kkbox-churn-prediction" target="_blank" rel="noopener noreferrer" className="block hover:text-white transition-colors">GitHub</a>
+          <a href="https://linkedin.com/in/robertlupo1997" target="_blank" rel="noopener noreferrer" className="block hover:text-white transition-colors">LinkedIn</a>
         </div>
       </div>
-      <div className="mt-20 opacity-10">
-        <h2 className="text-[15vw] font-black tracking-tighter leading-none whitespace-nowrap">
+      <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p className="text-[10px] opacity-50">Built with React, FastAPI, LightGBM, and SHAP</p>
+        <p className="text-[10px] opacity-50">2024 Robert Lupo</p>
+      </div>
+      <div className="mt-12 opacity-10">
+        <h2 className="text-[12vw] font-black tracking-tighter leading-none whitespace-nowrap">
           CHURN.ANALYSIS
         </h2>
       </div>
