@@ -70,6 +70,8 @@ release/
 kkbox-churn-prediction-challenge/
 KKBOX/
 data/
+# But keep frontend data directory
+!brutalist-aesthetic-kkbox-churn-analysis-pro/data/
 submissions/
 
 # Large eval outputs (keep app_features.csv for demo)

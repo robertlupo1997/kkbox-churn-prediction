@@ -1,0 +1,100 @@
+{
+  "lift": [
+    {
+      "percentile": 10,
+      "lift": 7.46,
+      "cumGain": 74.6
+    },
+    {
+      "percentile": 20,
+      "lift": 4.75,
+      "cumGain": 95.0
+    },
+    {
+      "percentile": 30,
+      "lift": 3.22,
+      "cumGain": 96.5
+    },
+    {
+      "percentile": 40,
+      "lift": 2.44,
+      "cumGain": 97.8
+    },
+    {
+      "percentile": 50,
+      "lift": 1.98,
+      "cumGain": 98.9
+    },
+    {
+      "percentile": 60,
+      "lift": 1.66,
+      "cumGain": 99.5
+    },
+    {
+      "percentile": 70,
+      "lift": 1.43,
+      "cumGain": 99.8
+    },
+    {
+      "percentile": 80,
+      "lift": 1.25,
+      "cumGain": 100.0
+    },
+    {
+      "percentile": 90,
+      "lift": 1.11,
+      "cumGain": 100.0
+    },
+    {
+      "percentile": 100,
+      "lift": 1.0,
+      "cumGain": 100.0
+    }
+  ],
+  "gains": [
+    {
+      "percentContacted": 0,
+      "percentCaptured": 0
+    },
+    {
+      "percentContacted": 10,
+      "percentCaptured": 74.6
+    },
+    {
+      "percentContacted": 20,
+      "percentCaptured": 95.0
+    },
+    {
+      "percentContacted": 30,
+      "percentCaptured": 96.5
+    },
+    {
+      "percentContacted": 40,
+      "percentCaptured": 97.8
+    },
+    {
+      "percentContacted": 50,
+      "percentCaptured": 98.9
+    },
+    {
+      "percentContacted": 60,
+      "percentCaptured": 99.5
+    },
+    {
+      "percentContacted": 70,
+      "percentCaptured": 99.8
+    },
+    {
+      "percentContacted": 80,
+      "percentCaptured": 100.0
+    },
+    {
+      "percentContacted": 90,
+      "percentCaptured": 100.0
+    },
+    {
+      "percentContacted": 100,
+      "percentCaptured": 100.0
+    }
+  ]
+}

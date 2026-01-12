@@ -1,0 +1,788 @@
+[
+  {
+    "feature": "auto_renew_ratio_30d",
+    "importance": 1.0,
+    "category": "transaction",
+    "description": "Ratio of auto-renew transactions in last 30 days"
+  },
+  {
+    "feature": "auto_renew_ratio_60d",
+    "importance": 0.221488,
+    "category": "transaction",
+    "description": "Ratio of auto-renew transactions in last 60 days"
+  },
+  {
+    "feature": "cancel_count_30d",
+    "importance": 0.106827,
+    "category": "transaction",
+    "description": "Number of cancellations in last 30 days"
+  },
+  {
+    "feature": "latest_auto_renew",
+    "importance": 0.054523,
+    "category": "transaction",
+    "description": "Whether latest subscription has auto-renew enabled"
+  },
+  {
+    "feature": "tx_count_60d",
+    "importance": 0.037039,
+    "category": "transaction",
+    "description": "Number of transactions in last 60 days"
+  },
+  {
+    "feature": "cancel_ratio_90d",
+    "importance": 0.029516,
+    "category": "transaction",
+    "description": "Ratio of cancelled transactions in last 90 days"
+  },
+  {
+    "feature": "total_paid_30d",
+    "importance": 0.02463,
+    "category": "transaction",
+    "description": "Total amount paid in last 30 days"
+  },
+  {
+    "feature": "tx_count_90d",
+    "importance": 0.014776,
+    "category": "transaction",
+    "description": "Number of transactions in last 90 days"
+  },
+  {
+    "feature": "min_paid_90d",
+    "importance": 0.014433,
+    "category": "temporal",
+    "description": "Min Paid 90D"
+  },
+  {
+    "feature": "tx_recency_vs_plan",
+    "importance": 0.0118,
+    "category": "temporal",
+    "description": "Transaction recency relative to plan length"
+  },
+  {
+    "feature": "cancel_count_14d",
+    "importance": 0.010735,
+    "category": "transaction",
+    "description": "Number of cancellations in last 14 days"
+  },
+  {
+    "feature": "std_paid_90d",
+    "importance": 0.010417,
+    "category": "temporal",
+    "description": "Payment standard deviation in last 90 days"
+  },
+  {
+    "feature": "transaction_count",
+    "importance": 0.010244,
+    "category": "other",
+    "description": "Total number of transactions"
+  },
+  {
+    "feature": "registered_via",
+    "importance": 0.010231,
+    "category": "demographic",
+    "description": "Registration method/channel"
+  },
+  {
+    "feature": "tx_count_30d",
+    "importance": 0.009475,
+    "category": "transaction",
+    "description": "Number of transactions in last 30 days"
+  },
+  {
+    "feature": "avg_paid_60d",
+    "importance": 0.009294,
+    "category": "temporal",
+    "description": "Average payment in last 60 days"
+  },
+  {
+    "feature": "max_paid_90d",
+    "importance": 0.009229,
+    "category": "temporal",
+    "description": "Max Paid 90D"
+  },
+  {
+    "feature": "days_since_last_tx",
+    "importance": 0.008074,
+    "category": "temporal",
+    "description": "Days since last transaction"
+  },
+  {
+    "feature": "last_trx_gt1_no_cancel",
+    "importance": 0.007416,
+    "category": "behavioral",
+    "description": "Last transaction >1 with no cancellation"
+  },
+  {
+    "feature": "tenure_days",
+    "importance": 0.006736,
+    "category": "demographic",
+    "description": "Days since user registration"
+  },
+  {
+    "feature": "membership_days_remaining",
+    "importance": 0.006517,
+    "category": "other",
+    "description": "Days remaining in current membership"
+  },
+  {
+    "feature": "days_since_tx_per_plan",
+    "importance": 0.005847,
+    "category": "temporal",
+    "description": "Days Since Tx Per Plan"
+  },
+  {
+    "feature": "autorenew_not_cancel",
+    "importance": 0.005762,
+    "category": "other",
+    "description": "Auto-renew enabled without cancellation"
+  },
+  {
+    "feature": "expiry_urgency",
+    "importance": 0.005635,
+    "category": "other",
+    "description": "Urgency based on membership expiration"
+  },
+  {
+    "feature": "most_common_payment_method",
+    "importance": 0.005501,
+    "category": "transaction",
+    "description": "Most Common Payment Method"
+  },
+  {
+    "feature": "last_ul_days_s",
+    "importance": 0.005277,
+    "category": "behavioral",
+    "description": "Last Ul Days S"
+  },
+  {
+    "feature": "last_5_is_churn",
+    "importance": 0.005201,
+    "category": "behavioral",
+    "description": "Last 5 Is Churn"
+  },
+  {
+    "feature": "total_paid_14d",
+    "importance": 0.005197,
+    "category": "transaction",
+    "description": "Total amount paid in last 14 days"
+  },
+  {
+    "feature": "days_since_last_listen",
+    "importance": 0.004891,
+    "category": "temporal",
+    "description": "Days since last listening activity"
+  },
+  {
+    "feature": "avg_discount_90d",
+    "importance": 0.004832,
+    "category": "transaction",
+    "description": "Avg Discount 90D"
+  },
+  {
+    "feature": "total_paid_60d",
+    "importance": 0.004796,
+    "category": "transaction",
+    "description": "Total amount paid in last 60 days"
+  },
+  {
+    "feature": "total_paid_90d",
+    "importance": 0.004521,
+    "category": "transaction",
+    "description": "Total amount paid in last 90 days"
+  },
+  {
+    "feature": "tx_trend_30v60",
+    "importance": 0.004363,
+    "category": "temporal",
+    "description": "Tx Trend 30V60"
+  },
+  {
+    "feature": "active_days_7d",
+    "importance": 0.004306,
+    "category": "listening",
+    "description": "Days with activity in last 7 days"
+  },
+  {
+    "feature": "discount",
+    "importance": 0.004175,
+    "category": "transaction",
+    "description": "Discount"
+  },
+  {
+    "feature": "churn_count",
+    "importance": 0.004084,
+    "category": "behavioral",
+    "description": "Historical churn count"
+  },
+  {
+    "feature": "months_since_last_churn",
+    "importance": 0.004072,
+    "category": "behavioral",
+    "description": "Months Since Last Churn"
+  },
+  {
+    "feature": "active_days_14d",
+    "importance": 0.003811,
+    "category": "listening",
+    "description": "Days with activity in last 14 days"
+  },
+  {
+    "feature": "total_plays_14d",
+    "importance": 0.003282,
+    "category": "listening",
+    "description": "Total plays in last 14 days"
+  },
+  {
+    "feature": "cancel_count_7d",
+    "importance": 0.003225,
+    "category": "transaction",
+    "description": "Number of cancellations in last 7 days"
+  },
+  {
+    "feature": "cancel_count_60d",
+    "importance": 0.0032,
+    "category": "transaction",
+    "description": "Number of cancellations in last 60 days"
+  },
+  {
+    "feature": "listening_mo1_mo2_trend",
+    "importance": 0.003185,
+    "category": "listening",
+    "description": "Listening Mo1 Mo2 Trend"
+  },
+  {
+    "feature": "auto_renew_ratio_90d",
+    "importance": 0.003127,
+    "category": "transaction",
+    "description": "Auto-renew ratio in last 90 days"
+  },
+  {
+    "feature": "last_4_is_churn",
+    "importance": 0.003111,
+    "category": "behavioral",
+    "description": "Last 4 Is Churn"
+  },
+  {
+    "feature": "activity_rate_30d",
+    "importance": 0.002958,
+    "category": "temporal",
+    "description": "Activity rate in last 30 days"
+  },
+  {
+    "feature": "total_secs_7d",
+    "importance": 0.002843,
+    "category": "listening",
+    "description": "Total listening time in last 7 days"
+  },
+  {
+    "feature": "active_days_30d",
+    "importance": 0.002728,
+    "category": "listening",
+    "description": "Days with listening activity in last 30 days"
+  },
+  {
+    "feature": "log_days_90d",
+    "importance": 0.00263,
+    "category": "temporal",
+    "description": "Log Days 90D"
+  },
+  {
+    "feature": "total_plays_7d",
+    "importance": 0.00262,
+    "category": "listening",
+    "description": "Total plays in last 7 days"
+  },
+  {
+    "feature": "churn_rate",
+    "importance": 0.002353,
+    "category": "behavioral",
+    "description": "Historical churn rate"
+  },
+  {
+    "feature": "active_days_90d",
+    "importance": 0.002343,
+    "category": "listening",
+    "description": "Days with listening activity in last 90 days"
+  },
+  {
+    "feature": "last_1_is_churn",
+    "importance": 0.002338,
+    "category": "behavioral",
+    "description": "Last 1 Is Churn"
+  },
+  {
+    "feature": "total_unq_14d",
+    "importance": 0.002273,
+    "category": "listening",
+    "description": "Unique songs played in last 14 days"
+  },
+  {
+    "feature": "activity_rate_7d",
+    "importance": 0.002145,
+    "category": "temporal",
+    "description": "Activity rate in last 7 days"
+  },
+  {
+    "feature": "activity_density_90d",
+    "importance": 0.002121,
+    "category": "temporal",
+    "description": "Activity density in last 90 days"
+  },
+  {
+    "feature": "last_3_is_churn",
+    "importance": 0.002035,
+    "category": "behavioral",
+    "description": "Last 3 Is Churn"
+  },
+  {
+    "feature": "discount_tx_count_90d",
+    "importance": 0.001996,
+    "category": "transaction",
+    "description": "Number of transactions in last 90 days"
+  },
+  {
+    "feature": "gender",
+    "importance": 0.001922,
+    "category": "demographic",
+    "description": "User's gender"
+  },
+  {
+    "feature": "total_secs_90d",
+    "importance": 0.001865,
+    "category": "listening",
+    "description": "Total listening seconds in last 90 days"
+  },
+  {
+    "feature": "auto_renew_count_90d",
+    "importance": 0.001815,
+    "category": "transaction",
+    "description": "Auto Renew Count 90D"
+  },
+  {
+    "feature": "total_unq_7d",
+    "importance": 0.001774,
+    "category": "listening",
+    "description": "Unique songs played in last 7 days"
+  },
+  {
+    "feature": "last_2_is_churn",
+    "importance": 0.001766,
+    "category": "behavioral",
+    "description": "Last 2 Is Churn"
+  },
+  {
+    "feature": "total_secs_14d",
+    "importance": 0.001707,
+    "category": "listening",
+    "description": "Total listening time in last 14 days"
+  },
+  {
+    "feature": "discount_ratio",
+    "importance": 0.001624,
+    "category": "transaction",
+    "description": "Discount Ratio"
+  },
+  {
+    "feature": "age",
+    "importance": 0.001623,
+    "category": "demographic",
+    "description": "User's age"
+  },
+  {
+    "feature": "unique_payment_methods_90d",
+    "importance": 0.001591,
+    "category": "transaction",
+    "description": "Unique Payment Methods 90D"
+  },
+  {
+    "feature": "avg_paid_90d",
+    "importance": 0.00158,
+    "category": "temporal",
+    "description": "Average payment amount in last 90 days"
+  },
+  {
+    "feature": "city",
+    "importance": 0.001486,
+    "category": "demographic",
+    "description": "User's city code"
+  },
+  {
+    "feature": "tx_count_14d",
+    "importance": 0.001464,
+    "category": "transaction",
+    "description": "Number of transactions in last 14 days"
+  },
+  {
+    "feature": "active_days_60d",
+    "importance": 0.001433,
+    "category": "listening",
+    "description": "Days with activity in last 60 days"
+  },
+  {
+    "feature": "total_paid_7d",
+    "importance": 0.001393,
+    "category": "transaction",
+    "description": "Total amount paid in last 7 days"
+  },
+  {
+    "feature": "amt_per_day",
+    "importance": 0.00133,
+    "category": "transaction",
+    "description": "Amt Per Day"
+  },
+  {
+    "feature": "max_plan_days_90d",
+    "importance": 0.0013,
+    "category": "temporal",
+    "description": "Max Plan Days 90D"
+  },
+  {
+    "feature": "avg_secs_per_day_7d",
+    "importance": 0.001271,
+    "category": "listening",
+    "description": "Avg Secs Per Day 7D"
+  },
+  {
+    "feature": "avg_secs_per_day_14d",
+    "importance": 0.001265,
+    "category": "listening",
+    "description": "Avg Secs Per Day 14D"
+  },
+  {
+    "feature": "total_plays_60d",
+    "importance": 0.001264,
+    "category": "listening",
+    "description": "Total plays in last 60 days"
+  },
+  {
+    "feature": "total_skipped_early_30d",
+    "importance": 0.001216,
+    "category": "listening",
+    "description": "Total Skipped Early 30D"
+  },
+  {
+    "feature": "std_unq_prev_mo",
+    "importance": 0.001176,
+    "category": "listening",
+    "description": "Std Unq Prev Mo"
+  },
+  {
+    "feature": "total_secs_30d",
+    "importance": 0.001159,
+    "category": "listening",
+    "description": "Total listening time in last 30 days"
+  },
+  {
+    "feature": "completion_rate_7d",
+    "importance": 0.001156,
+    "category": "listening",
+    "description": "Song completion rate in last 7 days"
+  },
+  {
+    "feature": "total_unq_30d",
+    "importance": 0.001136,
+    "category": "listening",
+    "description": "Unique songs played in last 30 days"
+  },
+  {
+    "feature": "total_plays_90d",
+    "importance": 0.001135,
+    "category": "listening",
+    "description": "Total song plays in last 90 days"
+  },
+  {
+    "feature": "cancel_count_90d",
+    "importance": 0.001101,
+    "category": "transaction",
+    "description": "Number of cancellations in last 90 days"
+  },
+  {
+    "feature": "tx_count_7d",
+    "importance": 0.00109,
+    "category": "transaction",
+    "description": "Number of transactions in last 7 days"
+  },
+  {
+    "feature": "activity_density_7d",
+    "importance": 0.001032,
+    "category": "temporal",
+    "description": "Activity density in last 7 days"
+  },
+  {
+    "feature": "total_secs_60d",
+    "importance": 0.001021,
+    "category": "listening",
+    "description": "Total listening time in last 60 days"
+  },
+  {
+    "feature": "avg_plan_days_90d",
+    "importance": 0.001009,
+    "category": "temporal",
+    "description": "Avg Plan Days 90D"
+  },
+  {
+    "feature": "total_plays_30d",
+    "importance": 0.000988,
+    "category": "listening",
+    "description": "Total plays in last 30 days"
+  },
+  {
+    "feature": "changed_payment_method",
+    "importance": 0.000972,
+    "category": "transaction",
+    "description": "Changed Payment Method"
+  },
+  {
+    "feature": "total_unq_60d",
+    "importance": 0.000953,
+    "category": "listening",
+    "description": "Unique songs played in last 60 days"
+  },
+  {
+    "feature": "revenue_per_active_day",
+    "importance": 0.000895,
+    "category": "other",
+    "description": "Revenue Per Active Day"
+  },
+  {
+    "feature": "avg_secs_per_day_90d",
+    "importance": 0.000877,
+    "category": "listening",
+    "description": "Avg Secs Per Day 90D"
+  },
+  {
+    "feature": "avg_secs_per_day_60d",
+    "importance": 0.000865,
+    "category": "listening",
+    "description": "Avg Secs Per Day 60D"
+  },
+  {
+    "feature": "total_skipped_early_90d",
+    "importance": 0.000856,
+    "category": "listening",
+    "description": "Total Skipped Early 90D"
+  },
+  {
+    "feature": "total_completed_90d",
+    "importance": 0.000851,
+    "category": "listening",
+    "description": "Total Completed 90D"
+  },
+  {
+    "feature": "secs_per_unq_song",
+    "importance": 0.00085,
+    "category": "listening",
+    "description": "Secs Per Unq Song"
+  },
+  {
+    "feature": "activity_density_30d",
+    "importance": 0.00084,
+    "category": "temporal",
+    "description": "Activity density in last 30 days"
+  },
+  {
+    "feature": "usually_auto_renew",
+    "importance": 0.000838,
+    "category": "transaction",
+    "description": "Usually Auto Renew"
+  },
+  {
+    "feature": "total_almost_complete_90d",
+    "importance": 0.000834,
+    "category": "temporal",
+    "description": "Total Almost Complete 90D"
+  },
+  {
+    "feature": "completion_rate_90d",
+    "importance": 0.000829,
+    "category": "listening",
+    "description": "Song completion rate in last 90 days"
+  },
+  {
+    "feature": "avg_secs_per_day_30d",
+    "importance": 0.000823,
+    "category": "listening",
+    "description": "Avg Secs Per Day 30D"
+  },
+  {
+    "feature": "std_secs_30d",
+    "importance": 0.00081,
+    "category": "listening",
+    "description": "Std Secs 30D"
+  },
+  {
+    "feature": "completion_rate_30d",
+    "importance": 0.000803,
+    "category": "listening",
+    "description": "Song completion rate in last 30 days"
+  },
+  {
+    "feature": "std_unq_90d",
+    "importance": 0.000798,
+    "category": "listening",
+    "description": "Std Unq 90D"
+  },
+  {
+    "feature": "early_skip_rate_90d",
+    "importance": 0.000798,
+    "category": "listening",
+    "description": "Early skip rate in last 90 days"
+  },
+  {
+    "feature": "total_75pct_90d",
+    "importance": 0.000792,
+    "category": "temporal",
+    "description": "Total 75Pct 90D"
+  },
+  {
+    "feature": "max_secs_day_90d",
+    "importance": 0.00078,
+    "category": "listening",
+    "description": "Max Secs Day 90D"
+  },
+  {
+    "feature": "avg_song_length_90d",
+    "importance": 0.000767,
+    "category": "listening",
+    "description": "Avg Song Length 90D"
+  },
+  {
+    "feature": "latest_plan_days",
+    "importance": 0.000764,
+    "category": "other",
+    "description": "Latest Plan Days"
+  },
+  {
+    "feature": "listening_trend_ratio",
+    "importance": 0.000758,
+    "category": "listening",
+    "description": "Listening Trend Ratio"
+  },
+  {
+    "feature": "std_secs_90d",
+    "importance": 0.000748,
+    "category": "listening",
+    "description": "Std Secs 90D"
+  },
+  {
+    "feature": "total_completed_60d",
+    "importance": 0.000742,
+    "category": "listening",
+    "description": "Total Completed 60D"
+  },
+  {
+    "feature": "listening_consistency_90d",
+    "importance": 0.000729,
+    "category": "listening",
+    "description": "Listening Consistency 90D"
+  },
+  {
+    "feature": "completion_rate_14d",
+    "importance": 0.000728,
+    "category": "listening",
+    "description": "Song completion rate in last 14 days"
+  },
+  {
+    "feature": "total_50pct_90d",
+    "importance": 0.000725,
+    "category": "temporal",
+    "description": "Total 50Pct 90D"
+  },
+  {
+    "feature": "total_completed_30d",
+    "importance": 0.000723,
+    "category": "listening",
+    "description": "Total Completed 30D"
+  },
+  {
+    "feature": "avg_unq_per_day_90d",
+    "importance": 0.000717,
+    "category": "listening",
+    "description": "Avg Unq Per Day 90D"
+  },
+  {
+    "feature": "min_plan_days_90d",
+    "importance": 0.00071,
+    "category": "temporal",
+    "description": "Min Plan Days 90D"
+  },
+  {
+    "feature": "total_unq_90d",
+    "importance": 0.000708,
+    "category": "listening",
+    "description": "Unique songs played in last 90 days"
+  },
+  {
+    "feature": "listening_trend_7v14",
+    "importance": 0.000706,
+    "category": "listening",
+    "description": "Listening Trend 7V14"
+  },
+  {
+    "feature": "early_skip_rate_30d",
+    "importance": 0.000703,
+    "category": "listening",
+    "description": "Early skip rate in last 30 days"
+  },
+  {
+    "feature": "avg_unq_per_day_30d",
+    "importance": 0.000698,
+    "category": "listening",
+    "description": "Avg Unq Per Day 30D"
+  },
+  {
+    "feature": "min_secs_day_90d",
+    "importance": 0.000698,
+    "category": "listening",
+    "description": "Min Secs Day 90D"
+  },
+  {
+    "feature": "secs_cv_30d",
+    "importance": 0.000675,
+    "category": "listening",
+    "description": "Secs Cv 30D"
+  },
+  {
+    "feature": "ul_last2wk_vs_month_unq_ratio",
+    "importance": 0.000665,
+    "category": "listening",
+    "description": "Ul Last2Wk Vs Month Unq Ratio"
+  },
+  {
+    "feature": "canc_per_payment_days",
+    "importance": 0.000662,
+    "category": "transaction",
+    "description": "Canc Per Payment Days"
+  },
+  {
+    "feature": "listening_trend_14v30",
+    "importance": 0.000657,
+    "category": "listening",
+    "description": "Listening Trend 14V30"
+  },
+  {
+    "feature": "completion_rate_60d",
+    "importance": 0.000634,
+    "category": "listening",
+    "description": "Song completion rate in last 60 days"
+  },
+  {
+    "feature": "listening_trend_30v60",
+    "importance": 0.000632,
+    "category": "listening",
+    "description": "Listening Trend 30V60"
+  },
+  {
+    "feature": "unq_trend_14v30",
+    "importance": 0.000618,
+    "category": "listening",
+    "description": "Unq Trend 14V30"
+  },
+  {
+    "feature": "has_cancelled",
+    "importance": 9.9e-05,
+    "category": "behavioral",
+    "description": "Has Cancelled"
+  }
+]

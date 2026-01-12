@@ -1,0 +1,50 @@
+[
+  {
+    "name": "logistic_regression",
+    "display_name": "Logistic Regression",
+    "auc": 0.869,
+    "log_loss": 0.1991,
+    "brier": 0.0508
+  },
+  {
+    "name": "random_forest",
+    "display_name": "Random Forest",
+    "auc": 0.9122,
+    "log_loss": 0.3156,
+    "brier": 0.081
+  },
+  {
+    "name": "xgboost",
+    "display_name": "XGBoost",
+    "auc": 0.9642,
+    "log_loss": 0.4134,
+    "brier": 0.1246,
+    "calibrated_log_loss": 0.12,
+    "calibrated_brier": 0.0356,
+    "log_loss_improvement": 0.2927
+  },
+  {
+    "name": "lightgbm",
+    "display_name": "LightGBM",
+    "auc": 0.9696,
+    "log_loss": 0.4138,
+    "brier": 0.1258,
+    "calibrated_log_loss": 0.1127,
+    "calibrated_brier": 0.0331,
+    "log_loss_improvement": 0.3003
+  },
+  {
+    "name": "xgb_lgb_ensemble",
+    "display_name": "XGB+LGB Ensemble",
+    "auc": 0.9653,
+    "log_loss": 0.4127,
+    "brier": 0.1243
+  },
+  {
+    "name": "xgb_lgb_50_50",
+    "display_name": "XGB+LGB 50/50",
+    "auc": 0.968,
+    "log_loss": 0.4119,
+    "brier": 0.1243
+  }
+]

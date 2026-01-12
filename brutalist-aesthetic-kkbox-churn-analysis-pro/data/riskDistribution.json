@@ -1,0 +1,32 @@
+[
+  {
+    "range": "0-10%",
+    "count": 778128,
+    "tier": "Low"
+  },
+  {
+    "range": "10-20%",
+    "count": 37021,
+    "tier": "Low"
+  },
+  {
+    "range": "20-40%",
+    "count": 30704,
+    "tier": "Medium"
+  },
+  {
+    "range": "40-60%",
+    "count": 78548,
+    "tier": "Medium"
+  },
+  {
+    "range": "60-80%",
+    "count": 46559,
+    "tier": "High"
+  },
+  {
+    "range": "80-100%",
+    "count": 0,
+    "tier": "High"
+  }
+]
