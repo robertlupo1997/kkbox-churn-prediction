@@ -28,7 +28,7 @@ Run the full stack locally:
 make app  # Starts API on :8000, Dashboard on :3000
 ```
 
-<!-- Or visit the [Hugging Face Space](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction) when deployed. -->
+Or visit the **[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction)**
 
 ## Results
 
