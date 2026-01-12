@@ -12,14 +12,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           lfs: true
 
       - name: Push to Hugging Face Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # Configure git credentials
           git config credential.helper store
           echo "https://user:${HF_TOKEN}@huggingface.co" > ~/.git-credentials
+
+          # Create orphan branch with current state (no history with large files)
+          git checkout --orphan hf-deploy
+          git add -A
+          git commit -m "Deploy to HuggingFace Spaces"
+
+          # Push to HuggingFace
           git remote add hf https://huggingface.co/spaces/${{ secrets.HF_SPACE_NAME }} || true
-          git push --force hf main
+          git push --force hf hf-deploy:main
