@@ -2,6 +2,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, LabelList } from 'recharts';
 import { Zap, TrendingUp, TrendingDown } from 'lucide-react';
+import { useApp } from '../App';
 
 interface SHAPFactor {
   feature: string;
@@ -23,6 +24,15 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
   baselineRisk = 4.7, // Base churn rate from dataset
   finalRisk,
 }) => {
+  const { isDark } = useApp();
+
+  // Theme-aware colors
+  const textColor = isDark ? '#a1a1aa' : '#000000';
+  const strokeColor = isDark ? '#ffffff' : '#000000';
+  const secondaryColor = isDark ? '#71717a' : '#666666';
+  const tooltipBg = isDark ? '#18181b' : '#ffffff';
+  const baselineFinalColor = isDark ? '#ffffff' : '#000000';
+  const neutralColor = isDark ? '#71717a' : '#999999';
   // Combine all factors for the waterfall chart
   const allFactors = [
     ...riskFactors.map(f => ({ ...f, type: 'risk' as const })),
@@ -86,7 +96,7 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
               domain={[-20, Math.max(finalRisk + 10, 50)]}
               fontSize={9}
               fontWeight={900}
-              tick={{ fill: 'currentColor' }}
+              tick={{ fill: textColor }}
               tickFormatter={(v) => `${v}%`}
             />
             <YAxis
@@ -95,21 +105,22 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
               width={120}
               fontSize={9}
               fontWeight={700}
-              tick={{ fill: 'currentColor' }}
+              tick={{ fill: textColor }}
             />
             <Tooltip
               contentStyle={{
                 borderRadius: '0',
-                backgroundColor: '#fff',
-                border: '2px solid black',
+                backgroundColor: tooltipBg,
+                border: `2px solid ${strokeColor}`,
                 fontSize: '10px',
                 fontWeight: '700',
+                color: textColor
               }}
               content={({ payload }) => {
                 if (!payload?.[0]) return null;
                 const data = payload[0].payload;
                 return (
-                  <div className="bg-white p-3 brutalist-border text-[10px]">
+                  <div className="bg-white dark:bg-zinc-900 p-3 brutalist-border text-[10px] dark:text-white">
                     <p className="font-black uppercase mb-1">{data.feature}</p>
                     <p className="opacity-70 mb-2">{data.description}</p>
                     {data.value !== undefined && (
@@ -127,12 +138,12 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
                 );
               }}
             />
-            <ReferenceLine x={0} stroke="#666" strokeDasharray="3 3" />
-            <Bar dataKey="displayContribution" stroke="#000" strokeWidth={1}>
+            <ReferenceLine x={0} stroke={secondaryColor} strokeDasharray="3 3" />
+            <Bar dataKey="displayContribution" stroke={strokeColor} strokeWidth={1}>
               {waterfallData.map((entry, index) => {
-                let fill = '#999';
-                if (entry.type === 'baseline') fill = '#000';
-                else if (entry.type === 'final') fill = finalRisk > 50 ? '#ff4d00' : '#000';
+                let fill = neutralColor;
+                if (entry.type === 'baseline') fill = baselineFinalColor;
+                else if (entry.type === 'final') fill = finalRisk > 50 ? '#ff4d00' : baselineFinalColor;
                 else if (entry.type === 'risk') fill = '#ff4d00';
                 else if (entry.type === 'protective') fill = '#22c55e';
                 return <Cell key={index} fill={fill} />;
@@ -142,6 +153,7 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
                 position="right"
                 fontSize={9}
                 fontWeight={900}
+                fill={textColor}
                 formatter={(v: number, entry: any) => {
                   const item = waterfallData.find(d => d.displayContribution === v);
                   if (!item) return '';
@@ -167,7 +179,7 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
           <span className="text-[9px] font-black uppercase dark:text-white">Decreases Risk</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-black brutalist-border" />
+          <div className="w-4 h-4 bg-black dark:bg-white brutalist-border" />
           <span className="text-[9px] font-black uppercase dark:text-white">Baseline / Final</span>
         </div>
       </div>

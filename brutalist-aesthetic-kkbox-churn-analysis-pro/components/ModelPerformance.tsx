@@ -6,6 +6,7 @@ import { modelMetrics, calibrationCurves, bestModel, calibratedModels, datasetSt
 import EnsembleWeights from './EnsembleWeights';
 import LiftGainsCurve from './LiftGainsCurve';
 import PrecisionRecallCurve from './PrecisionRecallCurve';
+import { useApp } from '../App';
 
 const BrutalistCard = ({ children, title, className = "" }: { children?: React.ReactNode, title?: string, className?: string }) => (
   <div className={`brutalist-border p-8 bg-white dark:bg-zinc-900 hover:bg-light dark:hover:bg-zinc-800 transition-colors brutalist-shadow ${className}`}>
@@ -17,7 +18,16 @@ const BrutalistCard = ({ children, title, className = "" }: { children?: React.R
 );
 
 const ModelPerformance: React.FC = () => {
-  const gridColor = 'rgba(0, 0, 0, 0.1)';
+  const { isDark } = useApp();
+
+  // Theme-aware chart colors
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  const textColor = isDark ? '#a1a1aa' : '#000000';  // zinc-400 : black
+  const strokeColor = isDark ? '#ffffff' : '#000000';  // white : black
+  const secondaryColor = isDark ? '#71717a' : '#666666';  // zinc-500 : gray
+  const tertiaryColor = isDark ? '#52525b' : '#cccccc';  // zinc-600 : light gray
+  const tooltipBg = isDark ? '#18181b' : '#ffffff';  // zinc-900 : white
+  const tooltipBorder = isDark ? '#ffffff' : '#000000';
 
   // Transform data for bar chart comparison - sorted by AUC descending
   const comparisonData = [...modelMetrics]
@@ -80,7 +90,7 @@ const ModelPerformance: React.FC = () => {
                   domain={[0.8, 1]}
                   fontSize={9}
                   fontWeight={900}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <YAxis
                   dataKey="name"
@@ -88,24 +98,25 @@ const ModelPerformance: React.FC = () => {
                   width={110}
                   fontSize={9}
                   fontWeight={900}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: '0',
-                    backgroundColor: '#fff',
-                    border: '2px solid black',
+                    backgroundColor: tooltipBg,
+                    border: `2px solid ${tooltipBorder}`,
                     fontSize: '10px',
                     fontWeight: '900',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    color: textColor
                   }}
                   formatter={(value: number) => [value.toFixed(4), 'AUC']}
                 />
-                <Bar dataKey="auc" stroke="#000" strokeWidth={1}>
+                <Bar dataKey="auc" stroke={strokeColor} strokeWidth={1}>
                   {comparisonData.map((entry, index) => (
                     <Cell
                       key={index}
-                      fill={entry.name === bestModel.display_name ? '#ff4d00' : '#000'}
+                      fill={entry.name === bestModel.display_name ? '#ff4d00' : strokeColor}
                     />
                   ))}
                 </Bar>
@@ -132,32 +143,33 @@ const ModelPerformance: React.FC = () => {
                   dataKey="name"
                   fontSize={9}
                   fontWeight={900}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <YAxis
                   domain={[0, 0.5]}
                   fontSize={9}
                   fontWeight={900}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: '0',
-                    backgroundColor: '#fff',
-                    border: '2px solid black',
+                    backgroundColor: tooltipBg,
+                    border: `2px solid ${tooltipBorder}`,
                     fontSize: '10px',
                     fontWeight: '900',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    color: textColor
                   }}
                   formatter={(value: number) => [value.toFixed(4), 'Log Loss']}
                 />
                 <Legend
                   verticalAlign="top"
                   height={36}
-                  wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}
+                  wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', color: textColor }}
                 />
-                <Bar dataKey="before" name="Before Calibration" fill="#000" stroke="#000" strokeWidth={1} />
-                <Bar dataKey="after" name="After Calibration" fill="#ff4d00" stroke="#000" strokeWidth={1} />
+                <Bar dataKey="before" name="Before Calibration" fill={strokeColor} stroke={strokeColor} strokeWidth={1} />
+                <Bar dataKey="after" name="After Calibration" fill="#ff4d00" stroke={strokeColor} strokeWidth={1} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -183,40 +195,41 @@ const ModelPerformance: React.FC = () => {
                 type="number"
                 domain={[0, 1]}
                 dataKey="mean_predicted"
-                label={{ value: 'MEAN PREDICTED PROBABILITY', position: 'bottom', offset: 10, fontSize: 9, fontWeight: 900, fill: 'currentColor' }}
+                label={{ value: 'MEAN PREDICTED PROBABILITY', position: 'bottom', offset: 10, fontSize: 9, fontWeight: 900, fill: textColor }}
                 fontSize={9}
                 fontWeight={900}
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: textColor }}
               />
               <YAxis
                 type="number"
                 domain={[0, 1]}
-                label={{ value: 'FRACTION OF POSITIVES', angle: -90, position: 'insideLeft', fontSize: 9, fontWeight: 900, fill: 'currentColor' }}
+                label={{ value: 'FRACTION OF POSITIVES', angle: -90, position: 'insideLeft', fontSize: 9, fontWeight: 900, fill: textColor }}
                 fontSize={9}
                 fontWeight={900}
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: textColor }}
               />
               <Tooltip
                 contentStyle={{
                   borderRadius: '0',
-                  backgroundColor: '#fff',
-                  border: '2px solid black',
+                  backgroundColor: tooltipBg,
+                  border: `2px solid ${tooltipBorder}`,
                   fontSize: '10px',
                   fontWeight: '900',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  color: textColor
                 }}
               />
               <Legend
                 verticalAlign="top"
                 height={48}
-                wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}
+                wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', color: textColor }}
               />
               {/* Perfect calibration line */}
               <Line
                 name="Perfect Calibration"
                 data={[{ mean_predicted: 0, fraction_of_positives: 0 }, { mean_predicted: 1, fraction_of_positives: 1 }]}
                 dataKey="fraction_of_positives"
-                stroke="#ccc"
+                stroke={tertiaryColor}
                 strokeDasharray="4 4"
                 dot={false}
                 strokeWidth={2}
@@ -228,9 +241,9 @@ const ModelPerformance: React.FC = () => {
                   name={curve.model.toUpperCase()}
                   data={curve.points}
                   dataKey="fraction_of_positives"
-                  stroke={idx === 2 ? '#ff4d00' : idx === 0 ? '#000' : '#666'}
+                  stroke={idx === 2 ? '#ff4d00' : idx === 0 ? strokeColor : secondaryColor}
                   strokeWidth={idx === 2 ? 3 : 2}
-                  dot={{ r: 4, fill: idx === 2 ? '#ff4d00' : idx === 0 ? '#000' : '#666', stroke: '#000', strokeWidth: 1 }}
+                  dot={{ r: 4, fill: idx === 2 ? '#ff4d00' : idx === 0 ? strokeColor : secondaryColor, stroke: strokeColor, strokeWidth: 1 }}
                 />
               ))}
             </LineChart>

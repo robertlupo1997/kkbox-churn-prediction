@@ -3,9 +3,19 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, AreaChart, Area } from 'recharts';
 import { TrendingUp, Zap, Target } from 'lucide-react';
 import { liftGainsData } from '../data/realData';
+import { useApp } from '../App';
 
 const LiftGainsCurve: React.FC = () => {
+  const { isDark } = useApp();
   const { lift: liftData, gains: gainsData } = liftGainsData;
+
+  // Theme-aware colors
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const textColor = isDark ? '#a1a1aa' : '#000000';
+  const strokeColor = isDark ? '#ffffff' : '#000000';
+  const secondaryColor = isDark ? '#71717a' : '#666666';
+  const tertiaryColor = isDark ? '#52525b' : '#cccccc';
+  const tooltipBg = isDark ? '#18181b' : '#ffffff';
 
   // Add random baseline for gains chart
   const gainsWithBaseline = gainsData.map(d => ({
@@ -23,31 +33,32 @@ const LiftGainsCurve: React.FC = () => {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={gainsWithBaseline} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
               <XAxis
                 dataKey="percentContacted"
-                label={{ value: '% POPULATION CONTACTED', position: 'bottom', offset: 10, fontSize: 9, fontWeight: 900, fill: 'currentColor' }}
+                label={{ value: '% POPULATION CONTACTED', position: 'bottom', offset: 10, fontSize: 9, fontWeight: 900, fill: textColor }}
                 fontSize={9}
                 fontWeight={900}
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: textColor }}
                 tickFormatter={(v) => `${v}%`}
               />
               <YAxis
                 domain={[0, 100]}
-                label={{ value: '% CHURNERS CAPTURED', angle: -90, position: 'insideLeft', fontSize: 9, fontWeight: 900, fill: 'currentColor' }}
+                label={{ value: '% CHURNERS CAPTURED', angle: -90, position: 'insideLeft', fontSize: 9, fontWeight: 900, fill: textColor }}
                 fontSize={9}
                 fontWeight={900}
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: textColor }}
                 tickFormatter={(v) => `${v}%`}
               />
               <Tooltip
                 contentStyle={{
                   borderRadius: '0',
-                  backgroundColor: '#fff',
-                  border: '2px solid black',
+                  backgroundColor: tooltipBg,
+                  border: `2px solid ${strokeColor}`,
                   fontSize: '10px',
                   fontWeight: '900',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  color: textColor
                 }}
                 formatter={(value: number, name: string) => [
                   `${value.toFixed(1)}%`,
@@ -59,7 +70,7 @@ const LiftGainsCurve: React.FC = () => {
               <Area
                 type="linear"
                 dataKey="random"
-                stroke="#ccc"
+                stroke={tertiaryColor}
                 strokeDasharray="4 4"
                 fill="none"
                 name="Random"
@@ -73,7 +84,7 @@ const LiftGainsCurve: React.FC = () => {
                 fill="#ff4d00"
                 fillOpacity={0.1}
                 name="Model"
-                dot={{ r: 4, fill: '#ff4d00', stroke: '#000', strokeWidth: 1 }}
+                dot={{ r: 4, fill: '#ff4d00', stroke: strokeColor, strokeWidth: 1 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -93,41 +104,42 @@ const LiftGainsCurve: React.FC = () => {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={liftData} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
               <XAxis
                 dataKey="percentile"
-                label={{ value: 'DECILE (TOP %)', position: 'bottom', offset: 10, fontSize: 9, fontWeight: 900, fill: 'currentColor' }}
+                label={{ value: 'DECILE (TOP %)', position: 'bottom', offset: 10, fontSize: 9, fontWeight: 900, fill: textColor }}
                 fontSize={9}
                 fontWeight={900}
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: textColor }}
                 tickFormatter={(v) => `${v}%`}
               />
               <YAxis
                 domain={[0, 10]}
-                label={{ value: 'LIFT FACTOR', angle: -90, position: 'insideLeft', fontSize: 9, fontWeight: 900, fill: 'currentColor' }}
+                label={{ value: 'LIFT FACTOR', angle: -90, position: 'insideLeft', fontSize: 9, fontWeight: 900, fill: textColor }}
                 fontSize={9}
                 fontWeight={900}
-                tick={{ fill: 'currentColor' }}
+                tick={{ fill: textColor }}
               />
               <Tooltip
                 contentStyle={{
                   borderRadius: '0',
-                  backgroundColor: '#fff',
-                  border: '2px solid black',
+                  backgroundColor: tooltipBg,
+                  border: `2px solid ${strokeColor}`,
                   fontSize: '10px',
                   fontWeight: '900',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  color: textColor
                 }}
                 formatter={(value: number) => [`${value.toFixed(2)}x`, 'Lift']}
                 labelFormatter={(label) => `Top ${label}%`}
               />
-              <ReferenceLine y={1} stroke="#666" strokeDasharray="4 4" label={{ value: 'Random', fontSize: 9, fill: '#666' }} />
+              <ReferenceLine y={1} stroke={secondaryColor} strokeDasharray="4 4" label={{ value: 'Random', fontSize: 9, fill: secondaryColor }} />
               <Line
                 type="monotone"
                 dataKey="lift"
-                stroke="#000"
+                stroke={strokeColor}
                 strokeWidth={3}
-                dot={{ r: 5, fill: '#ff4d00', stroke: '#000', strokeWidth: 2 }}
+                dot={{ r: 5, fill: '#ff4d00', stroke: strokeColor, strokeWidth: 2 }}
               />
             </LineChart>
           </ResponsiveContainer>

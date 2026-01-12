@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis } from 'recharts';
 import { Zap } from 'lucide-react';
 import { featureImportance } from '../data/realData';
+import { useApp } from '../App';
 
 interface BeeswarmPoint {
   feature: string;
@@ -65,8 +66,13 @@ const getColor = (normalized: number): string => {
 };
 
 const ShapBeeswarm: React.FC = () => {
+  const { isDark } = useApp();
   const topN = 15;
   const beeswarmData = useMemo(() => generateBeeswarmData(topN), []);
+
+  // Theme-aware colors
+  const textColor = isDark ? '#a1a1aa' : '#000000';
+  const secondaryColor = isDark ? '#71717a' : '#666666';
 
   const featureNames = useMemo(() =>
     featureImportance.slice(0, topN).map(f =>
@@ -94,12 +100,14 @@ const ShapBeeswarm: React.FC = () => {
               tickFormatter={(v) => v.toFixed(1)}
               fontSize={9}
               fontWeight={700}
+              tick={{ fill: textColor }}
               label={{
                 value: 'SHAP Value (impact on model output)',
                 position: 'bottom',
                 offset: 10,
                 fontSize: 9,
-                fontWeight: 700
+                fontWeight: 700,
+                fill: textColor
               }}
             />
             <YAxis
@@ -110,6 +118,7 @@ const ShapBeeswarm: React.FC = () => {
               tickFormatter={(value) => featureNames[Math.round(value)] || ''}
               fontSize={9}
               fontWeight={700}
+              tick={{ fill: textColor }}
               width={140}
               axisLine={false}
               tickLine={false}
@@ -130,7 +139,7 @@ const ShapBeeswarm: React.FC = () => {
                 );
               }}
             />
-            <ReferenceLine x={0} stroke="#666" strokeDasharray="3 3" />
+            <ReferenceLine x={0} stroke={secondaryColor} strokeDasharray="3 3" />
             <Scatter data={beeswarmData} shape="circle">
               {beeswarmData.map((point, index) => (
                 <Cell

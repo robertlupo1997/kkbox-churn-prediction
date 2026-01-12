@@ -2,9 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Area, ComposedChart } from 'recharts';
 import { Zap, Sliders, Target, Users, TrendingUp } from 'lucide-react';
 import { prCurveData, datasetStats } from '../data/realData';
+import { useApp } from '../App';
 
 const PrecisionRecallCurve: React.FC = () => {
+  const { isDark } = useApp();
   const [threshold, setThreshold] = useState(0.5);
+
+  // Theme-aware colors
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5';
+  const textColor = isDark ? '#a1a1aa' : '#000000';
+  const strokeColor = isDark ? '#ffffff' : '#000000';
 
   const metrics = useMemo(() => {
     // Find closest threshold in data
@@ -61,19 +68,21 @@ const PrecisionRecallCurve: React.FC = () => {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={areaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis
                   dataKey="recall"
                   domain={[0, 1]}
                   tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
                   fontSize={9}
                   fontWeight={700}
+                  tick={{ fill: textColor }}
                   label={{
                     value: 'Recall (% of churners identified)',
                     position: 'bottom',
                     offset: 0,
                     fontSize: 9,
-                    fontWeight: 700
+                    fontWeight: 700,
+                    fill: textColor
                   }}
                 />
                 <YAxis
@@ -81,12 +90,14 @@ const PrecisionRecallCurve: React.FC = () => {
                   tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
                   fontSize={9}
                   fontWeight={700}
+                  tick={{ fill: textColor }}
                   label={{
                     value: 'Precision',
                     angle: -90,
                     position: 'insideLeft',
                     fontSize: 9,
-                    fontWeight: 700
+                    fontWeight: 700,
+                    fill: textColor
                   }}
                 />
                 <Tooltip
@@ -96,8 +107,8 @@ const PrecisionRecallCurve: React.FC = () => {
                   ]}
                   labelFormatter={(label) => `Recall: ${(label * 100).toFixed(0)}%`}
                   contentStyle={{
-                    backgroundColor: '#000',
-                    border: '2px solid #000',
+                    backgroundColor: isDark ? '#18181b' : '#000',
+                    border: `2px solid ${strokeColor}`,
                     borderRadius: 0,
                     color: '#fff',
                     fontSize: 10,
@@ -105,7 +116,7 @@ const PrecisionRecallCurve: React.FC = () => {
                   }}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: 9, fontWeight: 700 }}
+                  wrapperStyle={{ fontSize: 9, fontWeight: 700, color: textColor }}
                 />
                 {/* Area under PR curve */}
                 <Area
@@ -122,7 +133,7 @@ const PrecisionRecallCurve: React.FC = () => {
                   dataKey="precision"
                   stroke="#ff4d00"
                   strokeWidth={3}
-                  dot={{ r: 5, fill: '#ff4d00', stroke: '#000', strokeWidth: 1 }}
+                  dot={{ r: 5, fill: '#ff4d00', stroke: strokeColor, strokeWidth: 1 }}
                   activeDot={{ r: 8 }}
                 />
                 {/* F1 Score */}
@@ -130,7 +141,7 @@ const PrecisionRecallCurve: React.FC = () => {
                   name="F1 Score"
                   type="monotone"
                   dataKey="f1"
-                  stroke="#000"
+                  stroke={strokeColor}
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   dot={false}

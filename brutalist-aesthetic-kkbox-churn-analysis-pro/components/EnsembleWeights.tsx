@@ -3,15 +3,24 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList, ReferenceLine } from 'recharts';
 import { Layers, Zap } from 'lucide-react';
 import { ensembleWeights } from '../data/realData';
+import { useApp } from '../App';
 
 const EnsembleWeights: React.FC = () => {
+  const { isDark } = useApp();
   const coefficients = ensembleWeights.coefficients;
+
+  // Theme-aware colors
+  const textColor = isDark ? '#a1a1aa' : '#000000';
+  const strokeColor = isDark ? '#ffffff' : '#000000';
+  const secondaryColor = isDark ? '#71717a' : '#666666';
+  const tooltipBg = isDark ? '#18181b' : '#ffffff';
+  const negativeColor = isDark ? '#ffffff' : '#000000';  // For negative coefficients
 
   // Transform coefficients for bar chart
   const barData = Object.entries(coefficients).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
     coefficient: value,
-    fill: value > 0 ? '#ff4d00' : '#000',
+    fill: value > 0 ? '#ff4d00' : negativeColor,
   }));
 
   // Calculate absolute sum for relative contribution
@@ -37,7 +46,7 @@ const EnsembleWeights: React.FC = () => {
                   domain={[-4, 6]}
                   fontSize={9}
                   fontWeight={900}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <YAxis
                   dataKey="name"
@@ -45,21 +54,22 @@ const EnsembleWeights: React.FC = () => {
                   width={80}
                   fontSize={10}
                   fontWeight={900}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: '0',
-                    backgroundColor: '#fff',
-                    border: '2px solid black',
+                    backgroundColor: tooltipBg,
+                    border: `2px solid ${strokeColor}`,
                     fontSize: '10px',
                     fontWeight: '900',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    color: textColor
                   }}
                   formatter={(value: number) => [value.toFixed(2), 'Coefficient']}
                 />
-                <ReferenceLine x={0} stroke="#666" strokeDasharray="3 3" />
-                <Bar dataKey="coefficient" stroke="#000" strokeWidth={2}>
+                <ReferenceLine x={0} stroke={secondaryColor} strokeDasharray="3 3" />
+                <Bar dataKey="coefficient" stroke={strokeColor} strokeWidth={2}>
                   {barData.map((entry, index) => (
                     <Cell key={index} fill={entry.fill} />
                   ))}
@@ -69,6 +79,7 @@ const EnsembleWeights: React.FC = () => {
                     fontSize={10}
                     fontWeight={900}
                     formatter={(v: number) => v.toFixed(2)}
+                    fill={textColor}
                   />
                 </Bar>
               </BarChart>

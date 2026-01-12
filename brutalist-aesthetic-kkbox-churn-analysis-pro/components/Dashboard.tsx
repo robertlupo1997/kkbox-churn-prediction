@@ -4,8 +4,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Users, AlertTriangle, Activity, DollarSign, Download, Zap, CheckSquare, Square, Trash2, Mail, Tag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { dashboardKPIs, riskDistribution, pieData, sampleMembers } from '../data/realData';
+import { useApp } from '../App';
 
-const COLORS = ['#000000', '#ff4d00', '#999999'];
+// Light mode: black, brand orange, gray | Dark mode: white, brand orange, zinc-500
+const COLORS_LIGHT = ['#000000', '#ff4d00', '#999999'];
+const COLORS_DARK = ['#ffffff', '#ff4d00', '#71717a'];
 const AVAILABLE_TAGS = ['High Value', 'At Risk', 'Needs Outreach', 'Priority', 'Churned'];
 
 const KPI_CARDS = [
@@ -53,8 +56,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const Dashboard: React.FC = () => {
+  const { isDark } = useApp();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<string | null>(() => localStorage.getItem('activeFilter'));
+
+  // Theme-aware colors
+  const COLORS = isDark ? COLORS_DARK : COLORS_LIGHT;
+  const chartTextColor = isDark ? '#a1a1aa' : '#000000';  // zinc-400 : black
+  const chartStrokeColor = isDark ? '#ffffff' : '#000000';  // white : black
+  const chartGridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
   const [memberTags, setMemberTags] = useState<Record<string, string[]>>(() => {
     const saved = localStorage.getItem('memberTags');
     return saved ? JSON.parse(saved) : {};
@@ -161,19 +171,19 @@ const Dashboard: React.FC = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={riskDistData}>
-                <XAxis dataKey="range" fontSize={8} fontWeight={900} axisLine={false} tickLine={false} tick={{fill: 'currentColor'}} className="dark:text-zinc-500" />
+                <XAxis dataKey="range" fontSize={8} fontWeight={900} axisLine={false} tickLine={false} tick={{fill: chartTextColor}} />
                 <YAxis hide />
-                <Tooltip content={<CustomTooltip />} cursor={{fill: '#f4f4f4'}} />
+                <Tooltip content={<CustomTooltip />} cursor={{fill: isDark ? '#27272a' : '#f4f4f4'}} />
                 <Bar
                   dataKey="count"
                   fill="#ff4d00"
-                  stroke="#000"
+                  stroke={chartStrokeColor}
                   strokeWidth={1}
                   onClick={handleChartClick}
                   cursor="pointer"
                 >
                   {riskDistData.map((entry, index) => (
-                    <Cell key={index} fill={activeFilter === entry.tier ? '#000' : '#ff4d00'} className={activeFilter === entry.tier ? 'dark:fill-white' : ''} />
+                    <Cell key={index} fill={activeFilter === entry.tier ? chartStrokeColor : '#ff4d00'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -191,15 +201,15 @@ const Dashboard: React.FC = () => {
                   outerRadius={80}
                   paddingAngle={0}
                   dataKey="value"
-                  stroke="#000"
+                  stroke={chartStrokeColor}
                   onClick={handleChartClick}
                   cursor="pointer"
                 >
                   {pieData.map((entry, index) => (
-                    <Cell key={index} fill={activeFilter === entry.tier ? '#ff4d00' : COLORS[index]} className="dark:fill-brand" />
+                    <Cell key={index} fill={activeFilter === entry.tier ? '#ff4d00' : COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Legend iconType="rect" verticalAlign="bottom" wrapperStyle={{fontSize: '9px', fontWeight: '900', textTransform: 'uppercase'}} />
+                <Legend iconType="rect" verticalAlign="bottom" wrapperStyle={{fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', color: chartTextColor}} />
               </PieChart>
             </ResponsiveContainer>
           </div>

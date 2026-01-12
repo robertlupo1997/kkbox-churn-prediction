@@ -2,11 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList, PieChart, Pie } from 'recharts';
 import { Zap, Filter, Search, Layers } from 'lucide-react';
 import { featureImportance } from '../data/realData';
+import { useApp } from '../App';
 
-const CATEGORY_COLORS: Record<string, string> = {
+// Light mode colors
+const CATEGORY_COLORS_LIGHT: Record<string, string> = {
   transaction: '#ff4d00',
   listening: '#000000',
   temporal: '#666666',
+  demographic: '#22c55e',
+  behavioral: '#3b82f6',
+  other: '#a855f7'
+};
+
+// Dark mode colors (swap black/dark gray for lighter variants)
+const CATEGORY_COLORS_DARK: Record<string, string> = {
+  transaction: '#ff4d00',
+  listening: '#ffffff',
+  temporal: '#a1a1aa',
   demographic: '#22c55e',
   behavioral: '#3b82f6',
   other: '#a855f7'
@@ -22,9 +34,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const FeatureImportanceGrouped: React.FC = () => {
+  const { isDark } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCount, setShowCount] = useState(20);
+
+  // Theme-aware colors
+  const CATEGORY_COLORS = isDark ? CATEGORY_COLORS_DARK : CATEGORY_COLORS_LIGHT;
+  const textColor = isDark ? '#a1a1aa' : '#000000';
+  const strokeColor = isDark ? '#ffffff' : '#000000';
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -105,7 +123,7 @@ const FeatureImportanceGrouped: React.FC = () => {
                   cy="50%"
                   innerRadius={40}
                   outerRadius={70}
-                  stroke="#000"
+                  stroke={strokeColor}
                   strokeWidth={1}
                   onClick={(data) => setSelectedCategory(
                     selectedCategory === data.category ? null : data.category
@@ -123,8 +141,8 @@ const FeatureImportanceGrouped: React.FC = () => {
                 <Tooltip
                   formatter={(value: number) => [`${value.toFixed(2)}`, 'Total Importance']}
                   contentStyle={{
-                    backgroundColor: '#000',
-                    border: '2px solid #000',
+                    backgroundColor: isDark ? '#18181b' : '#000',
+                    border: `2px solid ${strokeColor}`,
                     borderRadius: 0,
                     color: '#fff',
                     fontSize: 10,
@@ -262,7 +280,7 @@ const FeatureImportanceGrouped: React.FC = () => {
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => v.replace(/_/g, ' ').substring(0, 25)}
-                  tick={{ fill: 'currentColor' }}
+                  tick={{ fill: textColor }}
                 />
                 <Tooltip
                   content={({ payload }) => {
@@ -280,9 +298,9 @@ const FeatureImportanceGrouped: React.FC = () => {
                     );
                   }}
                 />
-                <Bar dataKey="importance" stroke="#000" strokeWidth={1}>
+                <Bar dataKey="importance" stroke={strokeColor} strokeWidth={1}>
                   {displayedFeatures.map((entry, index) => (
-                    <Cell key={index} fill={CATEGORY_COLORS[entry.category] || '#ccc'} />
+                    <Cell key={index} fill={CATEGORY_COLORS[entry.category] || (isDark ? '#52525b' : '#ccc')} />
                   ))}
                   <LabelList
                     dataKey="importance"
@@ -290,7 +308,7 @@ const FeatureImportanceGrouped: React.FC = () => {
                     fontSize={9}
                     fontWeight={700}
                     formatter={(v: number) => `${(v * 100).toFixed(1)}%`}
-                    fill="currentColor"
+                    fill={textColor}
                   />
                 </Bar>
               </BarChart>
