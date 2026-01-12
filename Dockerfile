@@ -12,13 +12,13 @@ FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy package files first for better layer caching
-COPY gemini-app/package.json gemini-app/package-lock.json* ./
+COPY brutalist-aesthetic-kkbox-churn-analysis-pro/package.json brutalist-aesthetic-kkbox-churn-analysis-pro/package-lock.json* ./
 
 # Install dependencies
 RUN npm ci --legacy-peer-deps
 
 # Copy frontend source
-COPY gemini-app/ ./
+COPY brutalist-aesthetic-kkbox-churn-analysis-pro/ ./
 
 # Build production bundle
 RUN npm run build
