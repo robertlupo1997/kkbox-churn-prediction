@@ -52,7 +52,10 @@ def evaluate_training(metrics: dict) -> None:
 
     models = metrics.get("models", {})
     if models:
-        print("\nModel Performance (validation set):")
+        print(
+            "\nModel Performance (validation window; also the Optuna tuning window "
+            "-- not a held-out test set):"
+        )
         print(f"  {'Model':<25} {'AUC':>10} {'Log Loss':>12} {'Brier':>10}")
         print(f"  {'-'*25} {'-'*10} {'-'*12} {'-'*10}")
 
@@ -86,14 +89,13 @@ def evaluate_calibration(metrics: dict) -> None:
             b = format_metric(before.get(metric, 0), metric)
             a = format_metric(after.get(metric, 0), metric)
             imp = improvement.get(metric, before.get(metric, 0) - after.get(metric, 0))
-            imp_str = f"{imp:+.4f}" if metric != "auc" else "preserved"
+            imp_str = f"{imp:+.4f}"
             print(f"  {metric:<12} {b:>12} {a:>12} {imp_str:>14}")
 
-    # Summary
-    print("\nCalibration Impact:")
-    print("  - Log loss reduced by ~73% (0.41 -> 0.11)")
-    print("  - Brier score reduced by ~74% (0.12 -> 0.03)")
-    print("  - AUC preserved (ranking unchanged)")
+    print(
+        "\nNote: AUC deltas above are computed from the same metrics file; isotonic "
+        "calibration does not guarantee exact rank preservation."
+    )
 
 
 def evaluate_features(metrics: dict) -> None:
@@ -154,9 +156,10 @@ def generate_report(models_dir: Path, output_path: Path | None = None) -> bool:
         )
         print(f"  Best Log Loss (calibrated):  {best_ll:.4f}")
 
-    print("\n  Status: Production Ready")
-    print("  Temporal Validation: Strict (no data leakage)")
-    print("  Calibration: Isotonic regression applied")
+    print("\n  Evaluation: single time-ordered split; the validation window was also")
+    print("              used for hyperparameter tuning, so these are not held-out results.")
+    print("  Calibration: isotonic regression applied offline; the API does not apply it.")
+    print("  See LIMITATIONS.md before quoting any figure above.")
 
     print("\n" + "=" * 60)
 

@@ -37,7 +37,7 @@ const MetricsBanner: React.FC = () => {
       </span>
       <span className="hidden md:inline text-zinc-500">|</span>
       <span className="hidden md:flex items-center gap-1">
-        <span className="text-brand">916K</span> Members
+        <span className="text-brand">916K</span> Rows
       </span>
       <span className="hidden lg:inline text-zinc-500">|</span>
       <span className="hidden lg:flex items-center gap-1">

@@ -86,7 +86,7 @@ const EnsembleWeights: React.FC = () => {
             </ResponsiveContainer>
           </div>
           <p className="text-[9px] font-bold opacity-60 mt-4 dark:text-white">
-            Negative CatBoost coefficient indicates it provides complementary signal when combined with XGBoost and LightGBM.
+            CatBoost has a negative coefficient in the fitted logistic meta-learner. Its incremental contribution was not evaluated here, so the sign alone does not establish complementary signal.
           </p>
         </div>
 

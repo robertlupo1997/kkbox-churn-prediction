@@ -42,9 +42,9 @@ const ROICalculator: React.FC = () => {
     <div className="space-y-12 pb-12">
       <div className="max-w-3xl">
         <h2 className="text-6xl font-black tracking-tighter leading-none mb-4 uppercase dark:text-white">
-          ROI<br/><span className="text-brand">PROJECTION</span>
+          SAVINGS<br/><span className="text-brand">PROJECTION</span>
         </h2>
-        <p className="text-[12px] font-black uppercase tracking-widest opacity-60 dark:text-white">Modeling the financial impact of predictive retention strategies.</p>
+        <p className="text-[12px] font-black uppercase tracking-widest opacity-60 dark:text-white">Scenario tool. Gross revenue retained if the churn reduction you enter were achieved. Campaign cost, treatment reach and incremental uplift are not modelled, so this is not an ROI figure.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -113,7 +113,7 @@ const ROICalculator: React.FC = () => {
             </div>
             <div className="relative z-10 space-y-12">
               <div>
-                <p className="text-brand text-[10px] font-black uppercase tracking-widest mb-4">Projected Annual Recovery</p>
+                <p className="text-brand text-[10px] font-black uppercase tracking-widest mb-4">Assumed Annual Gross Revenue Retained</p>
                 <p className="text-7xl font-black tracking-tighter leading-none">${results.yearlySavings.toLocaleString()}</p>
               </div>
 
