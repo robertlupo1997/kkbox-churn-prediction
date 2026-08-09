@@ -183,7 +183,19 @@ only `tests/test_temporal_safety.py` and `tests/test_new_modules.py`, excluding 
 comprehensive-window, calibration, and API tests; and the calibration, integration, and backtest
 steps are all `continue-on-error`. A green badge does not indicate the pipeline works.
 
-## 19. Much of the test suite asserts existence, not behavior
+## 19. The test suite does not pass
+
+Measured on 2026-08-09 in this checkout:
+
+- `python -m pytest tests/` **fails at collection**: `tests/api_tests/test_endpoints.py` imports
+  FastAPI, which `requirements.txt` does not install.
+- `python -m pytest tests/ --ignore=tests/api_tests` runs, and **16 tests fail** — across
+  `tests/test_labels.py`, `tests/test_feature_windows.py`, and `tests/test_calibration_modules.py`.
+
+Because `make test` swallows this and falls back to a single file (see §17 above), the failures are
+not visible through the advertised entry point.
+
+## 20. Much of the test suite asserts existence, not behavior
 
 `tests/test_calibration_modules.py` largely asserts that classes and functions import or have
 methods. `tests/api_tests/test_endpoints.py` skips its assertions when the member list is empty
@@ -191,28 +203,28 @@ methods. `tests/api_tests/test_endpoints.py` skips its assertions when the membe
 `tests/test_temporal_safety.py` and `tests/test_feature_windows.py`, which execute the SQL and assert
 exact aggregate values across cutoff boundaries.
 
-## 20. `ship.sh` does not run
+## 21. `ship.sh` does not run
 
 It passes `--cutoff` while the label CLI defines `--cutoff-date`; it reads
 `improvement.brier_delta` and `improvement.ece_delta` while the committed calibration artifact
 contains `improvement.brier` and no ECE at all; and it invokes `scripts/update_readme.py`, which is
 not at that path.
 
-## 21. Assets referenced in docs are LFS pointers here
+## 22. Assets referenced in docs are LFS pointers here
 
 `eval/calibration_reliability_diagram.png`, `eval/calibration_distributions.png`,
 `eval/calibration_isotonic_mapping.png`, and `1802.03396v1.pdf` are Git LFS pointer files (~130
 bytes each) in this checkout, not the images and paper themselves. Any claim resting on the contents
 of the cited paper cannot be checked from this clone.
 
-## 22. Multiple overlapping implementations, no authoritative path
+## 23. Multiple overlapping implementations, no authoritative path
 
 `train_models.py` calls `src/models.py`; the path that produced the reported result is
 `train_temporal.py`; orchestration lives in `run_full_pipeline.py`; and calibration is implemented
 twice, in `src/calibration.py` and `src/calibrate_and_evaluate.py`. A reader cannot tell from the
 repository which path is canonical.
 
-## 23. Things that were never evaluated at all
+## 24. Things that were never evaluated at all
 
 None of the following has a supporting artifact anywhere in this repository. They are listed so that
 nobody mistakes their absence for a passing result:
