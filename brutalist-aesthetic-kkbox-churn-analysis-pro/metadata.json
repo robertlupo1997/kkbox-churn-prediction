@@ -1,5 +1,5 @@
 {
   "name": "updated Copy of chrls aesthetic KKBox Churn Analysis Pro",
-  "description": "A high-performance analytics dashboard for predicting and managing subscriber churn based on the WSDM - KKBox's Churn Prediction Challenge, featuring risk scoring, ROI calculators, and model performance metrics.",
+  "description": "A portfolio analytics dashboard for exploring subscriber churn models from the WSDM - KKBox's Churn Prediction Challenge, featuring risk scoring, a retention savings projection, and recorded model performance metrics. Runs on checked-in exported data; see LIMITATIONS.md.",
   "requestFramePermissions": []
 }
