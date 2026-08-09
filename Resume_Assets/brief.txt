@@ -1,34 +1,43 @@
 Title
-Leak-safe churn prediction on KKBOX with calibrated actions
+Churn prediction on KKBOX with point-in-time features and calibrated probabilities
+
+Status
+Portfolio project. Read LIMITATIONS.md in the repo before quoting any figure below.
 
 Problem and metric
 Predict churn one month ahead. Score on log loss. See CITES.md.
 
 Approach
 
-* Rebuilt labels with the 30-day rule and tests.
-* DuckDB features with as-of windows and a leak audit.
-* Baselines, XGBoost, isotonic calibration.
-* Rolling backtests across three months.
-* SHAP reasons. Rules for next best action.
+* Rebuilt labels with the 30-day rule and tests. (Two implementations currently disagree on the
+  day-30 boundary; see DECISIONS-PENDING.md.)
+* DuckDB features with as-of windows, plus tests that fabricate post-cutoff events and assert
+  they are excluded.
+* Baselines, XGBoost, LightGBM, isotonic calibration.
+* SHAP endpoint with an explicitly flagged approximation fallback. Rules for next best action;
+  their effectiveness has not been evaluated.
 
-Results  [fill with measured numbers]
+Results (recorded; measured on the window that was also used for hyperparameter tuning,
+so not held-out)
 
-* Log loss. pre = A, post = B.
-* ROC AUC. C with 95% CI.
-* Brier. D with improved reliability.
-* Backtests. Feb→Mar = E, Mar→Apr = F, Apr→May = G.
-* Drift. PSI for features and score within thresholds.
+* Log loss. pre = 0.4130, post = 0.1127.
+* ROC AUC. 0.9696. No confidence interval is computed anywhere in the repository.
+* Brier. pre = 0.1255, post = 0.0331.
+* Backtests. Not produced. The backtest driver never calls its evaluation function and the
+  committed eval/backtests.csv is empty.
+* Drift. scripts/psi_scores.py exists; no PSI result is recorded.
 
 Demo
 
-* Retention Copilot. Member id or CSV upload.
-* Output. score, top 3 reasons, next action.
+* React dashboard over checked-in exported JSON and 200 sample members.
+* Output. score, rule-selected action, and placeholder explanation factors (the live API
+  path does not currently match the FastAPI routes).
 
 Reproducibility
 
-* One command. make all.
-* Docker and green CI on a 1k synthetic fixture.
+* make app for local startup; Docker and Docker Compose configuration included.
+* CI workflows exist but are not gating: lint is non-blocking, only two test files run, and the
+  calibration, integration and backtest steps use continue-on-error.
 
 Links
 
