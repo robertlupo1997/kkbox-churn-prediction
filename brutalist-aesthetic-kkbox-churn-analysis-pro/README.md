@@ -1,14 +1,20 @@
 # KKBOX Churn Analysis Dashboard
 
-Brutalist-aesthetic React dashboard for visualizing churn predictions and model performance.
+Brutalist-aesthetic React dashboard for visualizing churn predictions and model performance. It
+renders exported JSON artifacts from the ML pipeline; see [../LIMITATIONS.md](../LIMITATIONS.md).
 
-## Features
+## Pages
 
-- **Dashboard**: KPI cards, risk distribution charts, member monitoring table
-- **Member Lookup**: Search members, view SHAP explanations for predictions
-- **Model Performance**: AUC comparison, calibration curves, lift/gains charts
-- **Feature Importance**: SHAP beeswarm plots, grouped feature analysis
-- **ROI Calculator**: Interactive business impact projections
+- **Dashboard**: KPI cards computed from exported aggregates, risk distribution charts, member table
+- **Member Lookup**: Search the 200 checked-in sample members. The factor waterfall is an
+  illustrative placeholder generated from the risk score, not model SHAP output. Several displayed
+  member statistics (city, tenure, active days, auto-renew) are exporter placeholders rather than
+  real member data.
+- **Model Performance**: AUC comparison, calibration curves, lift/gains charts from exported JSON
+- **Feature Importance**: Grouped XGBoost importance, plus a beeswarm whose points are generated
+  synthetically from global importance values — it does not show sample-level SHAP values
+- **Retention Savings Projection**: Gross revenue retained under user-supplied assumptions. It does
+  not model campaign cost, treatment reach, or incremental uplift, so it is not an ROI calculation.
 
 ## Quick Start
 
@@ -27,12 +33,16 @@ npm run dev    # http://localhost:3000
 
 ## API Integration
 
-The dashboard can run standalone with sample data or connect to the FastAPI backend:
+The dashboard currently runs from checked-in sample data.
 
-- **Standalone**: Uses 200 sample members from `data/sampleMembers.json`
-- **With API**: Connects to `http://localhost:8000` for live predictions
+- **Standalone (current behaviour)**: Uses 200 sample members from `data/sampleMembers.json`
+- **With API**: not working as written. The health check requests `/health` while the backend
+  exposes `/api/health`, and member prediction requests `GET /api/predict/{id}` while the backend
+  exposes `POST /api/predictions/single`. When these calls fail the UI silently falls back to the
+  bundled samples and placeholder explanation factors.
 
-Set `VITE_API_URL` environment variable to configure the backend URL.
+`VITE_API_URL` configures the backend URL, but Vite substitutes it at build time; setting it only as
+a runtime environment variable (as `docker-compose.yml` does) has no effect on the compiled client.
 
 ## Build
 
