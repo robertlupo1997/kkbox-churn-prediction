@@ -61,6 +61,12 @@ Recorded dataset sizes: 1,929,125 training rows across two 2017 monthly windows 
 validation rows in the later window (`models/training_metrics.json`). These are row counts; a member
 can appear in more than one monthly window, and no distinct-member count is recorded.
 
+**That overlap is itself a leakage channel for the recorded AUC.** Because the same `msno` can appear
+in both the training and validation snapshots, the score partly reflects the model recognising members
+it has already seen rather than generalising to new ones. The split is temporal, not by member, and
+nothing in this repository measures how much of the recorded AUC that overlap accounts for. A
+member-disjoint split would be needed to separate the two, and it has not been run.
+
 Accuracy, precision, and recall are not reported here: no artifact in the repository contains them
 and the predictions needed to recompute them are not checked in.
 

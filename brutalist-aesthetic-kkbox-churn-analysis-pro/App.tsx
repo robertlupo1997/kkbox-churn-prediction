@@ -29,7 +29,7 @@ const MetricsBanner: React.FC = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-black text-white py-2 px-4 flex items-center justify-center gap-4 sm:gap-6 text-[10px] font-black uppercase tracking-widest">
       <span className="flex items-center gap-1">
-        <span className="text-brand">0.97</span> AUC
+        <span className="text-brand">0.9696</span> Tuned-Val AUC
       </span>
       <span className="hidden sm:inline text-zinc-500">|</span>
       <span className="hidden sm:flex items-center gap-1">
@@ -109,7 +109,7 @@ const Header = () => {
             CHURN.<span className="text-brand italic">ANALYSIS</span>
           </h1>
           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3 max-w-md">
-            Predicting customer churn with <span className="text-brand font-bold">97% AUC</span> using 131 engineered features and ensemble ML models
+            Predicting customer churn at <span className="text-brand font-bold">0.9696 AUC</span>, a tuned-validation figure rather than a held-out one, using 131 engineered features and ensemble ML models
           </p>
           <div className="flex flex-wrap gap-1 mb-3">
             {TECH_STACK.map(tech => <TechBadge key={tech} label={tech} />)}

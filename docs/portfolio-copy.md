@@ -9,7 +9,8 @@
 > End-to-End ML Pipeline for Music Streaming Churn Prediction
 
 **Option B (Results-focused)**
-> Predicting Customer Churn at 0.97 AUC Using a Time-Ordered Train/Validation Split
+> Predicting Customer Churn at 0.9696 AUC on a Time-Ordered Split — a Tuned-Validation
+> Figure, Not Held-Out
 
 **Option C (Full-stack emphasis)**
 > Churn Prediction End to End: From Feature Engineering to Interactive Dashboard
