@@ -55,17 +55,38 @@ curl -s -X POST $BASE/api/predictions/single \
 curl -s $BASE/api/calibration   # expect non-synthetic curve arrays matching models/calibration_metrics.json
 ```
 
-Pass criterion: all five return the expected shapes AND `/api/metrics` values match the
-committed `models/training_metrics.json` byte-for-byte.
+Pass criterion: all five return the expected shapes; `/api/metrics` `auc` and `log_loss`
+must match `models/training_metrics.json` byte-for-byte, but its `brier_score` will NOT:
+the metrics route prefers the calibrated Brier from `models/calibration_metrics.json`
+(`xgboost.after.brier` = 0.03895) over the uncalibrated one in training_metrics.json
+(0.03904). Probe 5 must return measured points (irregular values), never the synthetic
+formula `mean_predicted=i/10, fraction_of_positives=0.85*i/10+0.02`;
+`tests/test_calibration_serving.py` pins this at HEAD so drift cannot ship silently.
 
 ## Rollback
 
-The Space is a git repo. Rollback is:
+Two deploy paths exist and they behave differently:
+
+1. **CI auto-deploy (`.github/workflows/deploy-hf.yml`).** A push to GitHub `main`
+   triggers a workflow that builds an orphan branch `hf-deploy` from the current tree
+   (`git add -A`) and **force-pushes it to the HF Space's `main`** using the stored
+   `HF_TOKEN`. So once this repair merges to GitHub main, the Space updates WITHOUT any
+   manual HF push; conversely, rolling back means reverting on GitHub main and letting
+   CI redeploy the old tree.
+2. **Direct push by a human with a write-scoped HF token** (this plan's original path).
+   The Space side receives an orphan branch with no shared history, so a `git revert`
+   ON THE SPACE is impossible; rollback there means force-pushing the previous state
+   again:
 
 ```
-git revert <redeploy-commit>   # or git reset --hard <previous-sha> + force push if necessary
+# from a checkout of the pre-repair tree (e.g. upstream main before this change):
+git checkout --orphan hf-deploy-rollback
+git add -A && git commit -m "Rollback kkbox Space to pre-repair artifacts"
+git push --force hf hf-deploy-rollback:main
 ```
 
-then let the Space rebuild. Previous behavior returns exactly (empty members, 0.9642
-metrics) because the previous artifacts are unchanged upstream of this commit. No data
-migration exists; rollback risk is limited to the demo being broken-but-honest again.
+Previous behavior returns exactly (empty members, 0.9642 metrics, synthesized
+calibration curve) because the previous artifacts are unchanged upstream of this
+commit. No data migration exists; rollback risk is limited to the demo being
+broken-but-honest again. Note the CI workflow force-pushes with `git add -A`, which
+would also sweep untracked files present on the runner - keep GitHub main clean.

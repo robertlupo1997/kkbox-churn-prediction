@@ -143,11 +143,13 @@ make app
 # API at http://localhost:8000/api/health
 ```
 
-The dashboard serves its checked-in sample data. Member prediction through the API does not work from
-a clean clone: the checked-in `eval/app_features.csv` supplies 99 predictor columns while
-`models/xgb.json` declares 131, and the fallback predictions file the service looks for is not
-committed. The Docker Compose frontend API URL is also supplied at runtime although Vite substitutes
-it at build time. See [LIMITATIONS.md](LIMITATIONS.md).
+The dashboard serves its checked-in sample data. Member prediction through the API works from a
+clean clone as of 2026-08-23: `eval/app_features.csv` and `models/xgb.json` agree on an exact
+ordered feature list (`tests/test_artifact_contract.py` enforces this), and the served models are
+retrained on the shipped sample via `scripts/rebuild_serving_artifacts.py`. Remaining caveats:
+the Docker Compose frontend API URL is supplied at runtime although Vite substitutes it at build
+time, and the served model's metrics describe a 10k-member serving-sample holdout, not the
+full-data tuned-validation numbers quoted elsewhere. See [LIMITATIONS.md](LIMITATIONS.md).
 
 ### Option 2: ML Pipeline Only
 

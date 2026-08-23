@@ -16,7 +16,7 @@ FAILED tests/test_labels.py::TestChurnLabels::test_analyze_mismatches - KeyEr...
 =================== 8 failed, 72 passed, 3 warnings in 2.63s ===================
 make: *** [Makefile:57: test] Error 1
 ```
-make test exit: 0
+make test exit: 2 (expected - the 8 pre-existing label/window failures above; an earlier revision of this line wrongly recorded 0 because the shell's PIPESTATUS had been clobbered by an intervening echo)
 
 ## tests/test_artifact_contract.py
 ```
@@ -46,3 +46,20 @@ POST /api/predictions/single {"msno":"dNIykH..."} -> 200 {"churn_probability":0.
 ```
 IDENTICAL across rerun (seed 42 deterministic)
 ```
+
+## Post-fix verification (review round 1, HEAD pending, 2026-08-23)
+
+Reviewer refutation upheld: `/api/calibration` checked top-level curve keys while
+`models/calibration_metrics.json` nests them under `xgboost`, so the endpoint served its
+synthetic fallback despite real curves being committed.
+
+Fix: `api/routers/metrics.py` now falls back through per-model blocks to find
+`uncalibrated`/`calibrated`; `tests/test_calibration_serving.py` loads the ACTUAL
+committed artifact through the route function and asserts the served points equal the
+stored ones (and that no literal synthetic point appears).
+
+Live probe after fix (uvicorn :8125): `/api/calibration` returns measured values, e.g.
+`{"mean_predicted": 0.009792834858760726, "fraction_of_positives": 0.016260162601626018}`.
+
+Suite at fix commit: 8 failed / 74 passed - the pre-existing label/window set unchanged,
++2 new drift-guard tests.

@@ -65,7 +65,12 @@ anything the API returns.
 ## 4. The best recorded result (LightGBM) is not what the API loads
 
 Still true structurally: the API loads `models/xgb.json` and describes itself as XGBoost;
-`models/lgb.txt` sits beside it unserved. Since the 2026-08-23 repair,
+`models/lgb.txt` sits beside it unserved. Additionally, `models/xgboost.json` is a stale archived booster left over from before the
+2026-08-23 repair; nothing loads it (the API reads `MODEL_PATH = models/xgb.json`, and the
+Space Dockerfile ships only `xgb.json`, `training_metrics.json`,
+`calibration_metrics.json`, and `eval/app_features.csv`). It does not match the served
+model and its contents must not be cited as describing anything live. Since the
+2026-08-23 repair,
 `models/training_metrics.json` records honest holdout metrics for BOTH retrained models
 (lightgbm holdout AUC 0.9801 vs xgboost 0.9791 on the serving sample), so the metrics
 endpoint no longer contradicts the served model. What remains is a presentation gap:
