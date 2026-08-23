@@ -1,172 +1,195 @@
 /**
- * API Service for Backend Integration
- * Connects to FastAPI backend for live predictions with SHAP explanations.
- * Falls back gracefully when API is unavailable.
+ * API service for the churn demo.
+ *
+ * The bundle and the API are served by the same process: the Dockerfile builds
+ * this app into `./static`, and one uvicorn serves both that and `/api/*` on
+ * port 7860. So the base URL is relative by default. `VITE_API_URL` remains an
+ * override for running `vite dev` against an API on another port.
+ *
+ * Member ids are sent in a request body, never in a path segment. 4,927 of the
+ * 10,000 shipped msnos contain `/`, which ends a path segment; percent-encoding
+ * does not survive routing, and 4,802 contain `+`, which decodes to a space in
+ * a query string. `POST /api/members/lookup` and `POST /api/shap` exist for
+ * that reason.
+ *
+ * There is no mock data in this file. When the API cannot answer, the caller is
+ * told so and the UI says so.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-export interface SHAPFactor {
-  feature: string;
-  value: number;
-  contribution: number;
-  description: string;
+const HEALTH_TIMEOUT_MS = 3000;
+const REQUEST_TIMEOUT_MS = 10000;
+
+/** Raised when the API is reachable but could not answer for this member. */
+export class ApiUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiUnavailableError';
+  }
 }
 
-export interface PredictionResponse {
+/** One member as the API returns it. `risk_score` is a probability in [0, 1]. */
+export interface ApiMember {
   msno: string;
   risk_score: number;
   risk_tier: 'Low' | 'Medium' | 'High';
-  confidence: number;
-  top_risk_factors: SHAPFactor[];
-  top_protective_factors: SHAPFactor[];
-  member_stats: {
-    tenure_days: number;
-    city: number;
-    age: number;
-    is_auto_renew: boolean;
-    total_secs_30d: number;
-    active_days_30d: number;
-  };
+  is_churn: boolean | null;
+  /**
+   * Globally important model features. The API documents these as identical
+   * for every member, so the UI must not present them as this member's reasons.
+   * Per-member attribution comes from `fetchShap`.
+   */
+  top_risk_factors: string[];
+  action_recommendation: string;
 }
 
-export interface APIStatus {
+export interface ApiMemberList {
+  members: ApiMember[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ApiAction {
+  category: string;
+  recommendation: string;
+  message: string;
+  urgency: string;
+  channels: string[];
+}
+
+export interface ApiMemberDetail {
+  msno: string;
+  risk_score: number;
+  risk_tier: 'Low' | 'Medium' | 'High';
+  is_churn: boolean | null;
+  features: Record<string, number | string | null>;
+  action: ApiAction;
+}
+
+/** One feature's signed contribution to this member's score. */
+export interface ShapFactor {
+  feature: string;
+  impact: number;
+}
+
+export interface ApiShapExplanation {
+  base_value: number;
+  shap_values: Record<string, number>;
+  top_risk_factors: ShapFactor[];
+  top_protective_factors: ShapFactor[];
+  is_approximate: boolean;
+}
+
+export interface ApiStatus {
   available: boolean;
-  version?: string;
-  model_loaded?: boolean;
+  modelLoaded?: boolean;
+  featuresLoaded?: boolean;
+}
+
+async function getJson<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok) {
+    throw new ApiUnavailableError(`GET ${path} returned ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (response.status === 404) {
+    throw new ApiUnavailableError('not_found');
+  }
+  if (!response.ok) {
+    throw new ApiUnavailableError(`POST ${path} returned ${response.status}`);
+  }
+  return (await response.json()) as T;
 }
 
 /**
- * Check if the API is available
+ * Ask whether the API can serve predictions.
+ *
+ * `/api/health` reports healthy even when the member table is empty, which is
+ * how the demo shipped for months looking connected and serving nothing. So
+ * this also asks for one member and treats an empty population as unavailable.
  */
-export async function checkAPIStatus(): Promise<APIStatus> {
+export async function checkApiStatus(): Promise<ApiStatus> {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(3000), // 3 second timeout
-    });
+    const health = await getJson<{
+      status: string;
+      model_loaded?: boolean;
+      features_loaded?: boolean;
+    }>('/api/health', HEALTH_TIMEOUT_MS);
 
-    if (!response.ok) {
-      return { available: false };
-    }
+    const probe = await getJson<ApiMemberList>('/api/members?limit=1', HEALTH_TIMEOUT_MS);
 
-    const data = await response.json();
     return {
-      available: true,
-      version: data.version,
-      model_loaded: data.model_loaded,
+      available: health.status === 'healthy' && probe.total > 0,
+      modelLoaded: health.model_loaded,
+      featuresLoaded: health.features_loaded,
     };
-  } catch (error) {
+  } catch {
     return { available: false };
   }
 }
 
+/** How many members the API is serving. */
+export async function fetchPopulationSize(): Promise<number> {
+  const page = await getJson<ApiMemberList>('/api/members?limit=1');
+  return page.total;
+}
+
 /**
- * Get prediction and SHAP explanation for a member
+ * Search the served population by substring of the member id.
+ *
+ * The search runs on the server, over the members the API actually has. The
+ * previous implementation matched against a list bundled into this app, so a
+ * hit said nothing about whether the API knew the member.
  */
-export async function getMemberPrediction(msno: string): Promise<PredictionResponse | null> {
+export async function searchMembers(query: string, limit = 12): Promise<ApiMemberList> {
+  const params = new URLSearchParams({ q: query, limit: String(limit) });
+  return getJson<ApiMemberList>(`/api/members?${params.toString()}`);
+}
+
+/** Full record for one member. Returns null when the API has no such member. */
+export async function fetchMemberDetail(msno: string): Promise<ApiMemberDetail | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/predict/${encodeURIComponent(msno)}`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    return await response.json();
+    return await postJson<ApiMemberDetail>('/api/members/lookup', { msno });
   } catch (error) {
-    console.error('Failed to fetch prediction:', error);
+    if (error instanceof ApiUnavailableError && error.message === 'not_found') {
+      return null;
+    }
     throw error;
   }
 }
 
 /**
- * Search for members by partial ID match
+ * Per-member SHAP attribution.
+ *
+ * Returns null when the API has no explanation for this member. The caller must
+ * say the explanation is unavailable. It must not substitute anything.
  */
-export async function searchMembers(query: string, limit: number = 10): Promise<string[]> {
+export async function fetchShap(msno: string): Promise<ApiShapExplanation | null> {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/members/search?q=${encodeURIComponent(query)}&limit=${limit}`,
-      {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(5000),
-      }
+    const payload = await postJson<{ msno: string; explanation: ApiShapExplanation }>(
+      '/api/shap',
+      { msno },
     );
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    return await response.json();
+    return payload.explanation;
   } catch (error) {
-    console.error('Failed to search members:', error);
-    return [];
+    if (error instanceof ApiUnavailableError && error.message === 'not_found') {
+      return null;
+    }
+    throw error;
   }
-}
-
-/**
- * Generate mock SHAP factors for demo when API is unavailable
- */
-export function generateMockSHAPFactors(riskScore: number): {
-  riskFactors: SHAPFactor[];
-  protectiveFactors: SHAPFactor[];
-} {
-  // Mock risk factors - vary based on risk score
-  const riskFactors: SHAPFactor[] = [
-    {
-      feature: 'cancel_count_30d',
-      value: riskScore > 50 ? 2 : 0,
-      contribution: riskScore > 50 ? 0.15 : 0.02,
-      description: 'Number of cancellations in last 30 days',
-    },
-    {
-      feature: 'auto_renew_ratio_30d',
-      value: riskScore > 50 ? 0.2 : 0.8,
-      contribution: riskScore > 50 ? 0.12 : 0.01,
-      description: 'Ratio of auto-renew transactions',
-    },
-    {
-      feature: 'active_days_30d',
-      value: riskScore > 50 ? 5 : 25,
-      contribution: riskScore > 50 ? 0.08 : -0.05,
-      description: 'Days with listening activity',
-    },
-    {
-      feature: 'total_secs_trend',
-      value: riskScore > 50 ? -0.4 : 0.2,
-      contribution: riskScore > 50 ? 0.06 : -0.03,
-      description: 'Listening time trend (negative = declining)',
-    },
-  ].filter(f => f.contribution > 0);
-
-  const protectiveFactors: SHAPFactor[] = [
-    {
-      feature: 'tenure_days',
-      value: 730,
-      contribution: -0.08,
-      description: 'Days since registration',
-    },
-    {
-      feature: 'latest_auto_renew',
-      value: riskScore < 50 ? 1 : 0,
-      contribution: riskScore < 50 ? -0.12 : 0,
-      description: 'Auto-renew enabled on latest subscription',
-    },
-    {
-      feature: 'completion_rate_90d',
-      value: riskScore < 50 ? 0.75 : 0.3,
-      contribution: riskScore < 50 ? -0.06 : 0,
-      description: 'Song completion rate',
-    },
-  ].filter(f => f.contribution < 0);
-
-  return { riskFactors, protectiveFactors };
 }

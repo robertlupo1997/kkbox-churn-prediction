@@ -392,6 +392,38 @@ def get_sorted_members(
         return _sorted_members[offset : offset + limit], total
 
 
+def search_members(
+    query: str,
+    limit: int = 100,
+    offset: int = 0,
+    risk_tier: str | None = None,
+) -> tuple[list[dict], int]:
+    """Find members whose msno contains ``query``, case-insensitively.
+
+    Searching the served population is the point: the demo previously searched
+    a list bundled into the client, so a hit told you nothing about whether the
+    API knew the member.
+
+    Args:
+        query: Case-insensitive substring of the member id
+        limit: Maximum members to return
+        offset: Number to skip
+        risk_tier: Optional filter by tier
+
+    Returns:
+        Tuple of (members list, total matching count) -- total is the number of
+        matches, not the page size
+    """
+    if not _sorted_members:
+        return [], 0
+
+    needle = query.casefold()
+    matches = [m for m in _sorted_members if needle in m["msno"].casefold()]
+    if risk_tier:
+        matches = [m for m in matches if m["risk_tier"] == risk_tier]
+    return matches[offset : offset + limit], len(matches)
+
+
 def get_member_by_msno(msno: str) -> dict | None:
     """Get pre-computed member data by msno.
 

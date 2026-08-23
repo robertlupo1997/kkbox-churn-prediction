@@ -149,3 +149,17 @@ class BatchPredictionResponse(BaseModel):
     total_requested: int = Field(..., description="Total members requested")
     total_found: int = Field(..., description="Total members found")
     processing_time_ms: float = Field(..., description="Processing time in milliseconds")
+
+
+class MemberLookupRequest(BaseModel):
+    """Look up one member by id, with the id in the body.
+
+    Path parameters cannot carry a KKBOX ``msno``: the ids are base64 and 4,927
+    of the 10,000 shipped members contain ``/``, which ends the path segment.
+    Percent-encoding does not help -- the server decodes ``%2F`` before routing
+    and re-splits. A query parameter has the same class of problem with ``+``,
+    which decodes to a space. The body is the only transport with no encoding
+    trap, so it is what the demo client uses.
+    """
+
+    msno: str = Field(..., description="Member ID, verbatim -- no encoding applied")
