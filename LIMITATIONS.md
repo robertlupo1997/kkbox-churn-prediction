@@ -186,7 +186,8 @@ Measured on 2026-08-23 from a clean clone (`git clone` of this repository into a
 fresh virtualenv, `pip install -r requirements.txt`):
 
 - The suite runs to completion (no collection error since `requirements.txt` now includes the API
-  dependencies): **10 failed, 71 passed**.
+  dependencies): **10 failed, 70 passed** (`make install && make test` measured on the fixed
+tree; `make test` exits 2).
 - Failures sit in `tests/test_labels.py` (6), `tests/test_feature_windows.py` (2), and
   `tests/test_artifact_contract.py` (2, the serving-contract mismatch documented in §2).
 - On 2026-08-09 the count was 16 failures plus a collection error, measured before the API
@@ -239,6 +240,15 @@ nobody mistakes their absence for a passing result:
 - Drift monitoring output (`scripts/psi_scores.py` exists; no PSI result is recorded)
 - Robustness to activity gaps, pricing changes, or platform-wide behavior shifts
 - Any comparison against the competition winners' actual solutions
+
+## 25. The documented pipeline path overwrites the cited metric artifact
+
+Measured 2026-08-23 from a clean clone: `make features && make models` runs on synthetic data and
+rewrites `models/training_metrics.json` in place (212 lines changed), replacing the artifact the
+README and this file cite with synthetic-data numbers (1,000 samples, 9 features, XGBoost AUC
+0.4716). A visitor who follows the documented pipeline destroys the very evidence the
+documentation points at. The model binaries were byte-identical after the run, but the metric
+artifact was not.
 
 ---
 

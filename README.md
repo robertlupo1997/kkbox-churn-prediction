@@ -34,8 +34,10 @@ make app  # Starts API on :8000, Dashboard on :3000
 ```
 
 A Hugging Face Spaces URL is also published at
-[robertlupo1997/kkbox-churn-prediction](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction);
-whether it is currently up is external to this repository.
+[robertlupo1997/kkbox-churn-prediction](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction).
+Checked on 2026-08-23: the Space loads and answers, but its member cache is empty, prediction
+routes return "not found", and its `/api/metrics` reports AUC 0.9642 from an older build than this
+repository — see [`docs/repair/2026-08-23-live-demo-check.md`](docs/repair/2026-08-23-live-demo-check.md).
 
 The dashboard runs from checked-in exported JSON and 200 sample members. Its live-API code path does
 not currently match the FastAPI routes, and individual explanations shown in the UI are generated
