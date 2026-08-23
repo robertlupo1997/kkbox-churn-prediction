@@ -98,9 +98,27 @@ async def get_calibration() -> CalibrationResponse:
     """
     calibration_data = model_service.load_calibration_data()
 
-    # Check if calibration_data has the expected format (uncalibrated/calibrated arrays)
-    has_curve_data = (
-        calibration_data and "uncalibrated" in calibration_data and "calibrated" in calibration_data
+    # Curve data may be nested per-model ({"xgboost": {"uncalibrated": [...],
+    # "calibrated": [...]}}) or flat at the top level. Prefer the nested form
+    # and fall back through the model blocks defensively: if this lookup ever
+    # drifts from the committed models/calibration_metrics.json shape, the
+    # synthetic-curve fallback below would silently fabricate a curve again,
+    # which tests/test_calibration_serving.py guards against.
+    curve_source = calibration_data or {}
+    if not ("uncalibrated" in curve_source and "calibrated" in curve_source):
+        for block in (curve_source or {}).values():
+            if (
+                isinstance(block, dict)
+                and "uncalibrated" in block
+                and "calibrated" in block
+                and block["uncalibrated"]
+                and block["calibrated"]
+            ):
+                curve_source = block
+                break
+
+    has_curve_data = bool(curve_source.get("uncalibrated")) and bool(
+        curve_source.get("calibrated")
     )
 
     if not has_curve_data:
@@ -144,7 +162,7 @@ async def get_calibration() -> CalibrationResponse:
             mean_predicted=point.get("mean_predicted", 0),
             fraction_of_positives=point.get("fraction_of_positives", 0),
         )
-        for point in calibration_data.get("uncalibrated", [])
+        for point in curve_source.get("uncalibrated", [])
     ]
 
     calibrated = [
@@ -152,7 +170,7 @@ async def get_calibration() -> CalibrationResponse:
             mean_predicted=point.get("mean_predicted", 0),
             fraction_of_positives=point.get("fraction_of_positives", 0),
         )
-        for point in calibration_data.get("calibrated", [])
+        for point in curve_source.get("calibrated", [])
     ]
 
     return CalibrationResponse(
