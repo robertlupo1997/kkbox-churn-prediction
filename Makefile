@@ -25,11 +25,11 @@ format:
 # Testing
 test:
 	@echo "🧪 Running tests..."
-	python3 -m pytest tests/ -v --tb=short -c pytest.ini 2>/dev/null || python3 tests/test_temporal_safety.py
+	python3 -m pytest tests/ -v --tb=short -c pytest.ini
 
 test-ci:
 	@echo "🧪 Running CI tests..."
-	python3 -m pytest tests/ -q --tb=line -c pytest.ini 2>/dev/null || python3 tests/test_temporal_safety.py
+	python3 -m pytest tests/ -q --tb=line -c pytest.ini
 
 # Pipeline stages
 features:

@@ -43,8 +43,11 @@ The service catches that and falls back to a precomputed predictions file
 - `POST /api/predictions` marks every member not found
 - `GET /api/shap/{msno}` returns the flagged importance-based approximation, never true SHAP
 
-**To verify a fix:** add a test that loads the configured model and feature file, asserts exact
-ordered feature-name parity, scores ten rows, and asserts finite probabilities.
+**Status of the verification test:** `tests/test_artifact_contract.py` (added 2026-08-23) loads
+the configured model and feature file, asserts exact ordered feature-name parity, and asserts ten
+rows score to finite probabilities. It **currently fails**: model declares 131 features, the CSV
+carries 99 predictors, 32 model features are absent from the CSV. That failure is deliberate and
+visible until the serving dataset is rebuilt or the model is retrained on the shipped columns.
 
 ## 3. The API never applies calibration
 
@@ -162,19 +165,13 @@ reliability data backs any calibration-quality statement.
 model and feature files loaded. `docker-compose.yml` checks only for HTTP 200. Missing predictions,
 a feature mismatch, and an empty member cache all pass this check.
 
-## 17. `make test` hides suite failures
+## 17. ~~`make test` hides suite failures~~ — FIXED 2026-08-23
 
-```make
-test:
-	python3 -m pytest tests/ -v --tb=short -c pytest.ini 2>/dev/null || python3 tests/test_temporal_safety.py
-```
-
-If any collection error or test failure occurs, stderr is discarded and Make runs a single file
-instead. If that one file passes, `make test` reports success. `test-ci` has the same fallback.
-
-The advertised install target also omits API dependencies (`requirements.txt` has no FastAPI), while
-`tests/api_tests/test_endpoints.py` imports FastAPI — so a fresh `make install && make test` takes
-the fallback path.
+The `|| python3 tests/test_temporal_safety.py` fallback was removed from both `test` and `test-ci`
+in the Makefile, and `requirements.txt` now installs the API dependencies (`fastapi`,
+`pydantic-settings`, `uvicorn`, `httpx`) that `tests/api_tests/test_endpoints.py` needs to even be
+collected. A fresh `make install && make test` no longer silently substitutes a single passing file
+for the suite; failures surface with their real exit code. What still fails is described in §19.
 
 ## 18. CI is green by construction around the riskiest stages
 
@@ -185,15 +182,19 @@ steps are all `continue-on-error`. A green badge does not indicate the pipeline 
 
 ## 19. The test suite does not pass
 
-Measured on 2026-08-09 in this checkout:
+Measured on 2026-08-23 from a clean clone (`git clone` of this repository into an empty directory,
+fresh virtualenv, `pip install -r requirements.txt`):
 
-- `python -m pytest tests/` **fails at collection**: `tests/api_tests/test_endpoints.py` imports
-  FastAPI, which `requirements.txt` does not install.
-- `python -m pytest tests/ --ignore=tests/api_tests` runs, and **16 tests fail** — across
-  `tests/test_labels.py`, `tests/test_feature_windows.py`, and `tests/test_calibration_modules.py`.
+- The suite runs to completion (no collection error since `requirements.txt` now includes the API
+  dependencies): **10 failed, 71 passed**.
+- Failures sit in `tests/test_labels.py` (6), `tests/test_feature_windows.py` (2), and
+  `tests/test_artifact_contract.py` (2, the serving-contract mismatch documented in §2).
+- On 2026-08-09 the count was 16 failures plus a collection error, measured before the API
+  dependencies were installable from `requirements.txt`; several label/window tests were evidently
+  repaired between those dates, and today's numbers are the current baseline.
 
-Because `make test` swallows this and falls back to a single file (see §17 above), the failures are
-not visible through the advertised entry point.
+Because the Makefile fallback is gone (§17), these failures now abort `make test` with a non-zero
+exit instead of being hidden.
 
 ## 20. Much of the test suite asserts existence, not behavior
 
