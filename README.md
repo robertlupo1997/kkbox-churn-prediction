@@ -46,22 +46,27 @@ placeholders, not model SHAP values. See [LIMITATIONS.md](LIMITATIONS.md).
 
 ## Recorded Results
 
-These are the numbers stored in the checked-in metric artifacts. All of them come from the **March
-2017 window, which was also the window Optuna maximised AUC over during hyperparameter selection**
-(`src/hyperparameter_tuning.py`, `train_temporal.py`). They are therefore tuned-validation numbers,
-not held-out test numbers. **This repository contains no untouched test window.**
+The figures below are **historical full-population tuned-validation numbers** recovered from git
+history into `models/archive/` when the serving artifacts were rebuilt on 2026-08-23. All of them
+come from the **March 2017 window, which was also the window Optuna maximised AUC over during
+hyperparameter selection** (`src/hyperparameter_tuning.py`, `train_temporal.py`). They are therefore
+tuned-validation numbers, not held-out test numbers, and they **describe no served model**. **This
+repository contains no untouched test window.** Values are quoted exactly as stored in the archived
+artifacts (the often-cited roundings 0.9696 / 0.1127 / 0.0331 derive from these). The currently
+served model has its own separate metrics in `models/training_metrics.json`.
 
 | Metric | Baseline | Best recorded | Source |
 |--------|----------|---------------|--------|
-| AUC (LightGBM, uncalibrated) | 0.8690 (logistic regression) | 0.9696 | `models/training_metrics.json` |
-| Log loss (LightGBM, after isotonic calibration) | 0.4130 before | 0.1127 | `models/calibration_metrics.json` |
-| Brier score (LightGBM, after isotonic calibration) | 0.1255 before | 0.0331 | `models/calibration_metrics.json` |
+| AUC (LightGBM, uncalibrated) | 0.8690087735213405 (logistic regression) | 0.9695664691945679 | `models/archive/full-data-training_metrics.json` |
+| Log loss (LightGBM, after isotonic calibration) | 0.41297890834500645 before | 0.11270724473096795 | `models/archive/full-data-calibration_metrics.json` |
+| Brier score (LightGBM, after isotonic calibration) | 0.12552498527058062 before | 0.03311632255290847 | `models/archive/full-data-calibration_metrics.json` |
 
 The calibration figures were computed on a random split of that same already-tuned March population
 (`src/calibrate_and_evaluate.py`), so they are not independent of the tuning either.
 
 Recorded dataset sizes: 1,929,125 training rows across two 2017 monthly windows and 970,960
-validation rows in the later window (`models/training_metrics.json`). These are row counts; a member
+validation rows in the later window (`models/archive/full-data-training_metrics.json`; the served
+model trains on 10,000 rows - see `models/training_metrics.json`). These are row counts; a member
 can appear in more than one monthly window, and no distinct-member count is recorded.
 
 **That overlap is itself a leakage channel for the recorded AUC.** Because the same `msno` can appear
@@ -116,10 +121,11 @@ magnitudes mean something, which is why calibration is evaluated separately here
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                      MODEL TRAINING                             │
-│  Recorded validation AUC (also the Optuna tuning window):       │
-│   LightGBM 0.9696 │ XGBoost 0.9642 │ 50/50 blend 0.9680         │
+│  ARCHIVED tuned-validation figures (no served model; exact      │
+│  values in models/archive/): LightGBM ~0.9696 │ XGBoost ~0.9642 │
+│  50/50 blend ~0.9680                                            │
 │         ↓                                                       │
-│  Isotonic calibration → log loss 0.1127, Brier 0.0331           │
+│  Isotonic calibration → log loss ~0.1127, Brier ~0.0331         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -250,19 +256,19 @@ channel all appear in the recorded feature importance. See the bias section of
 ## Calibration
 
 Both training paths obtain positive-class probability estimates, and the served booster uses a
-`binary:logistic` objective. Those raw estimates are poorly calibrated in the recorded evaluation, and
-isotonic regression improves them substantially:
+`binary:logistic` objective. In the archived full-data evaluation the raw estimates were poorly
+calibrated and isotonic regression improved them substantially:
 
-| Metric (LightGBM) | Before | After |
-|-------------------|--------|-------|
-| Log loss | 0.4130 | 0.1127 |
-| Brier score | 0.1255 | 0.0331 |
-| AUC | 0.96996 | 0.97034 |
+| Metric (LightGBM) | Before | After | Source |
+|-------------------|--------|-------|--------|
+| Log loss | 0.41297890834500645 | 0.11270724473096795 | `models/archive/full-data-calibration_metrics.json` |
+| Brier score | 0.12552498527058062 | 0.03311632255290847 | `models/archive/full-data-calibration_metrics.json` |
+| AUC | 0.9699632964687438 | 0.9703411520587144 | `models/archive/full-data-calibration_metrics.json` |
 
-AUC changed slightly, so isotonic mapping did not preserve ranking exactly here. No ECE or reliability
-data is stored alongside these figures, so the *degree* of remaining calibration error is unmeasured;
-a nonzero Brier score is not evidence of exact calibration. The API does not apply any of this: it
-returns raw XGBoost scores and loads no calibrator artifact.
+These are historical figures describing no served model. The archived artifact stores no ECE or
+reliability curves alongside them, so the *degree* of remaining calibration error is unmeasured
+there; the serving-sample calibration artifact (`models/calibration_metrics.json`) does store
+measured reliability points. The API does not apply any calibrator: it returns raw XGBoost scores.
 
 ## Tech Stack
 

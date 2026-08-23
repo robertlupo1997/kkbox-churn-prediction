@@ -11,6 +11,10 @@ If a statement anywhere else in this repository conflicts with this file, this f
 ## 1. The headline metrics are tuned-validation numbers, not held-out results
 
 **What is claimed elsewhere:** LightGBM AUC 0.9696, calibrated log loss 0.1127, Brier 0.0331.
+(Exact stored values: 0.9695664691945679 AUC in
+`models/archive/full-data-training_metrics.json`; 0.11270724473096795 log loss and
+0.03311632255290847 Brier in `models/archive/full-data-calibration_metrics.json` - both recovered
+from git history on 2026-08-23 after the serving artifacts were rebuilt.)
 
 **What is true:** those numbers are real — they are in `models/training_metrics.json` and
 `models/calibration_metrics.json`. But they were measured on the March 2017 window, and that same

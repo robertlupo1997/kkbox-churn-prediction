@@ -4,9 +4,13 @@ These are my working notes from taking this project from an early 0.77 AUC basel
 0.9696 AUC, by reading about the Kaggle winners' approaches and applying similar feature patterns
 under a time-ordered split.
 
-**Caveat on every number below**: the recorded metrics come from the March 2017 window, which was
-also the window Optuna maximised AUC over. They are tuned-validation figures, not held-out results.
-There is no untouched test window in this repository. See LIMITATIONS.md.
+**Caveat on every number below**: the recorded metrics are HISTORICAL full-data figures recovered
+into `models/archive/full-data-training_metrics.json` and
+`models/archive/full-data-calibration_metrics.json` on 2026-08-23 (the serving artifacts were since
+rebuilt on a 10,000-member sample and describe different models). They come from the March 2017
+window, which was also the window Optuna maximised AUC over. They are tuned-validation figures, not
+held-out results, and they describe no served model. There is no untouched test window in this
+repository. See LIMITATIONS.md.
 
 ---
 
@@ -144,7 +148,11 @@ actual_amount_paid / payment_plan_days AS amt_per_day
 | **LightGBM** | 0.9696 | Best single model |
 | XGB+LGB Ensemble | 0.9680 | 50/50 blend |
 | XGBoost | 0.9642 | Close third |
-| Stacked Ensemble | 0.9638 | Worse than LightGBM alone (`models/stacked_ensemble_metrics.json`) |
+| Stacked Ensemble | 0.9637549319898823 | Worse than LightGBM alone (`models/stacked_ensemble_metrics.json`) |
+
+(LightGBM/XGB+LGB/XGBoost rows are archived full-data values from
+`models/archive/full-data-training_metrics.json`; the stacked figure is the only one still backed by
+a live artifact.)
 
 **Lesson**: More complex isn't always better. Single LightGBM beat stacking and ensembles.
 
@@ -203,14 +211,18 @@ artifact in this repository establishes that.
 
 ## 5. Calibration
 
-Recorded LightGBM figures from `models/calibration_metrics.json`:
+Historical LightGBM calibration figures (exact values from
+`models/archive/full-data-calibration_metrics.json`):
 
 ```
-                Before      After
-Log Loss        0.4130      0.1127
-Brier           0.1255      0.0331
-AUC             0.96996     0.97034
+                Before                After
+Log Loss        0.41297890834500645   0.11270724473096795
+Brier           0.12552498527058062   0.03311632255290847
+AUC             0.9699632964687438    0.9703411520587144
 ```
+
+(The shorter forms quoted elsewhere - 0.4130/0.1127, 0.1255/0.0331, 0.96996/0.97034 - are roundings
+of these stored values, not separate measurements.)
 
 Mean-prediction and observed-rate figures are not recorded in that artifact, and the evaluation
 predictions needed to recompute them are not checked in, so I do not quote them.

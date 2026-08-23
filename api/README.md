@@ -245,10 +245,11 @@ GET /api/calibration
 Returns uncalibrated and calibrated curve points, the bin count, and optional before/after fields
 (`CalibrationResponse`). There are no `bins`, `ece`, or `mce` top-level fields.
 
-Two caveats on this route: when curve arrays are absent from the metrics file — as they are in the
-committed `models/calibration_metrics.json` — the router **synthesizes** near-diagonal points rather
-than returning nothing, and the fields named `ece_before` / `ece_after` are populated with Brier
-scores, not expected calibration error.
+Two caveats on this route: when curve arrays are absent from the metrics file the router
+**synthesizes** near-diagonal points rather than returning nothing (the committed
+`models/calibration_metrics.json` HAS measured curve arrays since 2026-08-23, so the live route
+serves real points; `tests/test_calibration_serving.py` guards this), and the fields named
+`ece_before` / `ece_after` are populated with Brier scores, not expected calibration error.
 
 **Response:**
 ```json
@@ -260,6 +261,10 @@ scores, not expected calibration error.
   "ece_before": 0.1255,
   "ece_after": 0.0331
 }
+```
+
+(The values above are an illustrative payload shape, not a recorded measurement; despite their
+names, both fields carry Brier scores.)
 ```
 
 ---
