@@ -183,7 +183,10 @@ def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     X = df[feats].copy()
 
     # Encode categorical columns
-    if "gender" in X.columns:
+    if "gender" in X.columns and X["gender"].dtype == object:
+        # String gender is mapped; the shipped table stores the already-encoded
+        # 0/1/2 ints, which must pass through untouched (mapping them would
+        # turn every row into "unknown" = 2).
         gender_map = {"male": 0, "female": 1, "unknown": 2}
         X["gender"] = X["gender"].map(gender_map).fillna(2)
 
