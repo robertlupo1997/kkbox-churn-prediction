@@ -11,7 +11,7 @@ commit 2af2fe2, and verification after the fixes in 87c96e7.
 | Install | `make install` | exit 0; installs requirements.txt only — **no FastAPI/uvicorn/pydantic-settings/httpx** |
 | API import | `python -c "import api.main"` | `ModuleNotFoundError: No module named 'fastapi'` |
 | Full suite | `python -m pytest tests/ -c pytest.ini` | exit 2 — collection error: `tests/api_tests/test_endpoints.py` imports fastapi |
-| Suite minus api_tests | `pytest tests/ --ignore=tests/api_tests` | exit 1 — **8 failed, 69 passed** (6 in test_labels.py, 2 in test_feature_windows.py) |
+| Suite minus api_tests | `pytest tests/ --ignore=tests/api_tests` | exit 1 — **8 failed, 36 passed** (6 in test_labels.py, 2 in test_feature_windows.py) |
 | `make test` (documented entry) | `make test` | **exit 0** — fallback ran only tests/test_temporal_safety.py and reported "All temporal safety tests passed!" while the suite had a collection error + 8 failures |
 | Features | `make features` | exit 0 (synthetic data, 1000 rows / 12 features) |
 | Models | `make models` | exit 0 on synthetic data (AUC 0.4716); **overwrote `models/training_metrics.json`** (git shows the file modified) |
@@ -28,6 +28,12 @@ in model but not CSV: 32 ['autorenew_not_cancel', 'discount', 'amt_per_day',
 in CSV but not model: 0 []
 ordered parity: False
 ```
+
+**Correction (2026-08-23, post-review):** an earlier version of this table said
+"8 failed, 69 passed" for the baseline run. That number belonged to a later ad-hoc full-suite run
+in the same clone *after* fastapi/httpx/pydantic-settings had been manually pip-installed (the 33
+tests in `tests/api_tests` then pass, 36 + 33 = 69). Re-measured at 2af2fe2 with only
+requirements.txt installed, the documented command is **8 failed, 36 passed**.
 
 ## After fixes (87c96e7), fresh clone + fresh venv
 

@@ -5,7 +5,7 @@ Direct app host: https://robertlupo1997-kkbox-churn-prediction.hf.space
 
 All commands were plain `curl` from this machine; outputs verbatim below.
 
-## Result: the Space is UP, but serves the documented-broken behavior and stale metrics
+## Result: the Space is UP, but serves the documented-broken behavior and the non-headline model's metrics
 
 | Probe | Status | Observed |
 |---|---|---|
@@ -18,13 +18,23 @@ All commands were plain `curl` from this machine; outputs verbatim below.
 | `GET /api/features/importance` | 200 | top feature `auto_renew_ratio_30d` |
 | `GET /api/metrics/calibration` | 200* | body is `{"detail":"Not Found"}` despite HTTP 200; route exists in current repo code |
 
-## Key discrepancy: the Space's numbers do not match the repository
+## Key observation: the Space serves the repository's XGBoost numbers, not the headline model
 
-The live `/api/metrics` reports **AUC 0.9642**, log loss 0.41340, Brier 0.03560.
-The checked-in artifact `models/training_metrics.json` (source of the settled README figures)
-reports AUC **0.9696**. The deployed Space therefore runs an older/different build than the
-repository it is cited as proof of. It also still serves XGBoost raw scores with no calibration,
-consistent with LIMITATIONS §3/§4.
+The live `/api/metrics` reports **AUC 0.964237080730037** and log loss **0.41340251510455955**.
+These are byte-identical to the `xgboost` entry in the **current, checked-in**
+`models/training_metrics.json` — so there is no evidence of build staleness; the Space matches this
+repository's artifacts. (Its reported `brier_score` 0.03560055180046916 does differ from the
+artifact's uncalibrated xgboost `brier` 0.12455760073094979.)
+
+What the discrepancy actually is: the Space surfaces the **XGBoost tuned-validation AUC (0.9642)**
+while the portfolio headline cites **LightGBM AUC 0.9696** — a same-artifact, different-model
+presentation inconsistency, consistent with LIMITATIONS §4 ("the API serves a different model from
+the one the results describe"), not with an outdated deployment. The Space also serves raw scores
+with no calibration applied, per LIMITATIONS §3.
+
+*Correction (2026-08-23, post-review):* an earlier version of this section inferred that the Space
+runs "an older/different build" of the repository. That inference was wrong — the auc and log_loss
+values match the current checked-in artifact exactly, as shown above.
 
 Verbatim:
 
