@@ -47,7 +47,7 @@ POST /api/predictions/single {"msno":"dNIykH..."} -> 200 {"churn_probability":0.
 IDENTICAL across rerun (seed 42 deterministic)
 ```
 
-## Post-fix verification (review round 1, HEAD pending, 2026-08-23)
+## Post-fix verification (review round 1, HEAD debc8c3, 2026-08-23)
 
 Reviewer refutation upheld: `/api/calibration` checked top-level curve keys while
 `models/calibration_metrics.json` nests them under `xgboost`, so the endpoint served its
