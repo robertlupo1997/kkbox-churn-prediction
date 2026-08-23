@@ -27,27 +27,32 @@ optimistic by an unmeasured amount, and no uncertainty interval is computed anyw
 during tuning or calibration, score the frozen model against it once, and report that number
 alongside the tuned one.
 
-## 2. Scoring does not work from a clean clone
+## 2. Scoring works, but on a retrained serving-sample model (repaired 2026-08-23)
 
-`api/config.py` loads `models/xgb.json`, which declares **131 named features**. The checked-in
-`eval/app_features.csv` has 102 columns, of which 3 are metadata (`msno`, `is_churn`, `cutoff_ts`),
-leaving **99 predictors**. `api/services/model_service.py` builds a `DMatrix` straight from those
-columns, so XGBoost raises a feature-name mismatch.
+The original defect: `models/xgb.json` declared **131 named features** while
+`eval/app_features.csv` carried only **99 predictors**, so XGBoost refused to score and
+the API served an empty member cache (`/api/members` returned zero members,
+`POST /api/predictions/single` 404ed). Both deployed models (`xgb.json`, `lgb.txt`)
+wanted the identical 131 features; 23 of the missing 32 were deterministic transforms of
+columns already in the CSV, but 9 were historical churn lags that cannot be regenerated
+(section 6).
 
-The service catches that and falls back to a precomputed predictions file
-(`eval/stacked_ensemble_predictions.csv`), which is **not committed** and is git-ignored
-(`.gitignore:83`). The member cache therefore stays empty. Consequences:
+**Repair:** `scripts/rebuild_serving_artifacts.py` derives those 22 computable columns
+with the exact SQL formulas, retrains XGBoost and LightGBM on the shipped 10,000-member
+sample (stratified 80/20 holdout, seed 42), and rewrites the serving CSV plus both
+metrics files so every recorded number describes exactly what is served.
+`tests/test_artifact_contract.py` now passes with its assertions untouched.
 
-- `GET /api/members` returns an empty list
-- `POST /api/predictions/single` returns 404
-- `POST /api/predictions` marks every member not found
-- `GET /api/shap/{msno}` returns the flagged importance-based approximation, never true SHAP
+**New honest limitations of the serving artifacts:**
 
-**Status of the verification test:** `tests/test_artifact_contract.py` (added 2026-08-23) loads
-the configured model and feature file, asserts exact ordered feature-name parity, and asserts ten
-rows score to finite probabilities. It **currently fails**: model declares 131 features, the CSV
-carries 99 predictors, 32 model features are absent from the CSV. That failure is deliberate and
-visible until the serving dataset is rebuilt or the model is retrained on the shipped columns.
+- The serving models are trained on a 10,000-member February-2017-cutoff sample, NOT on
+  the full Kaggle training set. Their metrics (xgboost holdout `auc` 0.9791) are measured
+  on an in-sample stratified holdout and are **not comparable** to the archived
+  full-data tuned-validation numbers in section 1.
+- 80% of the members shown in the demo were part of the training split; their individual
+  risk scores are optimistically well-calibrated relative to unseen members.
+- The 9 historical churn-lag features remain absent from every artifact here;
+  reproducing them still requires the raw transaction history (section 6).
 
 ## 3. The API never applies calibration
 
@@ -57,11 +62,16 @@ JSON, not a calibrator. No prediction path transforms scores, and no calibrator 
 `models/`. The calibrated log loss and Brier figures describe an offline LightGBM evaluation, not
 anything the API returns.
 
-## 4. The API serves a different model from the one the results describe
+## 4. The best recorded result (LightGBM) is not what the API loads
 
-The best recorded result is LightGBM. The API loads `models/xgb.json` and describes itself as
-XGBoost (`api/config.py`, `api/main.py`). Both models are checked in; only the XGBoost one is wired
-to the service.
+Still true structurally: the API loads `models/xgb.json` and describes itself as XGBoost;
+`models/lgb.txt` sits beside it unserved. Since the 2026-08-23 repair,
+`models/training_metrics.json` records honest holdout metrics for BOTH retrained models
+(lightgbm holdout AUC 0.9801 vs xgboost 0.9791 on the serving sample), so the metrics
+endpoint no longer contradicts the served model. What remains is a presentation gap:
+portfolio copy citing the archived full-data LightGBM tuned-validation AUC of 0.9696 must
+not be presented as describing the demo's served model. See
+`docs/repair/space-redeploy-plan.md`.
 
 ## 5. The rolling backtest produces nothing
 
@@ -81,7 +91,9 @@ runs the backtest SQL; the two never meet.
 
 Yet `models/training_metrics.json` records 131 features, and the checked-in model artifacts name
 historical lag columns. The dataset that produced the headline model is **absent from the repository
-and not reproducible by the shown orchestration**.
+and not reproducible by the shown orchestration**. (Since 2026-08-23 the *serving* artifacts are
+reproducible via `scripts/rebuild_serving_artifacts.py`, but only on the shipped 10k sample; the
+original full-data 131-feature training set remains unreproducible.)
 
 ## 7. The current feature builder cannot feed the trainer
 
@@ -151,13 +163,14 @@ most members receive generic score-tier copy. No campaign evaluation of any rule
 Member precomputation assigns the same three globally important features to every member
 (`api/services/model_service.py`). Despite the field name, these are not per-member drivers.
 
-## 15. The calibration endpoint fabricates its curve
+## 15. Calibration data is now real, but the API still never applies the calibrator
 
-When curve arrays are absent from the metrics file — and they are absent from the committed
-`models/calibration_metrics.json` — `api/routers/metrics.py` **synthesizes** near-diagonal
-before/after points rather than returning nothing. The same route populates fields named
-`ece_before` / `ece_after` with Brier scores. No ECE is computed anywhere in this repository, and no
-reliability data backs any calibration-quality statement.
+Repaired 2026-08-23: `models/calibration_metrics.json` now carries real reliability-diagram
+points (isotonic fit on out-of-fold training predictions, evaluated on the holdout), so
+`GET /api/calibration` serves measured curves instead of synthesized ones. Still true:
+no prediction path transforms scores through the calibrator (section 3), and the fields
+named `ece_before` / `ece_after` in that route are still Brier scores, not ECE. No ECE is
+computed anywhere in this repository.
 
 ## 16. The health check can call a broken system healthy
 
