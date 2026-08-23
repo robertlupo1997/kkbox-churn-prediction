@@ -1,7 +1,15 @@
 # Frontend Rebuild Handoff - shadcn/ui Complete Rebuild
 
+> **STALE / NOT IN THIS REPOSITORY.** This handoff describes a `gemini-app/` shadcn/ui rebuild that
+> is not what this repository contains. The frontend here is
+> `brutalist-aesthetic-kkbox-churn-analysis-pro/`, built with custom JSX and Tailwind; its
+> `package.json` has no shadcn/ui or Radix dependencies, and there is no `gemini-app/` directory or
+> `components.json`. Nothing described below should be read as the current state of the code. It is
+> retained only as a record of an abandoned direction.
+
 ## Session Summary
-Completely rebuilt the KKBOX ChurnPro frontend using pure shadcn/ui components with the latest theming patterns.
+Rebuild of the KKBOX ChurnPro frontend using shadcn/ui components. This work is not present in the
+current repository.
 
 ## Completed Work
 

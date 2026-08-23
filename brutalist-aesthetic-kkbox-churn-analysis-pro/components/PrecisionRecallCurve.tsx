@@ -228,7 +228,7 @@ const PrecisionRecallCurve: React.FC = () => {
           <div className="p-4 brutalist-border bg-black text-white">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp size={12} />
-              <span className="text-[9px] font-black uppercase">Business Impact</span>
+              <span className="text-[9px] font-black uppercase">Illustrative Scenario ($5/Contact, $149/Save, 30% Save Rate)</span>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -244,7 +244,7 @@ const PrecisionRecallCurve: React.FC = () => {
                 <span className="text-[9px] font-black text-green-400">+${(metrics.totalSaved / 1000).toFixed(0)}K</span>
               </div>
               <div className="border-t border-white/20 pt-2 flex justify-between">
-                <span className="text-[9px] font-black">Net ROI</span>
+                <span className="text-[9px] font-black">Net (Assumed)</span>
                 <span className={`text-[9px] font-black ${metrics.netROI > 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {metrics.netROI > 0 ? '+' : ''}${(metrics.netROI / 1000).toFixed(0)}K
                 </span>
@@ -254,9 +254,10 @@ const PrecisionRecallCurve: React.FC = () => {
 
           {/* Interpretation */}
           <p className="text-[9px] font-bold opacity-60 dark:text-white">
-            At threshold <span className="text-brand">{threshold.toFixed(2)}</span>, contacting {(metrics.predictedPositive / 1000).toFixed(0)}K members
-            captures <span className="text-brand">{(metrics.recall * 100).toFixed(0)}%</span> of churners
-            with <span className="text-brand">{(metrics.precision * 100).toFixed(0)}%</span> accuracy.
+            At the nearest stored threshold to <span className="text-brand">{threshold.toFixed(2)}</span>, recorded recall is
+            <span className="text-brand"> {(metrics.recall * 100).toFixed(0)}%</span> and recorded precision is
+            <span className="text-brand"> {(metrics.precision * 100).toFixed(0)}%</span>. The contact count
+            ({(metrics.predictedPositive / 1000).toFixed(0)}K) is a heuristic estimate, not a count evaluated from predictions.
           </p>
         </div>
       </div>

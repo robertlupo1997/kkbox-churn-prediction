@@ -11,7 +11,12 @@ license: mit
 
 # KKBOX Churn Prediction
 
-> **0.97 AUC with honest temporal validation** - A production-ready churn prediction pipeline with React dashboard, FastAPI backend, and SHAP explanations.
+> A churn modelling project on the WSDM KKBOX Churn Prediction Challenge: SQL/DuckDB point-in-time
+> feature engineering, gradient-boosted models evaluated on a later time window, a FastAPI service,
+> and a React dashboard driven by exported JSON.
+
+**Read [LIMITATIONS.md](LIMITATIONS.md) before evaluating the numbers below.** It states plainly what
+this repository does not do and what is not currently reproducible from a clean clone.
 
 ![Dashboard Preview](assets/dashboard.gif)
 
@@ -20,113 +25,141 @@ license: mit
 [![FastAPI](https://img.shields.io/badge/api-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
 [![LightGBM](https://img.shields.io/badge/model-LightGBM-green.svg)](https://lightgbm.readthedocs.io/)
 
-## Live Demo
+## Demo
 
-Run the full stack locally:
+Run the stack locally:
 
 ```bash
 make app  # Starts API on :8000, Dashboard on :3000
 ```
 
-Or visit the **[Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction)**
+A Hugging Face Spaces URL is also published at
+[robertlupo1997/kkbox-churn-prediction](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction);
+whether it is currently up is external to this repository.
 
-## Results
+The dashboard runs from checked-in exported JSON and 200 sample members. Its live-API code path does
+not currently match the FastAPI routes, and individual explanations shown in the UI are generated
+placeholders, not model SHAP values. See [LIMITATIONS.md](LIMITATIONS.md).
 
-### Final Model Performance
+## Recorded Results
 
-| Metric | Starting | Final | Target | Kaggle Winner |
-|--------|----------|-------|--------|---------------|
-| **AUC** | 0.7755 | **0.9696** | 0.85 | ~0.99* |
-| **Log Loss** | 0.41 | **0.1127** | <0.15 | 0.08 |
-| **Brier Score** | 0.125 | **0.033** | <0.08 | - |
+These are the numbers stored in the checked-in metric artifacts. All of them come from the **March
+2017 window, which was also the window Optuna maximised AUC over during hyperparameter selection**
+(`src/hyperparameter_tuning.py`, `train_temporal.py`). They are therefore tuned-validation numbers,
+not held-out test numbers. **This repository contains no untouched test window.**
 
-> *Kaggle winners used random splits with data leakage. Our 0.97 AUC uses strict temporal validation (train on past, validate on future).
+| Metric | Baseline | Best recorded | Source |
+|--------|----------|---------------|--------|
+| AUC (LightGBM, uncalibrated) | 0.8690 (logistic regression) | 0.9696 | `models/training_metrics.json` |
+| Log loss (LightGBM, after isotonic calibration) | 0.4130 before | 0.1127 | `models/calibration_metrics.json` |
+| Brier score (LightGBM, after isotonic calibration) | 0.1255 before | 0.0331 | `models/calibration_metrics.json` |
 
-### Key Achievements
+The calibration figures were computed on a random split of that same already-tuned March population
+(`src/calibrate_and_evaluate.py`), so they are not independent of the tuning either.
 
-- **14% above target AUC** (0.97 vs 0.85 target)
-- **Within 0.03 log loss of winning solution** (0.11 vs 0.08)
-- **Perfect calibration** - predicted probabilities match actual churn rates
-- **131 engineered features** including winner-inspired patterns
-- **Zero data leakage** - all features use only past information
-- **Full-stack application** - React dashboard + FastAPI + SHAP explanations
+Recorded dataset sizes: 1,929,125 training rows across two 2017 monthly windows and 970,960
+validation rows in the later window (`models/training_metrics.json`). These are row counts; a member
+can appear in more than one monthly window, and no distinct-member count is recorded.
+
+**That overlap is itself a leakage channel for the recorded AUC.** Because the same `msno` can appear
+in both the training and validation snapshots, the score partly reflects the model recognising members
+it has already seen rather than generalising to new ones. The split is temporal, not by member, and
+nothing in this repository measures how much of the recorded AUC that overlap accounts for. A
+member-disjoint split would be needed to separate the two, and it has not been run.
+
+Accuracy, precision, and recall are not reported here: no artifact in the repository contains them
+and the predictions needed to recompute them are not checked in.
+
+No comparison against the competition winners is made. The repository holds no winner evaluation
+artifact, and the cited paper file is a Git LFS pointer in this checkout.
+
+## What Is Actually Built
+
+- **Point-in-time feature SQL** (`features/features_comprehensive.sql`) that bounds transactions and
+  user logs on both sides of the observation window before aggregating, so features for a cutoff
+  date use only data available at that date.
+- **Temporal-safety tests** (`tests/test_temporal_safety.py`, `tests/test_feature_windows.py`) that
+  fabricate events on both sides of a cutoff and assert exact aggregate values, including 89/91-day
+  and 29/31-day boundary cases. These tests execute the SQL they check.
+- **Model training over a time-ordered split** (`train_temporal.py`): two earlier monthly windows for
+  training, a later window for validation. This is a single fixed out-of-time split, not
+  cross-validation.
+- **Isotonic calibration** code and recorded before/after metrics (`src/calibrate_and_evaluate.py`).
+- **A FastAPI service** (`api/`) with routes for members, predictions, metrics, feature importance,
+  calibration curves, and SHAP explanations.
+- **A React dashboard** rendering exported JSON artifacts.
 
 ## The Problem
 
-KKBOX, Asia's leading music streaming service, needed to predict which users would churn (not renew their subscription). This was a [Kaggle competition](https://www.kaggle.com/c/kkbox-churn-prediction-challenge) with 970K users and transaction/listening history.
+KKBOX is a music streaming service. The [Kaggle competition](https://www.kaggle.com/c/kkbox-churn-prediction-challenge)
+asks which subscribers will fail to renew. A user churns if they do not renew within 30 days after
+membership expiration.
 
-**Challenge**: High AUC alone isn't enough - the model must output well-calibrated probabilities for business decisions.
+High AUC alone is not enough for retention targeting: the model must also output probabilities whose
+magnitudes mean something, which is why calibration is evaluated separately here.
 
-## Solution Architecture
+## Pipeline Shape
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    FEATURE ENGINEERING                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ Transactions │  │  User Logs   │  │  Historical  │          │
-│  │  (5 windows) │  │  (5 windows) │  │    Churn     │          │
-│  │  7/14/30/60/ │  │  7/14/30/60/ │  │  last_N_is_  │          │
-│  │    90 days   │  │    90 days   │  │    churn     │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│         ↓                  ↓                  ↓                 │
-│  ┌─────────────────────────────────────────────────┐           │
-│  │           131 Features (SQL + Python)           │           │
-│  └─────────────────────────────────────────────────┘           │
+│  Transactions (7/14/30/60/90d)  User logs (7/14/30/60/90d)      │
+│  Historical churn lags (generated to separate CSVs)             │
+│         ↓                                                       │
+│  131 features in the recorded training artifact                 │
+│  (see LIMITATIONS.md: the joined training set that produced     │
+│   those 131 columns is not reproducible from the current code)  │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                      MODEL TRAINING                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   LightGBM   │  │   XGBoost    │  │   Ensemble   │          │
-│  │  AUC: 0.9696 │  │  AUC: 0.9642 │  │  AUC: 0.9680 │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│  Recorded validation AUC (also the Optuna tuning window):       │
+│   LightGBM 0.9696 │ XGBoost 0.9642 │ 50/50 blend 0.9680         │
 │         ↓                                                       │
-│  ┌─────────────────────────────────────────────────┐           │
-│  │     Isotonic Calibration (Log Loss: 0.11)       │           │
-│  └─────────────────────────────────────────────────┘           │
+│  Isotonic calibration → log loss 0.1127, Brier 0.0331           │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│                      MODEL SELECTION                            │
-│  LightGBM chosen for: Best AUC (0.9696), fastest training,     │
-│  lowest memory usage, native categorical support                │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│                      APPLICATION STACK                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   FastAPI    │  │    React     │  │     SHAP     │          │
-│  │   Backend    │  │  Dashboard   │  │ Explanations │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                      SERVING (as checked in)                    │
+│  FastAPI loads models/xgb.json — the XGBoost booster, raw and   │
+│  uncalibrated. LightGBM had the better recorded AUC but is not  │
+│  the artifact the API serves, and no calibrator is loaded.      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
-### Option 1: Full Stack (Recommended)
+### Option 1: Full Stack
 
 ```bash
-# Clone and start everything with Docker
 git clone https://github.com/robertlupo1997/kkbox-churn-prediction.git
 cd kkbox-churn-prediction
 make app
 
-# Visit http://localhost:3000 for the dashboard
-# API available at http://localhost:8000/api/health
+# Dashboard at http://localhost:3000
+# API at http://localhost:8000/api/health
 ```
+
+The dashboard serves its checked-in sample data. Member prediction through the API does not work from
+a clean clone: the checked-in `eval/app_features.csv` supplies 99 predictor columns while
+`models/xgb.json` declares 131, and the fallback predictions file the service looks for is not
+committed. The Docker Compose frontend API URL is also supplied at runtime although Vite substitutes
+it at build time. See [LIMITATIONS.md](LIMITATIONS.md).
 
 ### Option 2: ML Pipeline Only
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
 
-# Run with synthetic data (no Kaggle download needed)
-make test      # Run tests
+make test      # See LIMITATIONS.md: this target masks suite failures
 make features  # Generate features
 make models    # Train models
 make calibrate # Calibrate predictions
 ```
+
+`make features` followed by `make models` does not currently run end to end; the feature builder
+emits duplicate `is_churn` columns that the trainer cannot consume (`src/backtest.py`,
+`train_temporal.py`).
 
 ### Option 3: Frontend Development
 
@@ -144,60 +177,54 @@ kkbox-churn-prediction/
 │   ├── features_processor.py     # Feature engineering
 │   ├── models.py                 # Model training
 │   ├── calibration.py            # Isotonic calibration
-│   ├── temporal_cv.py            # Temporal validation
-│   └── backtest.py               # Rolling backtests
+│   ├── temporal_cv.py            # Temporal validation helpers
+│   └── backtest.py               # Backtest driver (evaluation step not wired up)
 ├── api/                          # FastAPI Backend
 │   ├── main.py                   # App entry point
 │   ├── routers/                  # API endpoints
-│   │   ├── predictions.py        # /predictions
-│   │   ├── members.py            # /members
-│   │   ├── metrics.py            # /metrics
-│   │   └── shap.py               # /shap explanations
-│   └── services/                 # Business logic
-├── brutalist-aesthetic-.../      # React Dashboard
-│   ├── components/
-│   │   ├── Dashboard.tsx         # KPI overview
-│   │   ├── MemberLookup.tsx      # Individual predictions
-│   │   ├── ModelPerformance.tsx  # Model metrics
-│   │   ├── FeatureImportanceView.tsx
-│   │   └── ROICalculator.tsx     # Business impact
-│   └── data/                     # Visualization data
+│   └── services/                 # Model loading, rules
+├── brutalist-aesthetic-.../      # React Dashboard (renders exported JSON)
 ├── features/                     # SQL feature definitions
-│   └── features_comprehensive.sql
-├── models/                       # Trained models
+├── models/                       # Trained model artifacts and metric JSON
 ├── eval/                         # Evaluation outputs
 └── tests/                        # Test suite
 ```
 
-## Dashboard Features
+## Dashboard Pages
 
-| Page | Description |
-|------|-------------|
-| **Dashboard** | KPI cards, risk distribution, member filtering, CSV export |
-| **Member Lookup** | Search members, view predictions, SHAP waterfall charts |
-| **Model Performance** | AUC/Log Loss metrics, calibration curves, lift charts |
-| **Feature Importance** | Grouped feature analysis, SHAP beeswarm plots |
-| **ROI Calculator** | Business impact modeling for retention campaigns |
+| Page | What it shows |
+|------|---------------|
+| **Dashboard** | KPI cards computed from exported aggregates, risk distribution, member table, CSV export |
+| **Member Lookup** | Search across the 200 checked-in sample members; the factor waterfall is an illustrative placeholder, not model SHAP output |
+| **Model Performance** | Recorded AUC/log loss, calibration curves, lift and gains charts from exported JSON |
+| **Feature Importance** | Grouped XGBoost importance, plus an explicitly synthetic beeswarm generated from global importance |
+| **Retention Savings Projection** | Gross revenue retained under user-supplied assumptions; no campaign cost, uplift, or experiment evidence |
 
 ## API Endpoints
 
 ```
-GET  /api/health              # Health check
-GET  /api/members             # List members with predictions
-GET  /api/members/{id}        # Member detail + recommendations
-POST /api/predictions/single  # Single prediction
-POST /api/predictions         # Batch predictions (max 1000)
-GET  /api/metrics             # Model performance metrics
-GET  /api/features/importance # Feature importance
-GET  /api/calibration         # Calibration curves
-GET  /api/shap/{member_id}    # SHAP explanations
+GET  /api/health              # Liveness: reports whether model and feature files loaded
+GET  /api/members             # Cached members (empty unless compatible features are supplied)
+GET  /api/members/{id}        # Member features, risk fields, rule-selected action
+POST /api/predictions/single  # Single cached prediction
+POST /api/predictions         # Batch cached predictions (max 1000)
+GET  /api/metrics             # Recorded model metrics
+GET  /api/features/importance # Feature importance list
+GET  /api/calibration         # Calibration curve points
+GET  /api/shap/{member_id}    # SHAP values, or an explicitly flagged approximation
 ```
+
+See [api/README.md](api/README.md) for request and response shapes and for what does not work with
+the checked-in defaults.
 
 ## Feature Engineering
 
-Features were designed based on [Bryan Gregory's 1st place solution](https://arxiv.org/abs/1802.03396):
+The feature set spans transaction, listening, demographic, trend, and historical-churn families
+across 7/14/30/60/90-day windows. Several features are labelled "winner-inspired" in source comments,
+referencing [Bryan Gregory's 1st place solution](https://arxiv.org/abs/1802.03396); the repository
+does not carry a traceable feature-to-source derivation, and the paper file is an LFS pointer here.
 
-### Top Predictive Features
+### Top Recorded Features (XGBoost importance)
 
 | Feature | Importance | Description |
 |---------|------------|-------------|
@@ -207,25 +234,30 @@ Features were designed based on [Bryan Gregory's 1st place solution](https://arx
 | `latest_auto_renew` | 0.055 | Whether latest transaction was auto-renewed |
 | `tx_count_60d` | 0.037 | Transaction count (60 days) |
 
-### Feature Categories (131 total)
+The recorded model artifact names 131 features. Per-category counts are not published here: the
+previously stated breakdown summed to 125, and no code in the repository classifies features by
+category, so any breakdown would have to be regenerated from a documented rule.
 
-- **Transaction features** (35): Payment patterns across 5 time windows
-- **User log features** (50): Listening behavior, completion rates
-- **Trend features** (10): Week-over-week, month-over-month changes
-- **Historical churn** (10): `last_N_is_churn`, `churn_rate`
-- **Winner-inspired** (15): `autorenew_not_cancel`, `amt_per_day`
-- **Demographics** (5): Age, gender, tenure, registration channel
+Demographic inputs are included in the model: city, cleaned age, encoded gender, and registration
+channel all appear in the recorded feature importance. See the bias section of
+[MODEL_CARD.md](MODEL_CARD.md).
 
-## Calibration: The Secret Weapon
+## Calibration
 
-Raw model outputs are confidence scores, not probabilities. Calibration fixes this:
+Both training paths obtain positive-class probability estimates, and the served booster uses a
+`binary:logistic` objective. Those raw estimates are poorly calibrated in the recorded evaluation, and
+isotonic regression improves them substantially:
 
-```
-Before calibration:  Mean prediction = 0.35, Actual churn = 9%  (BAD)
-After calibration:   Mean prediction = 0.09, Actual churn = 9%  (GOOD)
-```
+| Metric (LightGBM) | Before | After |
+|-------------------|--------|-------|
+| Log loss | 0.4130 | 0.1127 |
+| Brier score | 0.1255 | 0.0331 |
+| AUC | 0.96996 | 0.97034 |
 
-**Impact**: Log loss dropped from 0.41 to 0.11 while AUC slightly improved.
+AUC changed slightly, so isotonic mapping did not preserve ranking exactly here. No ECE or reliability
+data is stored alongside these figures, so the *degree* of remaining calibration error is unmeasured;
+a nonzero Brier score is not evidence of exact calibration. The API does not apply any of this: it
+returns raw XGBoost scores and loads no calibrator artifact.
 
 ## Tech Stack
 
@@ -237,33 +269,18 @@ After calibration:   Mean prediction = 0.09, Actual churn = 9%  (GOOD)
 | **Frontend** | React 19, TypeScript, Vite, Recharts, Tailwind |
 | **Infrastructure** | Docker, GitHub Actions, Hugging Face Spaces |
 
-## Development
+The GitHub Actions workflows exist but are not gating: lint failures are non-blocking, only two test
+files run, and the calibration, integration, and backtest steps use `continue-on-error`.
 
-```bash
-# Install dev dependencies
-make dev
+## Notes on Metrics
 
-# Run tests
-make test
+AUC measures ranking — are churners scored above non-churners? Log loss and Brier score measure
+whether the predicted magnitudes are usable as probabilities. They move independently: a model can
+rank well and still emit badly scaled scores, which is what the before/after calibration table above
+shows. Isotonic regression is not free of ranking effects; it can introduce ties, and the recorded
+AUC did shift.
 
-# Code quality
-make lint    # Check
-make format  # Auto-fix
-
-# Full pipeline with real Kaggle data
-make all-real
-```
-
-## What I Learned
-
-This project taught me the difference between **ranking** (AUC) and **calibration** (log loss):
-
-1. **AUC measures ranking** - Are churners scored higher than non-churners?
-2. **Log loss measures calibration** - Does 80% prediction mean 80% actual probability?
-3. **These are independent** - Perfect AUC with terrible log loss is possible
-4. **Calibration is often free** - Isotonic regression preserves ranking while fixing probabilities
-
-See [LEARNERS_GUIDE.md](LEARNERS_GUIDE.md) for the full learning journey.
+See [LEARNERS_GUIDE.md](LEARNERS_GUIDE.md) for the working notes.
 
 ## References
 
@@ -273,5 +290,6 @@ See [LEARNERS_GUIDE.md](LEARNERS_GUIDE.md) for the full learning journey.
 
 ---
 
-**Built as a portfolio project demonstrating end-to-end ML engineering**: feature engineering, model training, calibration, API development, and interactive dashboard.
-
+**A portfolio project covering feature engineering, model training, calibration, API development, and
+an interactive dashboard.** Its current gaps are enumerated in [LIMITATIONS.md](LIMITATIONS.md) and the
+open fix-or-delete decisions in [DECISIONS-PENDING.md](DECISIONS-PENDING.md).

@@ -60,7 +60,7 @@ const ModelPerformance: React.FC = () => {
           MODEL<br/><span className="text-brand">PERFORMANCE</span>
         </h2>
         <p className="text-[12px] font-black uppercase tracking-widest opacity-60 dark:text-white">
-          Comparing {modelMetrics.length} models trained on {datasetStats.total_members.toLocaleString()} members
+          Comparing {modelMetrics.length} models; {datasetStats.total_members.toLocaleString()} rows in the exported summary (rows, not distinct members)
         </p>
       </div>
 
@@ -183,8 +183,8 @@ const ModelPerformance: React.FC = () => {
             <Info size={14} />
           </div>
           <div className="text-[10px] font-bold uppercase leading-tight dark:text-white">
-            <p className="mb-1">Statistical Integrity Note:</p>
-            <p className="opacity-70">A perfectly calibrated model follows the diagonal. The stacked ensemble (orange) shows excellent calibration compared to raw XGBoost/LightGBM predictions.</p>
+            <p className="mb-1">How To Read This:</p>
+            <p className="opacity-70">A perfectly calibrated model follows the diagonal. The stacked ensemble (orange) sits closer to the diagonal than the raw curves in several bins, but it still has substantial bin-level error (e.g. 0.45 predicted vs 0.26 observed).</p>
           </div>
         </div>
         <div className="h-96">

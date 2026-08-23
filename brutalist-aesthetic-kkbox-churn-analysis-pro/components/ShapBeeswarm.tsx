@@ -83,11 +83,11 @@ const ShapBeeswarm: React.FC = () => {
   return (
     <div className="brutalist-border p-8 bg-white dark:bg-zinc-900">
       <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 flex items-center dark:text-white">
-        <Zap size={10} className="mr-1" /> SHAP Summary (Beeswarm Plot)
+        <Zap size={10} className="mr-1" /> Illustrative Beeswarm (Synthetic, From Global Importance)
       </h3>
       <p className="text-[9px] font-bold opacity-60 mb-6 dark:text-white">
-        Each dot represents a sample. Color indicates feature value (blue=low, red=high).
-        Position on X-axis shows impact on prediction.
+        Illustrative only: these points are generated synthetically from global feature importance,
+        not from sample-level SHAP values. Vertical spread and X positions do not represent real samples.
       </p>
 
       <div className="h-[500px]">

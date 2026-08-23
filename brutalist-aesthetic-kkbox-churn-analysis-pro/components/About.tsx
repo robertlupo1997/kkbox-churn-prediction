@@ -23,39 +23,30 @@ const About: React.FC = () => {
           <span className="text-[10px] font-black uppercase tracking-widest">Technical Manifesto</span>
         </div>
         <h2 className="text-7xl font-black tracking-tighter leading-[0.85] mb-8">
-          INDUSTRIAL<br/>STRENGTH<br/>CHURN PREDICTION
+          CHURN PREDICTION<br/>ON THE KKBOX<br/>WSDM CHALLENGE
         </h2>
         <p className="text-[16px] font-bold leading-relaxed opacity-60">
-          ChurnPro is a high-performance analytics interface for the WSDM - KKBox Churn Prediction Challenge.
-          It leverages ensemble learning with XGBoost and LightGBM to provide reliable probabilistic forecasts
-          for massive subscriber bases.
+          ChurnPro is a portfolio analytics interface for exploring models and sample outputs from the
+          WSDM - KKBox Churn Prediction Challenge. It presents recorded results from XGBoost, LightGBM
+          and CatBoost models trained on 2017 competition data. See LIMITATIONS.md in the repository
+          for what is and is not verified.
         </p>
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <DocSection title="Core Infrastructure" icon={Layers}>
-          <p>The prediction engine uses a temporal-aware stacking ensemble. Playlogs, transactions, and user identity features are cross-referenced to identify behavioral decay.</p>
-          <p>Probabilistic outputs are calibrated using Isotonic Regression, ensuring that the risk indices reflect real-world event frequencies.</p>
+          <p>The model combines listening, transaction and member features to predict the 30-day non-renewal label. Models are trained on earlier monthly snapshots and evaluated on a later monthly window.</p>
+          <p>Offline evaluation records isotonic-calibrated metrics. The API in this repository serves raw XGBoost scores and does not load a calibrator.</p>
         </DocSection>
 
         <DocSection title="Feature Engineering" icon={Database}>
-          <p>99 distinct predictors are extracted across multiple time windows (7d, 14d, 30d). We track skip rates, repetition factors, and session breadth as core loyalty indicators.</p>
-          <div className="pt-4 space-y-1">
-             <div className="flex justify-between items-center text-[10px] font-black border-b border-black/10 pb-1">
-                <span>Play History</span><span>64% Weight</span>
-             </div>
-             <div className="flex justify-between items-center text-[10px] font-black border-b border-black/10 pb-1">
-                <span>Transaction Recency</span><span>22% Weight</span>
-             </div>
-             <div className="flex justify-between items-center text-[10px] font-black">
-                <span>Demographics</span><span>14% Weight</span>
-             </div>
-          </div>
+          <p>The recorded models use 131 predictors across 7d, 14d, 30d, 60d and 90d windows, including skip rates, repetition factors and session breadth.</p>
+          <p className="opacity-60">Per-feature XGBoost importance is recorded. Grouped category weights are not computed anywhere in this repository, so none are shown.</p>
         </DocSection>
 
         <DocSection title="Model Integrity" icon={ShieldCheck}>
-          <p>Strict temporal validation splits are applied to prevent data leakage. The model is trained on historic snapshots and validated against out-of-time monthly churn events.</p>
-          <p>AUC-ROC: 0.912 | Log Loss: 0.142 | Brier Score: 0.084</p>
+          <p>Training uses earlier monthly snapshots and validation uses a later monthly window. That same later window was also used for hyperparameter tuning, so these are tuned-validation figures, not held-out test results.</p>
+          <p>Best recorded: LightGBM AUC 0.9696; after isotonic calibration, log loss 0.1127 and Brier 0.0331.</p>
         </DocSection>
 
         <div className="brutalist-border bg-black text-white p-12 flex flex-col justify-between items-start">
@@ -63,7 +54,7 @@ const About: React.FC = () => {
              <Zap size={48} className="text-brand mb-8 fill-brand" />
              <h3 className="text-3xl font-black uppercase tracking-tight mb-4">Access the raw intelligence.</h3>
              <p className="text-[11px] font-black uppercase tracking-widest opacity-60 max-w-xs mb-8">
-               View the full project documentation, dataset source, and technical notebooks on Kaggle.
+               Open the Kaggle competition page for the dataset and competition overview. Project documentation and source live in this repository.
              </p>
            </div>
            <a

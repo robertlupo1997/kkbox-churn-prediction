@@ -173,9 +173,9 @@ const LiftGainsCurve: React.FC = () => {
             <p className="text-[8px] font-black uppercase opacity-30">vs Random</p>
           </div>
           <div className="p-4 border-2 border-white/20">
-            <p className="text-[9px] font-black uppercase opacity-50">Resources Saved</p>
-            <p className="text-2xl font-black text-brand">80%</p>
-            <p className="text-[8px] font-black uppercase opacity-30">For 100% Capture</p>
+            <p className="text-[9px] font-black uppercase opacity-50">Contacts Avoided</p>
+            <p className="text-2xl font-black text-brand">20%</p>
+            <p className="text-[8px] font-black uppercase opacity-30">100% Capture At Top 80%</p>
           </div>
         </div>
       </div>

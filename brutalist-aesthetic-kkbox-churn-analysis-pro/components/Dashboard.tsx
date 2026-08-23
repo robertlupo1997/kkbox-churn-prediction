@@ -12,10 +12,10 @@ const COLORS_DARK = ['#ffffff', '#ff4d00', '#71717a'];
 const AVAILABLE_TAGS = ['High Value', 'At Risk', 'Needs Outreach', 'Priority', 'Churned'];
 
 const KPI_CARDS = [
-  { label: 'Total Subscribers', value: dashboardKPIs.totalSubscribers, icon: <Users size={16} /> },
-  { label: 'High Risk Users', value: dashboardKPIs.highRiskUsers, icon: <AlertTriangle size={16} /> },
+  { label: 'Total Rows', value: dashboardKPIs.totalSubscribers, icon: <Users size={16} /> },
+  { label: 'Est. Churners (Rows x Churn Rate)', value: dashboardKPIs.highRiskUsers, icon: <AlertTriangle size={16} /> },
   { label: 'Churn Rate', value: dashboardKPIs.churnRate, icon: <Activity size={16} /> },
-  { label: 'Revenue at Risk', value: dashboardKPIs.revenueAtRisk, icon: <DollarSign size={16} /> },
+  { label: 'Illustrative Exposure (@ $149/Churner)', value: dashboardKPIs.revenueAtRisk, icon: <DollarSign size={16} /> },
 ];
 
 // Transform risk distribution for chart display (scale down for visibility)

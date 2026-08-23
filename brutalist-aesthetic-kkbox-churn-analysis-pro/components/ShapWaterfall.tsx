@@ -81,8 +81,12 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
   return (
     <div className="brutalist-border p-8 bg-white dark:bg-zinc-900 brutalist-shadow">
       <h3 className="text-[10px] font-black uppercase tracking-widest mb-6 border-b-2 border-black dark:border-white/20 pb-2 flex items-center dark:text-white">
-        <Zap size={12} className="mr-2" /> SHAP Feature Contributions
+        <Zap size={12} className="mr-2" /> Feature Contributions
       </h3>
+      <p className="text-[9px] font-bold opacity-60 mb-6 dark:text-white">
+        When the prediction API is unavailable -- which is the case for the bundled sample data --
+        these factors are generated placeholders derived from the risk score, not model SHAP values.
+      </p>
 
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">

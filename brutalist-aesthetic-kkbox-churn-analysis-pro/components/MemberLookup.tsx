@@ -242,10 +242,10 @@ const MemberLookup: React.FC = () => {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'City_ID', val: selectedMember.city },
-                  { label: 'Auto_Renew', val: selectedMember.is_auto_renew ? 'YES' : 'NO' },
-                  { label: 'Tenure_Days', val: selectedMember.tenure_days },
-                  { label: 'Active_Days_30d', val: selectedMember.active_days_30d },
+                  { label: 'City_ID (placeholder)', val: selectedMember.city },
+                  { label: 'Auto_Renew (inferred from score)', val: selectedMember.is_auto_renew ? 'YES' : 'NO' },
+                  { label: 'Tenure_Days (placeholder)', val: selectedMember.tenure_days },
+                  { label: 'Active_Days_30d (placeholder)', val: selectedMember.active_days_30d },
                 ].map((stat, i) => (
                   <div key={i} className="brutalist-border dark:border-white bg-light dark:bg-zinc-800 p-4">
                     <p className="text-[9px] font-black text-black/40 dark:text-white/40 uppercase mb-1">{stat.label}</p>

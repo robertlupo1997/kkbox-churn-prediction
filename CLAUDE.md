@@ -1,6 +1,9 @@
 # KKBOX Churn Prediction
 
-Production-ready ML churn prediction pipeline for KKBOX music streaming service. Achieves 0.97 AUC with strict temporal validation (no data leakage).
+ML churn prediction project for KKBOX music streaming service. Records 0.9696 AUC on a later
+monthly window than the training windows -- but that same window was also the Optuna tuning window,
+so it is a tuned-validation figure, not a held-out result. Read LIMITATIONS.md before quoting any
+metric from this repository.
 
 ## Quick Reference
 
@@ -203,13 +206,17 @@ Key test files:
 ## Key Concepts
 
 ### Temporal Validation
-All features use only past information. Train on Jan-Feb 2017, validate on Mar 2017. No data leakage.
+Feature SQL bounds every window aggregate at the observation cutoff, and unit tests fabricate
+post-cutoff events to assert they are excluded. Train on Jan-Feb 2017, validate on Mar 2017. The
+March window was also used for hyperparameter tuning, so it is not an untouched test set.
 
 ### 30-Day Churn Rule
 User churns if no new subscription within 30 days after expiration (official KKBOX definition).
 
 ### Isotonic Calibration
-Transforms model confidence scores into true probabilities. Preserves ranking (AUC) while fixing calibration (log loss).
+Transforms raw model scores into calibrated probability estimates. In the recorded evaluation it
+improved log loss and Brier substantially and moved AUC slightly (0.96996 -> 0.97034); it does not
+guarantee exact rank preservation. The API does not apply it.
 
 ### Feature Categories (131 total)
 - Transaction features (35): Payment patterns across 5 time windows

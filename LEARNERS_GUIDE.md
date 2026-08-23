@@ -1,16 +1,26 @@
 # Learner's Guide: KKBOX Churn Prediction
 
-This guide documents my learning journey from 0.77 AUC to **0.97 AUC** by studying Kaggle winners and implementing their techniques with proper temporal validation.
+These are my working notes from taking this project from an early 0.77 AUC baseline to a recorded
+0.9696 AUC, by reading about the Kaggle winners' approaches and applying similar feature patterns
+under a time-ordered split.
+
+**Caveat on every number below**: the recorded metrics come from the March 2017 window, which was
+also the window Optuna maximised AUC over. They are tuned-validation figures, not held-out results.
+There is no untouched test window in this repository. See LIMITATIONS.md.
 
 ---
 
-## Final Results: What We Achieved
+## Recorded Results
 
-| Metric | Starting | Final | Winner | Notes |
-|--------|----------|-------|--------|-------|
-| **AUC** | 0.7755 | **0.9696** | ~0.99 | Ours uses temporal validation |
-| **Log Loss** | 0.41 | **0.1127** | 0.08 | Within 0.03 of winner |
-| **Features** | 108 | **131** | 76-258 | Including historical churn |
+| Metric | Starting | Recorded best | Notes |
+|--------|----------|---------------|-------|
+| **AUC** | 0.7755 | **0.9696** | LightGBM, uncalibrated, on the tuning window |
+| **Log Loss** | 0.4130 | **0.1127** | After isotonic calibration |
+| **Brier** | 0.1255 | **0.0331** | After isotonic calibration |
+| **Features** | 108 | **131** | Including historical churn lags |
+
+No comparison against the winners' scores is made here. This repository holds no winner evaluation
+artifact, and the cited paper is a Git LFS pointer in this checkout.
 
 ---
 
@@ -28,7 +38,9 @@ Log Loss = Probability calibration (is 80% prediction = 80% actual?)
 THESE ARE INDEPENDENT! You can have 0.97 AUC with 0.41 log loss.
 ```
 
-**Solution**: Apply isotonic calibration AFTER training. It preserves ranking (AUC) while fixing probabilities (log loss).
+**Solution**: Apply isotonic calibration AFTER training. In this project it improved probability
+quality a lot and moved AUC only slightly (0.96996 -> 0.97034). It is not guaranteed to leave
+ranking untouched -- isotonic mapping can introduce ties.
 
 ```python
 from sklearn.calibration import IsotonicRegression
@@ -39,7 +51,7 @@ calibrator.fit(raw_predictions, actual_labels)
 
 # Apply to test set
 calibrated = calibrator.transform(test_predictions)
-# Log loss: 0.41 → 0.11 (AUC unchanged!)
+# Recorded here: log loss 0.4130 -> 0.1127, AUC 0.96996 -> 0.97034
 ```
 
 ---
@@ -132,111 +144,100 @@ actual_amount_paid / payment_plan_days AS amt_per_day
 | **LightGBM** | 0.9696 | Best single model |
 | XGB+LGB Ensemble | 0.9680 | 50/50 blend |
 | XGBoost | 0.9642 | Close third |
-| Stacked Ensemble | 0.9653 | Worse than LightGBM alone! |
+| Stacked Ensemble | 0.9638 | Worse than LightGBM alone (`models/stacked_ensemble_metrics.json`) |
 
 **Lesson**: More complex isn't always better. Single LightGBM beat stacking and ensembles.
 
 ### Hyperparameter Tuning
 
 ```python
-# Optuna found these optimal parameters
+# Optuna's selected LightGBM parameters, as stored in models/best_hyperparameters.json
 lgb_params = {
-    'learning_rate': 0.05,
-    'max_depth': 7,
-    'num_leaves': 256,
-    'n_estimators': 240,
-    'subsample': 0.8,
-    'colsample_bytree': 0.8
+    'learning_rate': 0.05407092815174269,
+    'max_depth': 6,
+    'num_leaves': 296,
+    'n_estimators': 327,
+    'min_child_samples': 65,
+    'subsample': 0.8763671856065534,
+    'colsample_bytree': 0.8110698895711549,
 }
 ```
 
----
-
-## 4. Our Implementation vs Winners
-
-| Aspect | Our Implementation | Winner Solutions |
-|--------|-------------------|------------------|
-| **Validation** | Temporal splits (**honest**) | Random splits (leaky) |
-| **AUC** | 0.9696 | 0.99 (but leaked) |
-| **Log Loss** | 0.1127 | 0.08 |
-| **Features** | 131 | 76-258 |
-| **Churn History** | ✅ Implemented | Central to success |
-| **Models** | LightGBM best | XGB + LGB ensemble |
-| **Calibration** | ✅ Isotonic | Clipping + rate scaling |
-| **Production Ready** | ✅ Yes | No (Kaggle notebooks) |
-
-### Why Our 0.97 AUC is More Honest
-
-Competition winners used random train/test splits that leak future information:
-
-```
-Random split: Train on mix of Jan+Feb+Mar → Test on mix of Jan+Feb+Mar
-              ↳ Model sees future behavior in training → Inflated 0.99 AUC
-
-Temporal split: Train on Jan+Feb → Test on Mar
-                ↳ Model only uses past → Honest 0.97 AUC
-```
+Optuna maximised AUC on the March validation window -- the same window the headline AUC is reported
+on. That is why the headline number should not be read as a held-out estimate.
 
 ---
 
-## 5. Calibration: The Secret Weapon
+## 4. Choices In This Implementation
 
-### Before Calibration
+| Aspect | This implementation |
+|--------|---------------------|
+| **Validation** | One fixed time-ordered split: train on two earlier windows, validate on a later one |
+| **AUC** | 0.9696 (on the same window used for tuning) |
+| **Log Loss** | 0.1127 after isotonic calibration |
+| **Features** | 131 in the recorded artifact |
+| **Churn History** | Lag features implemented (not joined by the current pipeline -- see LIMITATIONS.md) |
+| **Models** | LightGBM had the best recorded AUC |
+| **Calibration** | Isotonic, fitted offline; not applied by the API |
+
+### Why a time-ordered split
+
+Splitting a time series at random lets a model see behaviour from the same period it is later scored
+on, which inflates the estimate. Splitting on time removes that particular source of optimism:
+
 ```
-Raw predictions:    mean = 0.35
-Actual churn rate:  9%
-Log Loss:           0.41 (BAD)
+Random split:   Train on a mix of Jan+Feb+Mar -> Test on a mix of Jan+Feb+Mar
+                (the model can see contemporaneous behaviour)
+
+Temporal split: Train on Jan+Feb -> Validate on Mar
+                (the model only sees earlier periods)
 ```
 
-### After Isotonic Calibration
+That is the argument for the split. It is **not** an argument that this project's number is a clean
+estimate: the same March window was reused for hyperparameter selection, so the split's benefit was
+partly spent. What I did not do -- and would need to do -- is hold out a fourth window that nothing
+touched. I have no basis for characterising how the competition winners validated their models; no
+artifact in this repository establishes that.
+
+---
+
+## 5. Calibration
+
+Recorded LightGBM figures from `models/calibration_metrics.json`:
+
 ```
-Calibrated predictions: mean = 0.09
-Actual churn rate:      9%
-Log Loss:               0.11 (GOOD!)
+                Before      After
+Log Loss        0.4130      0.1127
+Brier           0.1255      0.0331
+AUC             0.96996     0.97034
 ```
+
+Mean-prediction and observed-rate figures are not recorded in that artifact, and the evaluation
+predictions needed to recompute them are not checked in, so I do not quote them.
 
 ### Why It Works
 
-Isotonic regression learns a monotonic mapping from raw scores to true probabilities:
+Isotonic regression learns a monotonic mapping from raw scores to calibrated probability estimates.
+It improved probability quality substantially here. It moved AUC slightly, so it did not leave the
+ranking exactly intact -- isotonic mapping can collapse distinct scores into ties.
 
-```
-Raw Score → True Probability
-0.2       → 0.03
-0.5       → 0.08
-0.8       → 0.35
-0.95      → 0.72
-```
-
-The mapping preserves order (AUC unchanged) while fixing probabilities (log loss improved).
+The evaluation itself was done on a random split of the already-tuned March population
+(`src/calibrate_and_evaluate.py`), so these calibration figures are not independent of the tuning
+either.
 
 ---
 
-## 6. Error Analysis Insights
+## 6. Error Analysis
 
-After running `src/run_error_analysis.py --calibrate`:
+`src/run_error_analysis.py --calibrate` exists and is the intended entry point for this section.
 
-### Model Performance
-- **Accuracy**: 95.50%
-- **Precision**: 83.42%
-- **Recall**: 62.35%
+No error-analysis output is checked into the repository. Accuracy, precision, recall, per-segment
+accuracy, and reliability-bin tables previously appeared here as if measured; none of them are backed
+by an artifact, and the predictions needed to recompute them are not committed. They have been
+removed rather than guessed.
 
-### Weakest Segments (Improvement Opportunities)
-
-| Segment | Accuracy | Samples |
-|---------|----------|---------|
-| `tx_count_90d = 5` | 46% | 462 |
-| `auto_renew_count_90d = 4` | 43% | 680 |
-| `cancel_ratio_90d = 0.2` | 40% | 394 |
-
-### Perfect Calibration Achieved
-
-```
-Confidence Bin | Predicted | Actual | Match?
-0.0-0.1        | 0.01      | 0.01   | ✓
-0.1-0.2        | 0.13      | 0.13   | ✓
-0.8-0.9        | 0.87      | 0.87   | ✓
-0.9-1.0        | 0.92      | 0.92   | ✓
-```
+To regenerate this section honestly: produce and commit a prediction file for a window that was not
+used for tuning, run the error-analysis script against it, and paste its actual output.
 
 ---
 
@@ -261,10 +262,11 @@ final_preds = calibrator.transform(raw_preds_test)
 ```
 
 ### 3. Study Winners, But Think Critically
-- Winners' 0.99 AUC was inflated by data leakage
-- Their feature engineering patterns are still valuable
-- Their calibration techniques (clipping, scaling) work
-- But temporal safety must come first
+- Their feature engineering patterns transferred well to this project
+- Their calibration techniques (clipping, scaling) are worth reading about
+- Scores from different validation schemes are not directly comparable, so I do not compare mine to
+  theirs here
+- Temporal safety comes first, and tuning on the same window you report on undercuts it
 
 ### 4. Simpler Often Wins
 - LightGBM alone beat XGB+LGB stacking and ensembles
@@ -294,9 +296,6 @@ final_preds = calibrator.transform(raw_preds_test)
 ```bash
 # Run calibration
 python src/calibrate_and_evaluate.py
-
-# Generate submission
-python src/generate_kaggle_submission.py
 
 # Error analysis
 python src/run_error_analysis.py --calibrate

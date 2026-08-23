@@ -100,7 +100,7 @@ fact_user_logs: Converted log_date to DATE, computed completion_ratio and skip_r
 fact_churn_labels: Merged v1/v2 churn labels with ON CONFLICT, ensured msno uniqueness (1,082,190 rows).
 
 
-Output: Production-ready fact and dimension tables with enforced data quality.
+Output: Fact and dimension tables with primary keys, indexes, and type/uniqueness constraints applied.
 
 C. Feature Engineering (03_feature_engineering.sql)
 Why: Raw facts need to be aggregated into user-level features for modeling and KPIs.

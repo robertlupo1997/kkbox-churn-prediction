@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+#
+# KNOWN ISSUES (documented, not yet fixed -- see DECISIONS-PENDING.md):
+#   * This script passes --cutoff to the label CLI, which defines --cutoff-date.
+#   * It reads improvement.brier_delta / improvement.ece_delta from
+#     models/calibration_metrics.json, which stores 'brier' and no ECE at all.
+#   * It invokes scripts/update_readme.py, which does not exist at that path.
+# Do not treat a successful run of this script as a release gate.
+#
 set -Eeuo pipefail
 IFS=$'\n\t'
 trap 'echo -e "\n❌ Failed at line $LINENO"; exit 1' ERR
@@ -163,12 +171,12 @@ else
     echo "⚠️  Using synthetic data (demo mode)"
 fi
 
-echo "✅ Models trained and calibrated"
-echo "✅ Integration tests passing"
-echo "✅ App ready for deployment"
+echo "Steps above completed without a non-zero exit."
+echo "This is not a deployment readiness check: no holdout evaluation, load test,"
+echo "or serving-contract check is performed here. See LIMITATIONS.md."
 
-echo -e "\n🚀 Ready to ship! Launch with:"
-echo "   make app    # Start Streamlit demo"
-echo "   make docker-run  # Containerized deployment"
+echo -e "\nLocal launch:"
+echo "   make app         # Start the FastAPI API and the React dashboard"
+echo "   make docker-run  # Containerized run"
 
 exit 0

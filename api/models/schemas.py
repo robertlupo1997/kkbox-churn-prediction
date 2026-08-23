@@ -8,7 +8,10 @@ from pydantic import BaseModel, Field
 class HealthResponse(BaseModel):
     """Health check response."""
 
-    status: str = Field(..., description="API health status")
+    status: str = Field(
+        ...,
+        description="Liveness status. Always 'healthy'; it does not check scoring readiness.",
+    )
     model_loaded: bool = Field(..., description="Whether the model is loaded")
     features_loaded: bool = Field(..., description="Whether features are loaded")
 
@@ -30,8 +33,17 @@ class MemberResponse(BaseModel):
     risk_score: float = Field(..., description="Churn probability (0-1)")
     risk_tier: str = Field(..., description="Risk tier: High, Medium, Low")
     is_churn: bool | None = Field(None, description="Actual churn label if available")
-    top_risk_factors: list[str] = Field(..., description="Top features driving the risk score")
-    action_recommendation: str = Field(..., description="Recommended retention action")
+    top_risk_factors: list[str] = Field(
+        ...,
+        description=(
+            "Top globally important model features. These are the same for every member; "
+            "they are not member-level risk drivers."
+        ),
+    )
+    action_recommendation: str = Field(
+        ...,
+        description="Rule-selected retention action. Its effectiveness has not been evaluated.",
+    )
 
 
 class MemberDetail(BaseModel):
@@ -42,7 +54,10 @@ class MemberDetail(BaseModel):
     risk_tier: str = Field(..., description="Risk tier: High, Medium, Low")
     is_churn: bool | None = Field(None, description="Actual churn label if available")
     features: dict[str, Any] = Field(..., description="All feature values")
-    action: ActionRecommendation = Field(..., description="Detailed action plan")
+    action: ActionRecommendation = Field(
+        ...,
+        description="Rule-selected action. Its effectiveness has not been evaluated.",
+    )
 
 
 class MemberListResponse(BaseModel):
@@ -104,8 +119,12 @@ class CalibrationResponse(BaseModel):
     calibrated: list[CalibrationPoint] = Field(..., description="Calibrated predictions")
     n_bins: int | None = Field(None, description="Number of calibration bins")
     bin_counts: list[int] | None = Field(None, description="Sample count per bin")
-    ece_before: float | None = Field(None, description="ECE before calibration")
-    ece_after: float | None = Field(None, description="ECE after calibration")
+    ece_before: float | None = Field(
+        None, description="Populated with the Brier score before calibration, not ECE"
+    )
+    ece_after: float | None = Field(
+        None, description="Populated with the Brier score after calibration, not ECE"
+    )
 
 
 class BatchPredictionRequest(BaseModel):
