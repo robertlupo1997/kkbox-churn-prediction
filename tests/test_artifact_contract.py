@@ -5,12 +5,14 @@ the configured model (`models/xgb.json`) and the checked-in app feature table
 (`eval/app_features.csv`) must agree on an exact, ordered list of feature names,
 and the model must score ten real rows to finite probabilities.
 
-KNOWN STATUS (2026-08-23): this test FAILS by design until the serving dataset is
-rebuilt or the model is retrained on the shipped columns. The model declares 131
-named features; `eval/app_features.csv` carries 99 predictors; 32 model features
-are absent from the CSV. A visible failing contract is deliberately preferred over
-the previously hidden mismatch (LIMITATIONS.md section 2). Do not skip or xfail
-this test to make the suite green.
+HISTORY (2026-08-23): this test was added deliberately FAILING - the model then
+declared 131 named features while `eval/app_features.csv` carried 99 predictors.
+The mismatch was repaired by rebuilding the serving artifacts (see
+scripts/rebuild_serving_artifacts.py): the CSV now carries the 121 predictors the
+serving model was retrained on, in exact order. One harness line below
+(`drop(columns=...)`) originally used `set & Index`, which raised under pandas
+before any assertion could run once parity held; that line was repaired without
+touching any assertion. Do not skip or xfail this test.
 """
 
 import numpy as np
@@ -72,7 +74,7 @@ def test_scores_ten_rows_to_finite_probabilities(loaded_booster, app_frame):
             "test_exact_ordered_feature_name_parity)."
         )
 
-    sample = app_frame.drop(columns=list(METADATA_COLUMNS & app_frame.columns)).head(
+    sample = app_frame.drop(columns=[c for c in app_frame.columns if c in METADATA_COLUMNS]).head(
         N_ROWS_TO_SCORE
     )
     dmatrix = xgb.DMatrix(sample, feature_names=model_features)
