@@ -1,5 +1,11 @@
 # Evidence — kkbox serving rebuild, 2026-08-23T16:56:17-04:00, HEAD 948b61640ff0a741de68124f61a3756d77f765bb
 
+> **HISTORICAL (wave 3).** The figures below describe the seed-42 stratified-split artifacts,
+> which the wave-3 deterministic-msno-hash rebuild superseded. Current expected values:
+> xgboost holdout AUC 0.97654 / log_loss 0.15336 / uncalibrated Brier 0.04275 / calibrated
+> Brier 0.04303; train/holdout 8,005/1,995; membership in `eval/serving_split.json`. Do not
+> use this file as a probe reference.
+
 ## make test (in .venv)
 ```
 

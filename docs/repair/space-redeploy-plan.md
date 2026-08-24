@@ -28,13 +28,14 @@ the Space is NOT stale; it faithfully runs the repo's own broken artifact set.
 | `api/services/model_service.py` | Gender passthrough fix for numeric-encoded gender | The string→int map silently turned every numeric gender into "unknown" (2) at scoring time. |
 | `tests/test_artifact_contract.py` | One harness line repaired (`set & Index` crash), zero assertion changes | That line raised under pandas before any assertion could execute once parity held; assertions untouched and still enforce exact ordered parity + finite scoring. |
 | `Makefile` | PEP 668-safe install (creates/uses `.venv` outside a virtualenv) | `make install` was a bare `pip install`; it dies on current Debian/Ubuntu before a visitor can do anything. |
-| `Dockerfile` (Space root) | **No change needed** — it already copies exactly the four repaired artifacts by name | The Space build picks up the fix by redeploying from the updated repo state. |
+| `Dockerfile` (Space root) | copies the repaired artifacts by name — six since wave 3 (`models/xgb.json`, `models/training_metrics.json`, `models/calibration_metrics.json`, `models/isotonic_calibrator.json`, `eval/app_features.csv`, `eval/serving_split.json`) | The Space build picks up the fix by redeploying from the updated repo state. |
 
 ## What the site link will point at after redeploy
 
 The portfolio's "Live demo ↗" link beside `0.9696 AUC (val)` will reach a **working**
-application: 10,000 members listed, per-member scoring live, and `/api/metrics`
-reporting the *served* model's honest holdout numbers (xgboost AUC 0.9791, holdout of a
+application: the persisted holdout population listed and searchable (1,995 members),
+per-member scoring live with the fitted isotonic calibrator applied, and `/api/metrics`
+reporting the *served* model's honest holdout numbers (xgboost AUC 0.9765, holdout of a
 10k-member sample). Those numbers deliberately do NOT equal 0.9696. Site copy must be
 worded accordingly: the 0.9696 figure remains an archived full-data LightGBM
 tuned-validation result (LIMITATIONS §1), while the demo is labeled as an interactive
@@ -47,8 +48,8 @@ than as proof of the headline metric.
 ```
 BASE=https://robertlupo1997-kkbox-churn-prediction.hf.space
 curl -s $BASE/api/health        # expect model_loaded true, features_loaded true
-curl -s $BASE/api/metrics       # expect auc ≈ 0.9791, log_loss ≈ 0.1406, training_samples 8000
-curl -s "$BASE/api/members?limit=5"   # expect total=10000 and 5 member objects
+curl -s $BASE/api/metrics       # expect auc ≈ 0.9765, log_loss ≈ 0.1534, training_samples 8005
+curl -s "$BASE/api/members?limit=5"   # expect total=1995 (holdout only) and 5 member objects
 curl -s -X POST $BASE/api/predictions/single \
      -H 'Content-Type: application/json' \
      -d '{"msno":"<msno from members list>"}'   # expect 200 with churn_probability
@@ -58,8 +59,9 @@ curl -s $BASE/api/calibration   # expect non-synthetic curve arrays matching mod
 Pass criterion: all five return the expected shapes; `/api/metrics` `auc` and `log_loss`
 must match `models/training_metrics.json` byte-for-byte, but its `brier_score` will NOT:
 the metrics route prefers the calibrated Brier from `models/calibration_metrics.json`
-(`xgboost.after.brier` = 0.03895) over the uncalibrated one in training_metrics.json
-(0.03904). Probe 5 must return measured points (irregular values), never the synthetic
+(`xgboost.after.brier` = 0.04303) over the uncalibrated one in training_metrics.json
+(0.04275) — and since wave 3 the calibrator is actually applied at serving time, so that
+calibrated figure describes the served scores. Probe 5 must return measured points (irregular values), never the synthetic
 formula `mean_predicted=i/10, fraction_of_positives=0.85*i/10+0.02`;
 `tests/test_calibration_serving.py` pins this at HEAD so drift cannot ship silently.
 

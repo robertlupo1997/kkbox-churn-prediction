@@ -43,18 +43,24 @@ columns already in the CSV, but 9 were historical churn lags that cannot be rege
 
 **Repair:** `scripts/rebuild_serving_artifacts.py` derives those 22 computable columns
 with the exact SQL formulas, retrains XGBoost and LightGBM on the shipped 10,000-member
-sample (stratified 80/20 holdout, seed 42), and rewrites the serving CSV plus both
-metrics files so every recorded number describes exactly what is served.
+sample (holdout = members whose `sha256(msno)[:8]/2^32 < 0.2`, deterministic from the msno
+and persisted in `eval/serving_split.json`; it was a seed-42 stratified random split before
+the 2026-08-23 wave-3 repair, which could not be reproduced from committed inputs), and
+rewrites the serving CSV plus both metrics files so every recorded number describes exactly
+what is served.
 `tests/test_artifact_contract.py` now passes with its assertions untouched.
 
 **New honest limitations of the serving artifacts:**
 
 - The serving models are trained on a 10,000-member February-2017-cutoff sample, NOT on
-  the full Kaggle training set. Their metrics (xgboost holdout `auc` 0.9791) are measured
-  on an in-sample stratified holdout and are **not comparable** to the archived
+  the full Kaggle training set. Their metrics (xgboost holdout `auc` 0.9765) are measured
+  on an in-sample holdout and are **not comparable** to the archived
   full-data tuned-validation numbers in section 1.
-- 80% of the members shown in the demo were part of the training split; their individual
-  risk scores are optimistically well-calibrated relative to unseen members.
+- Since the wave-3 repair, the browsable/searchable demo surface serves ONLY the persisted
+  holdout population (`eval/serving_split.json`, 1,995 of 10,000 members). Before that
+  repair, 80% of the members shown were training split members whose scores were
+  systematically optimistic; that exposure is gone from the API, but the underlying sample
+  is still an in-sample holdout of a small serving sample, not an external test set.
 - The 9 historical churn-lag features remain absent from every artifact here;
   reproducing them still requires the raw transaction history (section 6).
 
@@ -76,7 +82,7 @@ Space Dockerfile ships only `xgb.json`, `training_metrics.json`,
 model and its contents must not be cited as describing anything live. Since the
 2026-08-23 repair,
 `models/training_metrics.json` records honest holdout metrics for BOTH retrained models
-(lightgbm holdout AUC 0.9801 vs xgboost 0.9791 on the serving sample), so the metrics
+(lightgbm holdout AUC 0.9799 vs xgboost 0.9765 on the serving sample), so the metrics
 endpoint no longer contradicts the served model. What remains is a presentation gap:
 portfolio copy citing the archived full-data LightGBM tuned-validation AUC of 0.9696 must
 not be presented as describing the demo's served model. See

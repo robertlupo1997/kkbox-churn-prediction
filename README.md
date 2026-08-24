@@ -40,9 +40,12 @@ routes return "not found", and it surfaces the XGBoost tuned-validation AUC (0.9
 the LightGBM headline above — see
 [`docs/repair/2026-08-23-live-demo-check.md`](docs/repair/2026-08-23-live-demo-check.md).
 
-The dashboard runs from checked-in exported JSON and 200 sample members. Its live-API code path does
-not currently match the FastAPI routes, and individual explanations shown in the UI are generated
-placeholders, not model SHAP values. See [LIMITATIONS.md](LIMITATIONS.md).
+Repaired 2026-08-23 (wave 3): the shipped dashboard is built from
+`brutalist-aesthetic-kkbox-churn-analysis-pro/` into the API's static dir and talks to the same
+origin. Member search, scores, and per-member SHAP come from the live API over the holdout-only
+serving population; when an explanation cannot be produced the UI says so instead of substituting
+placeholder numbers. The dashboard's aggregate charts are labeled or historical — see the panel
+inventory in `docs/repair/2026-08-23-demo-panel-inventory.md` and [LIMITATIONS.md](LIMITATIONS.md).
 
 ## Recorded Results
 
@@ -130,9 +133,12 @@ magnitudes mean something, which is why calibration is evaluated separately here
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                      SERVING (as checked in)                    │
-│  FastAPI loads models/xgb.json — the XGBoost booster, raw and   │
-│  uncalibrated. LightGBM had the better recorded AUC but is not  │
-│  the artifact the API serves, and no calibrator is loaded.      │
+│  FastAPI loads models/xgb.json plus models/isotonic_calibrator  │
+│  .json and applies the calibrator to every served score, so the │
+│  number matches the calibrated metrics the API advertises. The  │
+│  browsable surface is the persisted holdout only                │
+│  (eval/serving_split.json, 1,995 members). LightGBM had the     │
+│  better recorded AUC but is not the artifact the API serves.    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

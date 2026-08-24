@@ -8,7 +8,7 @@ is unverified.
 | Field | Value |
 |-------|-------|
 | **Best recorded offline result** | LightGBM classifier with isotonic calibration fitted afterwards |
-| **What the API actually serves** | An uncalibrated XGBoost booster (`models/xgb.json`), loaded via `api/config.py` |
+| **What the API actually serves** | The XGBoost booster (`models/xgb.json`) with the fitted isotonic calibrator in `models/isotonic_calibrator.json` applied to every served score (since the 2026-08-23 wave-3 repair; before that it was raw) |
 | **Version** | 2.0 (2026-01-04) |
 | **Owner** | Robert "Trey" Lupo |
 | **Framework** | scikit-learn, LightGBM, XGBoost |
