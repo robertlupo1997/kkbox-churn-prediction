@@ -173,7 +173,7 @@ python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 # Dashboard and API both at http://127.0.0.1:8000
 ```
 
-### Option 2: Docker Compose — repaired, not yet run
+### Option 2: Docker Compose
 
 ```bash
 make app
@@ -188,15 +188,17 @@ proxy, so every API call hit the bundle host and member lookup reported the API 
 while it was healthy on :8000. It now runs nginx and proxies `/api/` to the api service,
 which keeps the relative base URL — the same one that makes the Space work.
 
-**This has not been run end to end.** Docker was unavailable in the environment where the fix
-was written, so the wiring is asserted by `tests/test_compose_wiring.py` and nothing more. If
-you run it, these three commands settle it:
+Verified end to end on 2026-08-23 from a clean clone of `353ba5f`, Docker 29.4.1:
 
 ```bash
 make app
 curl -s http://localhost:3000/api/health          # through the proxy, not :8000
+#   -> {"status":"healthy","model_loaded":true,"features_loaded":true}
 node scripts/verify/drive-demo.mjs http://localhost:3000
+#   -> 28 assertions, 0 failures
 ```
+
+`tests/test_compose_wiring.py` guards the wiring so it cannot silently regress.
 
 See [LIMITATIONS.md](LIMITATIONS.md).
 
