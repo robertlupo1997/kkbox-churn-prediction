@@ -36,7 +36,7 @@ const About: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <DocSection title="Core Infrastructure" icon={Layers}>
           <p>The model combines listening, transaction and member features to predict the 30-day non-renewal label. Models are trained on earlier monthly snapshots and evaluated on a later monthly window.</p>
-          <p>Offline evaluation records isotonic-calibrated metrics. The API in this repository serves raw XGBoost scores and does not load a calibrator.</p>
+          <p>Offline evaluation records isotonic-calibrated metrics. The served API applies the fitted isotonic calibrator (models/isotonic_calibrator.json) to every score it returns, so the live number matches those calibrated figures.</p>
         </DocSection>
 
         <DocSection title="Feature Engineering" icon={Database}>
