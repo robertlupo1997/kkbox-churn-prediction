@@ -12,6 +12,12 @@ Recomputed `int(sha256(msno)[:8],16)/2**32 < 0.2` over the committed
 
 The previous seed-42 stratified split could not be re-derived from any committed input.
 
+> **Wave-3 post-review addendum:** `predict()` now also clips calibrated probabilities into
+> [1e-4, 1-1e-4] (isotonic saturates at the ends), and `/api/shap` carries
+> `probability_explained` — the PRE-calibration probability attributions reconcile against.
+> See `2026-08-24-post-review-fixes-evidence.md`. The equality below still holds verbatim for
+> every member whose calibrated score is interior to the clip range.
+
 ## 2. Served scores are calibrated: independent recomputation
 
 For holdout members sampled across the population, the raw booster probability was computed
