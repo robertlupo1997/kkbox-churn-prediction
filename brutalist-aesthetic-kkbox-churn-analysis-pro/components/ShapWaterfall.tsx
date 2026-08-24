@@ -16,6 +16,9 @@ import type { ApiShapExplanation } from '../services/apiService';
  * Only the strongest contributors get their own bar. Everything else is summed
  * into one "all other features" bar so the waterfall still adds up to the score
  * the demo displays.
+ *
+ * The caller must have passed `checkShapReconciles` before rendering this. An
+ * explanation that does not sum to the score is not drawn at all.
  */
 
 interface ShapWaterfallProps {
@@ -103,9 +106,7 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({ explanation, finalScore }
           : 'The API reports these as exact.'}{' '}
         Contributions are in log-odds, the units the model is additive in — they do not convert
         to percentage points. Base value plus every bar equals the final log-odds
-        {residual < 1e-3
-          ? ' (they reconcile to within 0.001).'
-          : ` (residual ${residual.toFixed(4)}).`}
+        {` — they reconcile to within ${Math.max(residual, 1e-6).toExponential(0)}.`}
       </p>
 
       <div className="h-80">

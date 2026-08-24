@@ -4,6 +4,7 @@ import { Search, Loader2, Sparkles, Zap, AlertCircle, Wifi, WifiOff } from 'luci
 import { motion } from 'framer-motion';
 import {
   checkApiStatus,
+  checkShapReconciles,
   fetchMemberDetail,
   fetchPopulationSize,
   fetchShap,
@@ -113,10 +114,20 @@ const MemberLookup: React.FC = () => {
 
       try {
         const explanation = await fetchShap(msno);
-        if (explanation) {
-          setShap(explanation);
-        } else {
+        if (!explanation) {
           setShapUnavailable('The API has no explanation for this member.');
+        } else {
+          // Never draw an explanation that does not explain the score. The API
+          // has a fallback path returning numbers that are not attributions.
+          const check = checkShapReconciles(explanation, record.risk_score);
+          if (check.ok) {
+            setShap(explanation);
+          } else {
+            setShapUnavailable(
+              `The explanation the API returned was rejected because ${check.reason}. ` +
+                'Nothing has been drawn in its place.',
+            );
+          }
         }
       } catch (error) {
         setShapUnavailable(

@@ -173,11 +173,59 @@ export async function fetchMemberDetail(msno: string): Promise<ApiMemberDetail |
   }
 }
 
+/** Largest log-odds gap between an explanation and the score it explains. */
+export const SHAP_RECONCILIATION_TOLERANCE = 1e-3;
+
+const logit = (p: number): number => {
+  const clamped = Math.min(Math.max(p, 1e-9), 1 - 1e-9);
+  return Math.log(clamped / (1 - clamped));
+};
+
+/**
+ * Decide whether an explanation actually explains the score it came with.
+ *
+ * Real SHAP values are additive in log-odds: `base_value + sum(shap_values)`
+ * equals `logit(risk_score)`. The API also has a fallback that returns
+ * `importance * z_score * 0.1` per feature with a hardcoded base value of
+ * -1.5, flagged only by `is_approximate`. Those numbers are not attributions
+ * and do not sum to anything -- observed off by 141 log-odds on a member the
+ * real path explained to within 1e-6. Neither the flag nor the arithmetic is
+ * trusted alone: both must hold.
+ */
+export function checkShapReconciles(
+  explanation: ApiShapExplanation,
+  riskScore: number,
+): { ok: boolean; residual: number; reason?: string } {
+  const total =
+    explanation.base_value +
+    Object.values(explanation.shap_values).reduce((sum: number, v) => sum + Number(v), 0);
+  const residual = Math.abs(logit(riskScore) - total);
+
+  if (explanation.is_approximate) {
+    return {
+      ok: false,
+      residual,
+      reason:
+        'the API flagged this explanation as approximate, which means it came from a ' +
+        'feature-importance fallback rather than the model',
+    };
+  }
+  if (!(residual <= SHAP_RECONCILIATION_TOLERANCE)) {
+    return {
+      ok: false,
+      residual,
+      reason: `the contributions do not sum to the score (off by ${residual.toFixed(3)} log-odds)`,
+    };
+  }
+  return { ok: true, residual };
+}
+
 /**
  * Per-member SHAP attribution.
  *
  * Returns null when the API has no explanation for this member. The caller must
- * say the explanation is unavailable. It must not substitute anything.
+ * say the explanation is unavailable. It must not substitute anything, and it
+ * must run `checkShapReconciles` before drawing it.
  */
 export async function fetchShap(msno: string): Promise<ApiShapExplanation | null> {
   try {
