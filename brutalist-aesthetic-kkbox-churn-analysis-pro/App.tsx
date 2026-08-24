@@ -109,7 +109,10 @@ const Header = () => {
             CHURN.<span className="text-brand italic">ANALYSIS</span>
           </h1>
           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-3 max-w-md">
-            Predicting customer churn at <span className="text-brand font-bold">0.9696 AUC</span>, a tuned-validation figure rather than a held-out one, using 131 engineered features and ensemble ML models
+            This demo scores <span className="text-brand font-bold">0.9765 AUC</span> on a 1,995-member
+            holdout, using 121 engineered features. The often-quoted{' '}
+            <span className="font-bold">0.9696</span> is an archived full-data LightGBM
+            tuned-validation figure and describes no model served here.
           </p>
           <div className="flex flex-wrap gap-1 mb-3">
             {TECH_STACK.map(tech => <TechBadge key={tech} label={tech} />)}
