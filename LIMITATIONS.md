@@ -151,10 +151,20 @@ metrics mean, they do not carry the temporal guarantee the rest of the project i
   feature importance. It contains no sample-level SHAP values.
 - **Placeholder member data.** `scripts/export_dashboard_data.py` hard-codes city to 1, tenure and
   active days to 0, and infers auto-renew from the risk score.
-- **Docker Compose cannot wire it up as written.** `VITE_API_URL=http://api:8000` is supplied as a
-  runtime service environment value, but Vite substitutes client variables during the earlier image
-  build, so the compiled client keeps its localhost default. Even moved into the build, a browser
-  outside the Compose network could not resolve the internal `api` hostname.
+- **Docker Compose is repaired, but the repair has not been run.** As written before, the
+  frontend container ran `serve` -- a static-file server with no proxy -- while the client
+  requested relative `/api/*` paths, so every API call hit the bundle host and the dashboard
+  reported the API unavailable. `VITE_API_URL=http://api:8000` was set as a runtime service
+  environment value and did nothing: Vite substitutes client variables during the earlier image
+  build. Moving it into the build would not have worked either, because a browser outside the
+  Compose network cannot resolve the internal `api` hostname.
+
+  The frontend container now runs nginx and proxies `/api/` to the api service, which keeps the
+  relative base URL that makes the same bundle work on Hugging Face Spaces.
+  `tests/test_compose_wiring.py` asserts the wiring. **Nobody has run `make app` against it** --
+  Docker was unavailable in the environment where the fix was written -- so treat it as
+  built-and-guarded, not verified. The commands that would settle it are in the PR that
+  introduced the change.
 
 ## 12. Business impact figures are assumptions, not measurements
 

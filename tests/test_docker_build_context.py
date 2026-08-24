@@ -14,8 +14,12 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCKERFILE = ROOT / "Dockerfile"
 DOCKERIGNORE = ROOT / ".dockerignore"
+
+# Both Dockerfiles that build from the repository root, so both are governed by
+# the root .dockerignore. The frontend image builds from its own subdirectory
+# context and is deliberately not listed here.
+DOCKERFILES = [ROOT / "Dockerfile", ROOT / "api" / "Dockerfile"]
 
 
 def _patterns() -> list[str]:
@@ -52,34 +56,48 @@ def is_excluded(path: str, patterns: list[str]) -> bool:
     return excluded
 
 
-def copy_sources() -> list[str]:
-    """Local COPY sources in the root Dockerfile, ignoring `--from=` stage copies."""
-    sources: list[str] = []
-    for raw in DOCKERFILE.read_text().splitlines():
-        line = raw.strip()
-        if not line.upper().startswith("COPY "):
-            continue
-        tokens = line.split()[1:]
-        if any(t.startswith("--from=") for t in tokens):
-            continue
-        tokens = [t for t in tokens if not t.startswith("--")]
-        sources.extend(tokens[:-1])  # last token is the destination
+def copy_sources() -> list[tuple[str, str]]:
+    """Local COPY sources in the root-context Dockerfiles, as (dockerfile, source).
+
+    `--from=` stage copies are skipped: their source is an earlier build stage,
+    not the build context, so .dockerignore does not apply to them.
+    """
+    sources: list[tuple[str, str]] = []
+    for dockerfile in DOCKERFILES:
+        name = dockerfile.relative_to(ROOT).as_posix()
+        for raw in dockerfile.read_text().splitlines():
+            line = raw.strip()
+            if not line.upper().startswith("COPY "):
+                continue
+            tokens = line.split()[1:]
+            if any(t.startswith("--from=") for t in tokens):
+                continue
+            tokens = [t for t in tokens if not t.startswith("--")]
+            sources.extend((name, src) for src in tokens[:-1])
     return sources
+
+
+def test_every_dockerfile_is_readable():
+    """Guard the guard: a missing file would make the parametrization vacuous."""
+    for dockerfile in DOCKERFILES:
+        assert dockerfile.is_file(), f"{dockerfile} is missing"
 
 
 def test_dockerfile_has_copy_sources():
     """Guard the guard: a parser that finds nothing would pass vacuously."""
-    assert len(copy_sources()) >= 8, copy_sources()
+    assert len(copy_sources()) >= 10, copy_sources()
 
 
-@pytest.mark.parametrize("source", copy_sources())
-def test_copy_source_survives_dockerignore(source):
+@pytest.mark.parametrize(
+    "dockerfile,source", copy_sources(), ids=lambda v: v.replace("/", "_")
+)
+def test_copy_source_survives_dockerignore(dockerfile, source):
     patterns = _patterns()
     if any(ch in source for ch in "*?"):
         pytest.skip(f"glob source, not a single path: {source}")
     assert (ROOT / source).exists(), f"{source} is COPYed but not committed"
     assert not is_excluded(source, patterns), (
-        f".dockerignore excludes {source}, which the Dockerfile COPYs. "
+        f".dockerignore excludes {source}, which {dockerfile} COPYs. "
         f"docker build fails on this; add `!{source}` after the pattern that "
         f"excludes it."
     )
