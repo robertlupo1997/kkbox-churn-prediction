@@ -78,16 +78,47 @@ class PredictionResponse(BaseModel):
     action: str = Field(..., description="Recommended action")
 
 
+class MetricRegime(BaseModel):
+    """One model's metrics under a single scoring regime."""
+
+    auc: float | None = Field(None, description="AUC-ROC score")
+    log_loss: float | None = Field(None, description="Log loss score")
+    brier: float | None = Field(None, description="Brier score")
+
+
 class MetricsResponse(BaseModel):
-    """Model performance metrics."""
+    """Model performance metrics.
+
+    The three top-level scalars do not all describe the same scores, and they
+    are kept that way for compatibility with existing clients and probes:
+    `auc` and `log_loss` are the raw model's, while `brier_score` is measured
+    after calibration. The API serves calibrated scores. Read `uncalibrated`
+    and `calibrated` for a coherent set, and `metric_regimes` for which regime
+    each top-level scalar came from.
+    """
 
     model_name: str = Field(..., description="Model type")
-    log_loss: float = Field(..., description="Log loss score")
-    auc: float = Field(..., description="AUC-ROC score")
-    brier_score: float | None = Field(None, description="Brier score")
+    log_loss: float = Field(..., description="Log loss score, uncalibrated")
+    auc: float = Field(..., description="AUC-ROC score, uncalibrated")
+    brier_score: float | None = Field(None, description="Brier score, calibrated")
     ece: float | None = Field(None, description="Expected calibration error")
     training_samples: int | None = Field(None, description="Number of training samples")
     validation_samples: int | None = Field(None, description="Number of validation samples")
+
+    calibration_applied_at_serving: bool = Field(
+        False,
+        description="Whether the scores this API returns pass through the calibrator",
+    )
+    metric_regimes: dict[str, str] = Field(
+        default_factory=dict,
+        description="Which regime each top-level scalar was measured under",
+    )
+    uncalibrated: MetricRegime | None = Field(
+        None, description="Raw model output on the holdout"
+    )
+    calibrated: MetricRegime | None = Field(
+        None, description="The same scores after isotonic calibration, which is what is served"
+    )
 
 
 class FeatureImportanceItem(BaseModel):

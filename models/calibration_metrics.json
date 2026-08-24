@@ -2,10 +2,14 @@
   "xgboost": {
     "method": "isotonic (fit on out-of-fold training-split predictions, evaluated on holdout); applied at serving time -- see models/isotonic_calibrator.json",
     "before": {
-      "brier": 0.04274804890155792
+      "brier": 0.04274804890155792,
+      "auc": 0.9765398335681713,
+      "log_loss": 0.15336255729198456
     },
     "after": {
-      "brier": 0.04303226585624005
+      "brier": 0.04303226585624005,
+      "auc": 0.9763178422443322,
+      "log_loss": 0.16772267180024938
     },
     "uncalibrated": [
       {
@@ -86,6 +90,12 @@
         "mean_predicted": 0.9733496769368957,
         "fraction_of_positives": 0.956140350877193
       }
-    ]
+    ],
+    "evaluated_on": {
+      "population": "holdout, eval/serving_split.json",
+      "n": 1995,
+      "churn_rate": 0.2050125313283208
+    },
+    "note": "before = raw model output; after = the same scores mapped through models/isotonic_calibrator.json, which is what the API serves. Isotonic calibration is monotone non-decreasing, so it can only tie scores that were distinct; AUC therefore falls slightly rather than staying identical."
   }
 }

@@ -1,4 +1,5 @@
 {
+  "_provenance": "DERIVATION NOT COMMITTED. scripts/export_dashboard_data.py builds this file from eval/stacked_ensemble_predictions.csv, which is not in the repository and cannot be regenerated from it (the raw Kaggle data is absent -- LIMITATIONS.md section 6). Re-running the export today returns an empty result for this file rather than these numbers. The values are kept because they are what the archived run produced, not because they are checkable.",
   "lift": [
     {
       "percentile": 10,

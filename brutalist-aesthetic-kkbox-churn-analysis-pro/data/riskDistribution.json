@@ -1,32 +1,35 @@
-[
-  {
-    "range": "0-10%",
-    "count": 778128,
-    "tier": "Low"
-  },
-  {
-    "range": "10-20%",
-    "count": 37021,
-    "tier": "Low"
-  },
-  {
-    "range": "20-40%",
-    "count": 30704,
-    "tier": "Medium"
-  },
-  {
-    "range": "40-60%",
-    "count": 78548,
-    "tier": "Medium"
-  },
-  {
-    "range": "60-80%",
-    "count": 46559,
-    "tier": "High"
-  },
-  {
-    "range": "80-100%",
-    "count": 0,
-    "tier": "High"
-  }
-]
+{
+  "_provenance": "DERIVATION NOT COMMITTED. scripts/export_dashboard_data.py builds this file from eval/stacked_ensemble_predictions.csv, which is not in the repository and cannot be regenerated from it (the raw Kaggle data is absent -- LIMITATIONS.md section 6). Re-running the export today returns an empty result for this file rather than these numbers. The values are kept because they are what the archived run produced, not because they are checkable.",
+  "data": [
+    {
+      "range": "0-10%",
+      "count": 778128,
+      "tier": "Low"
+    },
+    {
+      "range": "10-20%",
+      "count": 37021,
+      "tier": "Low"
+    },
+    {
+      "range": "20-40%",
+      "count": 30704,
+      "tier": "Medium"
+    },
+    {
+      "range": "40-60%",
+      "count": 78548,
+      "tier": "Medium"
+    },
+    {
+      "range": "60-80%",
+      "count": 46559,
+      "tier": "High"
+    },
+    {
+      "range": "80-100%",
+      "count": 0,
+      "tier": "High"
+    }
+  ]
+}

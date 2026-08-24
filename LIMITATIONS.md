@@ -147,8 +147,37 @@ metrics mean, they do not carry the temporal guarantee the rest of the project i
   `api/routers/predictions.py`.)
 - **Mock explanations.** `MemberLookup.tsx` falls back to generated factors both when offline and
   when the API call fails. With the checked-in artifacts, that is always.
-- **Synthetic beeswarm.** `ShapBeeswarm.tsx` generates every point with `Math.random()` from global
-  feature importance. It contains no sample-level SHAP values.
+- **Synthetic beeswarm — removed.** `ShapBeeswarm.tsx` generated every point with
+  `Math.random()` from global feature importance and contained no sample-level SHAP values.
+  It stopped being rendered in wave 3 and the file is now deleted, so it cannot be imported
+  back by accident. Real per-member attribution is on the Member Lookup page, from
+  `POST /api/shap`.
+
+- **Four chart families cannot be reproduced from this repository.**
+  `scripts/export_dashboard_data.py` builds `calibrationCurves.json`, `liftGainsData.json`,
+  `prCurveData.json`, `riskDistribution.json`, and `sampleMembers.json` from
+  `eval/stacked_ensemble_predictions.csv`. That file is not committed and cannot be
+  regenerated here — the raw Kaggle data is absent (section 6). Re-running the export today
+  returns an empty result for each of them. The committed JSON is the only copy, and it is a
+  record of what the archived run produced rather than evidence you can check. Each file now
+  carries a `_provenance` string saying so, and the Historical page's banner repeats it.
+  `tests/test_dashboard_provenance.py` keeps the two in step.
+
+- **The Historical page used to mix two runs.** `datasetStats.json` took `total_members`
+  (916,814) and `churn_rate` (4.72%) from `eval/dataset_summary.json` — a cohort Mar→Apr 2017
+  split with 893,768 validation rows at 3.30% positive — and its sample counts from the
+  archived full-data March-2017 run, while the banner above claimed every figure came from one
+  run. 916,814 was neither the sum of the counts beside it (2,900,085) nor either of them. The
+  file now describes the archived run alone: 970,960 validation rows at 8.99% churn, 1,929,125
+  training rows, 131 features. The Dashboard KPI cards read the same file, so their totals
+  moved with it.
+- **The threshold panel's contact volume is now derived, not invented.** It read
+  `Math.max(0.01, 1 - threshold) * 0.5`, which is not a property of the curve, the model, or
+  the data. At threshold 0.05 it claimed 47.5% of the population would be contacted; the
+  curve implies 30.2%. Every dollar figure in that panel was built on it. The count is now
+  `recall × churners ÷ precision`, which precision and recall pin exactly, and it reads "—"
+  at thresholds where both are zero. The dollar figures remain assumptions — see section 12.
+
 - **Placeholder member data.** `scripts/export_dashboard_data.py` hard-codes city to 1, tenure and
   active days to 0, and infers auto-renew from the risk score.
 - **Docker Compose is repaired, but the repair has not been run.** As written before, the

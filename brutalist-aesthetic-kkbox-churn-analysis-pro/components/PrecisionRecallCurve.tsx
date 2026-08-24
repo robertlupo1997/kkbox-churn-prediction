@@ -13,6 +13,12 @@ const PrecisionRecallCurve: React.FC = () => {
   const textColor = isDark ? '#a1a1aa' : '#000000';
   const strokeColor = isDark ? '#ffffff' : '#000000';
 
+  // At the top of the PR curve nothing is flagged correctly, so the contact
+  // count is 0/0. Render an em dash rather than a number.
+  const thousands = (v: number | null) => (v === null ? '—' : `${(v / 1000).toFixed(0)}K`);
+  const dollarsK = (v: number | null) =>
+    v === null ? '—' : `${v < 0 ? '-' : ''}$${Math.abs(v / 1000).toFixed(0)}K`;
+
   const metrics = useMemo(() => {
     // Find closest threshold in data
     const point = prCurveData.reduce((closest, p) =>
@@ -23,20 +29,39 @@ const PrecisionRecallCurve: React.FC = () => {
     const baseChurnRate = datasetStats.churn_rate / 100;
     const totalChurners = Math.round(totalMembers * baseChurnRate);
 
-    // Estimate members flagged at this threshold
-    // Higher threshold = fewer flagged
-    const flagRate = Math.max(0.01, 1 - point.threshold) * 0.5;
-    const predictedPositive = Math.round(totalMembers * flagRate);
-    const truePositives = Math.round(predictedPositive * point.precision);
+    // How many members get contacted at this threshold is not a guess. Precision
+    // and recall pin it exactly:
+    //
+    //   true positives     = recall * total churners
+    //   predicted positive = true positives / precision
+    //
+    // This used to read `Math.max(0.01, 1 - threshold) * 0.5`, which is not a
+    // property of the curve, the model, or the data -- it is a line that slopes
+    // the right way. At threshold 0.05 it claimed 47.5% of the population would
+    // be contacted; the curve says 30.2%. Every dollar figure below was built on
+    // that number.
+    //
+    // At the top of the curve precision and recall are both zero, so nothing was
+    // flagged correctly and the identity is 0/0. That is reported as unknown
+    // rather than filled in.
+    const derivable = point.precision > 0 && point.recall > 0;
     const capturedChurners = Math.round(totalChurners * point.recall);
+    const predictedPositive = derivable
+      ? Math.round(capturedChurners / point.precision)
+      : null;
+    const truePositives = derivable ? capturedChurners : 0;
 
     // Cost-benefit analysis
-    const costPerContact = 5; // $5 to contact a customer
-    const valuePerSave = 149; // $149 subscription value
-    const saveRate = 0.3; // 30% of contacted churners stay
-    const totalCost = predictedPositive * costPerContact;
-    const totalSaved = Math.round(truePositives * saveRate * valuePerSave);
-    const netROI = totalSaved - totalCost;
+    // These three are assumptions, not measurements. No campaign was run, so no
+    // save rate was observed. See LIMITATIONS.md section 12.
+    const costPerContact = 5; // $5 to contact a customer -- assumed
+    const valuePerSave = 149; // $149 subscription value -- assumed
+    const saveRate = 0.3; // 30% of contacted churners stay -- assumed, unmeasured
+    const totalCost = derivable ? predictedPositive * costPerContact : null;
+    const totalSaved = derivable
+      ? Math.round(truePositives * saveRate * valuePerSave)
+      : null;
+    const netROI = derivable ? totalSaved - totalCost : null;
 
     return {
       ...point,
@@ -220,7 +245,7 @@ const PrecisionRecallCurve: React.FC = () => {
             </div>
             <div className="p-3 brutalist-border bg-light dark:bg-zinc-800">
               <p className="text-[8px] font-black uppercase opacity-60 dark:text-white">To Contact</p>
-              <p className="text-2xl font-black dark:text-white">{(metrics.predictedPositive / 1000).toFixed(0)}K</p>
+              <p className="text-2xl font-black dark:text-white">{thousands(metrics.predictedPositive)}</p>
             </div>
           </div>
 
@@ -237,16 +262,20 @@ const PrecisionRecallCurve: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-[9px] opacity-70">Contact Cost</span>
-                <span className="text-[9px] font-black">-${(metrics.totalCost / 1000).toFixed(0)}K</span>
+                <span className="text-[9px] font-black">{dollarsK(metrics.totalCost === null ? null : -metrics.totalCost)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[9px] opacity-70">Revenue Saved</span>
-                <span className="text-[9px] font-black text-green-400">+${(metrics.totalSaved / 1000).toFixed(0)}K</span>
+                <span className="text-[9px] font-black text-green-400">{metrics.totalSaved === null ? '—' : `+${(metrics.totalSaved / 1000).toFixed(0)}K`}</span>
               </div>
               <div className="border-t border-white/20 pt-2 flex justify-between">
                 <span className="text-[9px] font-black">Net (Assumed)</span>
-                <span className={`text-[9px] font-black ${metrics.netROI > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {metrics.netROI > 0 ? '+' : ''}${(metrics.netROI / 1000).toFixed(0)}K
+                <span className={`text-[9px] font-black ${
+                  metrics.netROI === null ? '' : metrics.netROI > 0 ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {metrics.netROI === null
+                    ? '—'
+                    : `${metrics.netROI > 0 ? '+' : ''}${dollarsK(metrics.netROI).replace('-', '')}`}
                 </span>
               </div>
             </div>
@@ -257,7 +286,10 @@ const PrecisionRecallCurve: React.FC = () => {
             At the nearest stored threshold to <span className="text-brand">{threshold.toFixed(2)}</span>, recorded recall is
             <span className="text-brand"> {(metrics.recall * 100).toFixed(0)}%</span> and recorded precision is
             <span className="text-brand"> {(metrics.precision * 100).toFixed(0)}%</span>. The contact count
-            ({(metrics.predictedPositive / 1000).toFixed(0)}K) is a heuristic estimate, not a count evaluated from predictions.
+            ({thousands(metrics.predictedPositive)}) is derived from those two exactly —
+            recall × churners ÷ precision — not estimated. The dollar figures are not:
+            $5 per contact, $149 per save, and a 30% save rate are assumptions. No campaign
+            was run, so no save rate was measured. See LIMITATIONS.md §12.
           </p>
         </div>
       </div>
