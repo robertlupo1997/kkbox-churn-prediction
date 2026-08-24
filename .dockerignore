@@ -7,15 +7,20 @@ __pycache__/
 *.pyc
 .git/
 
-# Ignore most eval files but keep app_features.csv
+# Ignore most eval files but keep the ones the Dockerfile copies.
+# Every un-ignore here matches a COPY line in the root Dockerfile. A COPY of an
+# ignored path fails the build, which is how the Space went to BUILD_ERROR when
+# serving_split.json was added to the Dockerfile but not to this allowlist.
 eval/*
 !eval/app_features.csv
+!eval/serving_split.json
 
-# Ignore most model files but keep production files
+# Ignore most model files but keep the ones the Dockerfile copies
 models/*
 !models/xgb.json
 !models/training_metrics.json
 !models/calibration_metrics.json
+!models/isotonic_calibrator.json
 
 # Ignore thoughts and internal docs
 thoughts/
