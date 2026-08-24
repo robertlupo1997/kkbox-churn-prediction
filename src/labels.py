@@ -39,7 +39,7 @@ def create_churn_labels(
         window_days: Days after expiration to check for renewals (default 30)
 
     Returns:
-        DataFrame with columns: msno, is_churn, last_expire_date, next_txn_date, days_to_next
+        DataFrame with columns: msno, is_churn, expire_date, next_renewal_date, days_to_next
 
     Raises:
         FileNotFoundError: If input files don't exist
@@ -73,8 +73,13 @@ def create_churn_labels(
     WITH tx_parsed AS (
         SELECT
             msno,
-            TRY_CAST(STRPTIME(CAST(transaction_date AS VARCHAR), '%Y%m%d') AS DATE) AS transaction_date,
-            TRY_CAST(STRPTIME(CAST(membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE) AS membership_expire_date,
+            -- TRY_STRPTIME, not STRPTIME. STRPTIME RAISES on an unparseable
+            -- string, and TRY_CAST cannot catch that -- the error happens before
+            -- the cast. A single row with membership_expire_date "invalid" aborted
+            -- the whole run instead of being dropped by the IS NOT NULL filters
+            -- immediately below.
+            TRY_CAST(TRY_STRPTIME(CAST(transaction_date AS VARCHAR), '%Y%m%d') AS DATE) AS transaction_date,
+            TRY_CAST(TRY_STRPTIME(CAST(membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE) AS membership_expire_date,
             CAST(payment_plan_days AS INTEGER) AS payment_plan_days,
             CAST(is_auto_renew AS INTEGER) AS is_auto_renew,
             CAST(is_cancel AS INTEGER) AS is_cancel
@@ -84,8 +89,8 @@ def create_churn_labels(
             AND CAST(membership_expire_date AS VARCHAR) IS NOT NULL
             AND CAST(transaction_date AS VARCHAR) != ''
             AND CAST(membership_expire_date AS VARCHAR) != ''
-            AND TRY_CAST(STRPTIME(CAST(transaction_date AS VARCHAR), '%Y%m%d') AS DATE) IS NOT NULL
-            AND TRY_CAST(STRPTIME(CAST(membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE) IS NOT NULL
+            AND TRY_CAST(TRY_STRPTIME(CAST(transaction_date AS VARCHAR), '%Y%m%d') AS DATE) IS NOT NULL
+            AND TRY_CAST(TRY_STRPTIME(CAST(membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE) IS NOT NULL
     ),
 
     -- Sort transactions by date per user (mirroring Scala sorting)
@@ -106,22 +111,42 @@ def create_churn_labels(
         GROUP BY msno
     ),
 
-    -- For each user's last expiry, find the next transaction that extends membership
-    -- This mirrors the Scala logic of checking if later transactions extend beyond expiry
+    -- For each user's last expiry, find the next transaction that extends membership.
+    --
+    -- This searches tx_parsed, NOT tx_sorted. tx_sorted is truncated at
+    -- cutoff_date - 1 day, which is correct for choosing WHICH expiries form the
+    -- cohort but wrong for finding their renewals: a renewal may legitimately
+    -- arrive up to window_days AFTER the expiry, which is past the cutoff.
+    --
+    -- Searching the truncated set made every member whose window extended beyond
+    -- the cutoff look like a churner. With cutoff 2017-03-01 and an expiry of
+    -- 2017-02-15, renewals from 2017-03-01 to 2017-03-17 were invisible, so a
+    -- day-30 renewal labelled churn and a day-31 renewal labelled churn for the
+    -- wrong reason -- the same answer, no discrimination.
+    --
+    -- Looking forward past the cutoff is correct HERE and only here. A churn label
+    -- is defined by what happens after the expiry; that is what the label is. The
+    -- cutoff exists to keep FEATURES from seeing the future, and this module
+    -- produces no features.
     next_extensions AS (
-        SELECT DISTINCT
+        SELECT
             ule.msno,
             ule.last_expire_date,
             MIN(t2.transaction_date) AS next_txn_date,
             MIN(t2.membership_expire_date) AS next_expire_date
         FROM user_last_expire ule
-        INNER JOIN tx_sorted t1 ON ule.msno = t1.msno
-            AND t1.membership_expire_date = ule.last_expire_date
-        LEFT JOIN tx_sorted t2 ON ule.msno = t2.msno
-            -- Find transactions after the expiry that aren't cancellations
-            AND t2.transaction_date > ule.last_expire_date
+        LEFT JOIN tx_parsed t2 ON ule.msno = t2.msno
+            -- Inclusive on the expiry day: a renewal transacted ON the expiry date
+            -- is a renewal, at day 0 of the window. `>` dropped it and labelled a
+            -- member who never lapsed as a churner. Inclusive here matches the
+            -- `<= window_days` test below, so both ends of the window are closed.
+            --
+            -- This cannot match the expiring transaction itself: that row's
+            -- membership_expire_date equals last_expire_date and the guard below
+            -- requires it to be strictly greater.
+            AND t2.transaction_date >= ule.last_expire_date
             AND t2.is_cancel = 0
-            -- Check if the new transaction extends membership beyond the expiry window
+            -- The new transaction must actually extend membership beyond the expiry
             AND t2.membership_expire_date > ule.last_expire_date
         GROUP BY ule.msno, ule.last_expire_date
     ),
@@ -148,8 +173,8 @@ def create_churn_labels(
     SELECT
         cl.msno,
         cl.is_churn,
-        cl.last_expire_date,
-        cl.next_txn_date,
+        cl.last_expire_date AS expire_date,
+        cl.next_txn_date AS next_renewal_date,
         cl.days_to_next,
         ol.is_churn AS official_is_churn
     FROM churn_labels cl
@@ -204,7 +229,7 @@ def mismatch_audit(labels_df: pd.DataFrame, max_examples: int = 50) -> pd.DataFr
     """
     Generate detailed mismatch audit with 50 diff examples as specified.
 
-    Creates a CSV with msno, last_expire_date, next_txn_date, days_to_next,
+    Creates a CSV with msno, expire_date, next_renewal_date, days_to_next,
     generated_label, official_label for debugging the WSDMChurnLabeller logic.
 
     Args:
@@ -226,8 +251,8 @@ def mismatch_audit(labels_df: pd.DataFrame, max_examples: int = 50) -> pd.DataFr
     audit_df = mismatches[
         [
             "msno",
-            "last_expire_date",
-            "next_txn_date",
+            "expire_date",
+            "next_renewal_date",
             "days_to_next",
             "is_churn",
             "official_is_churn",
@@ -300,7 +325,7 @@ def analyze_mismatches(labels_df: pd.DataFrame, max_examples: int = 10):
         print(f"\nFirst {min(max_examples, len(mismatches))} mismatches:")
         print(
             mismatches[
-                ["msno", "is_churn", "official_is_churn", "last_expire_date", "next_txn_date"]
+                ["msno", "is_churn", "official_is_churn", "expire_date", "next_renewal_date"]
             ].head(max_examples)
         )
 
