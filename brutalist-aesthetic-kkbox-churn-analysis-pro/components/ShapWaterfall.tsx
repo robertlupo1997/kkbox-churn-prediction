@@ -8,22 +8,25 @@ import type { ApiShapExplanation } from '../services/apiService';
  * Per-member SHAP attribution, drawn in the units the model works in.
  *
  * The model's SHAP values are additive in LOG-ODDS, not in probability points:
- * `base_value + sum(shap_values) == logit(risk_score)`, which the API satisfies
- * to within 1e-6. An earlier version of this chart multiplied contributions by
- * 100 and labelled them "pp", which is not a conversion -- it is a different
- * quantity. The axis is log-odds now, and the bars reconcile.
+ * `base_value + sum(shap_values) == logit(probability_explained)`, where
+ * `probability_explained` is the model's PRE-calibration output the API ships
+ * in the payload (the served risk_score is isotonic-calibrated -- a monotone
+ * remap, not the identity). Reconciles to within 1e-6 on the real path. An
+ * earlier version of this chart multiplied contributions by 100 and labelled
+ * them "pp", which is not a conversion -- it is a different quantity.
  *
  * Only the strongest contributors get their own bar. Everything else is summed
- * into one "all other features" bar so the waterfall still adds up to the score
- * the demo displays.
+ * into one "all other features" bar so the waterfall still adds up to the
+ * log-odds it explains.
  *
  * The caller must have passed `checkShapReconciles` before rendering this. An
- * explanation that does not sum to the score is not drawn at all.
+ * explanation that does not sum to the probability it names is not drawn at
+ * all.
  */
 
 interface ShapWaterfallProps {
   explanation: ApiShapExplanation;
-  /** Churn probability in [0, 1], as served. */
+  /** The pre-calibration probability this attribution explains, in [0, 1]. */
   finalScore: number;
 }
 
@@ -100,7 +103,8 @@ const ShapWaterfall: React.FC<ShapWaterfallProps> = ({ explanation, finalScore }
         <Zap size={12} className="mr-2" /> Feature contributions (SHAP, log-odds)
       </h3>
       <p className="text-[9px] font-bold opacity-60 mb-6 dark:text-white">
-        Real SHAP values for this member, served by the model.{' '}
+        Real SHAP values for this member, served by the model — they explain the
+        uncalibrated model output shown as the final bar, not the calibrated score above.{' '}
         {explanation.is_approximate
           ? 'The API reports these as approximate.'
           : 'The API reports these as exact.'}{' '}

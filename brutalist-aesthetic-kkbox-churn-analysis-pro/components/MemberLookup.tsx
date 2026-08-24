@@ -117,9 +117,12 @@ const MemberLookup: React.FC = () => {
         if (!explanation) {
           setShapUnavailable('The API has no explanation for this member.');
         } else {
-          // Never draw an explanation that does not explain the score. The API
-          // has a fallback path returning numbers that are not attributions.
-          const check = checkShapReconciles(explanation, record.risk_score);
+          // Never draw an explanation that does not explain the probability it
+          // names. SHAP is additive in the model's raw margin; the API ships
+          // that pre-calibration probability in the payload because the served
+          // risk_score is isotonic-calibrated. The fallback path returns
+          // numbers that are not attributions at all.
+          const check = checkShapReconciles(explanation);
           if (check.ok) {
             setShap(explanation);
           } else {
@@ -430,7 +433,18 @@ const MemberLookup: React.FC = () => {
             </div>
           </div>
 
-          {shap && <ShapWaterfall explanation={shap} finalScore={detail.risk_score} />}
+          {shap && shap.probability_explained !== undefined && (
+            <>
+              {Math.abs(shap.probability_explained - detail.risk_score) > 1e-6 && (
+                <p className="text-[10px] font-bold uppercase tracking-wide text-brand mb-2">
+                  Note: this attribution explains the model&apos;s uncalibrated output (
+                  {(shap.probability_explained * 100).toFixed(2)}%). The score above is the
+                  isotonic-calibrated probability ({(detail.risk_score * 100).toFixed(2)}%).
+                </p>
+              )}
+              <ShapWaterfall explanation={shap} finalScore={shap.probability_explained} />
+            </>
+          )}
         </motion.div>
       ) : results.length === 0 ? (
         <div className="py-32 flex flex-col items-center text-center">

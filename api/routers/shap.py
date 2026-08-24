@@ -53,7 +53,21 @@ def _explanation(msno: str) -> dict:
 
     explanation = shap_service.explain_prediction(member_row)
 
+    # The attribution is additive in the model's RAW margin, so the payload
+    # carries the pre-calibration probability it explains. The served
+    # risk_score is the isotonic-calibrated probability -- a monotone remap of
+    # this, not the identity. Reconcile against `probability_explained`, never
+    # against risk_score.
+    raw_probs, _ = model_service.predict_raw(member_row)
+
     return {
         "msno": msno,
-        "explanation": explanation,
+        "explanation": {
+            **explanation,
+            "probability_explained": float(raw_probs[0]),
+            "explains": (
+                "the model's uncalibrated output; the served risk_score is the "
+                "isotonic-calibrated probability"
+            ),
+        },
     }

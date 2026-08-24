@@ -240,16 +240,18 @@ def load_calibration_data() -> dict[str, Any]:
         return {}
 
 
-def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
-    """Generate churn predictions for members.
+def predict_raw(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+    """Score members with the raw booster output -- NO calibrator applied.
+
+    This is the quantity SHAP attributions are additive in. Anything that
+    explains the model in log-odds space must be reconciled against this
+    probability, not the calibrated one.
 
     Args:
         df: DataFrame with member features
 
     Returns:
         Tuple of (probabilities, feature_names)
-        - probabilities: Array of churn probabilities
-        - feature_names: List of feature column names used
     """
     bst = load_model()
 
@@ -274,11 +276,26 @@ def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     # Get predictions (Booster returns probabilities directly for binary classification)
     probs = bst.predict(dmatrix)
 
-    # Serve the calibrated probability. The API advertises calibrated Brier
-    # and reliability curves; the served number must be the same quantity.
-    probs = apply_calibrator(probs)
-
     return probs, feats
+
+
+def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+    """Generate the SERVED churn probability for members: calibrated and clipped.
+
+    The API advertises calibrated Brier and reliability curves; the served
+    number must be the same quantity. Isotonic regression saturates at 0/1 by
+    construction, so the result is clipped into [1e-4, 1 - 1e-4]: no member is
+    ever told they have a 100% or 0% churn probability.
+
+    Args:
+        df: DataFrame with member features
+
+    Returns:
+        Tuple of (probabilities, feature_names)
+    """
+    probs, feats = predict_raw(df)
+    probs = apply_calibrator(probs)
+    return np.clip(probs, 1e-4, 1 - 1e-4), feats
 
 
 def get_feature_importance(top_n: int | None = None) -> list[dict[str, Any]]:

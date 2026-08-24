@@ -26,6 +26,17 @@ def get_explainer():
         return None
 
     try:
+        # shap pulls in matplotlib; on any host whose environment selects an
+        # interactive backend (e.g. MPLBACKEND=module://matplotlib_inline...,
+        # inherited from a jupyter parent process) that import RAISES -- and
+        # the except below would silently degrade every explanation to the
+        # fabricated importance proxy. A serving process is always headless,
+        # so the backend override is forced, not defaulted: leaving a parent's
+        # MPLBACKEND in place is exactly what breaks the import.
+        import os
+
+        os.environ["MPLBACKEND"] = "Agg"
+
         import shap
 
         bst = model_service.load_model()
@@ -130,8 +141,13 @@ def explain_prediction(member_features: pd.DataFrame) -> dict[str, Any]:
     feats = [c for c in member_features.columns if c not in drop]
     X = member_features[feats].copy()
 
-    # Encode categorical
-    if "gender" in X.columns:
+    # Encode categorical -- EXACTLY as model_service.predict_raw does. The
+    # shipped table stores gender as already-encoded 0/1/2 numerics that must
+    # pass through untouched; mapping them anyway turned every row into
+    # "unknown" (=2) inside the attribution path only, so explanations did not
+    # reconcile with the scored margin for any member whose gender mattered.
+    # Commit 09b6be0 fixed this in the scoring path but not here.
+    if "gender" in X.columns and X["gender"].dtype == object:
         gender_map = {"male": 0, "female": 1, "unknown": 2}
         X["gender"] = X["gender"].map(gender_map).fillna(2)
 

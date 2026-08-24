@@ -80,6 +80,13 @@ export interface ApiShapExplanation {
   top_risk_factors: ShapFactor[];
   top_protective_factors: ShapFactor[];
   is_approximate: boolean;
+  /**
+   * The PRE-calibration model probability this attribution explains. SHAP is
+   * additive in log-odds of the raw margin; the served risk_score is the
+   * isotonic-calibrated probability, which is a different number. Reconcile
+   * against this field, never against risk_score.
+   */
+  probability_explained?: number;
 }
 
 export interface ApiStatus {
@@ -182,24 +189,35 @@ const logit = (p: number): number => {
 };
 
 /**
- * Decide whether an explanation actually explains the score it came with.
+ * Decide whether an explanation actually explains a probability it names.
  *
  * Real SHAP values are additive in log-odds: `base_value + sum(shap_values)`
- * equals `logit(risk_score)`. The API also has a fallback that returns
- * `importance * z_score * 0.1` per feature with a hardcoded base value of
- * -1.5, flagged only by `is_approximate`. Those numbers are not attributions
- * and do not sum to anything -- observed off by 141 log-odds on a member the
- * real path explained to within 1e-6. Neither the flag nor the arithmetic is
- * trusted alone: both must hold.
+ * equals `logit(probability_explained)` -- the PRE-calibration model output
+ * the API now ships in the payload, because the served risk_score is
+ * isotonic-calibrated and isotonic is not the identity. The API also has a
+ * fallback that returns `importance * z_score * 0.1` per feature with a
+ * hardcoded base value of -1.5, flagged only by `is_approximate`. Those
+ * numbers are not attributions and do not sum to anything -- observed off by
+ * 141 log-odds on a member the real path explained to within 1e-6. Neither
+ * the flag nor the arithmetic is trusted alone: both must hold.
  */
 export function checkShapReconciles(
   explanation: ApiShapExplanation,
-  riskScore: number,
 ): { ok: boolean; residual: number; reason?: string } {
+  if (
+    explanation.probability_explained === undefined ||
+    !Number.isFinite(explanation.probability_explained)
+  ) {
+    return {
+      ok: false,
+      residual: NaN,
+      reason: 'the API did not name the probability this attribution explains',
+    };
+  }
   const total =
     explanation.base_value +
     Object.values(explanation.shap_values).reduce((sum: number, v) => sum + Number(v), 0);
-  const residual = Math.abs(logit(riskScore) - total);
+  const residual = Math.abs(logit(explanation.probability_explained) - total);
 
   if (explanation.is_approximate) {
     return {
@@ -225,7 +243,9 @@ export function checkShapReconciles(
  *
  * Returns null when the API has no explanation for this member. The caller must
  * say the explanation is unavailable. It must not substitute anything, and it
- * must run `checkShapReconciles` before drawing it.
+ * must run `checkShapReconciles` before drawing it. A drawn explanation
+ * reconciles against `probability_explained` (pre-calibration), NOT against the
+ * served calibrated risk_score.
  */
 export async function fetchShap(msno: string): Promise<ApiShapExplanation | null> {
   try {
