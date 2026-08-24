@@ -33,12 +33,22 @@ Run the stack locally:
 make app  # Starts API on :8000, Dashboard on :3000
 ```
 
-A Hugging Face Spaces URL is also published at
+The live demo runs on Hugging Face Spaces at
 [robertlupo1997/kkbox-churn-prediction](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction).
-Checked on 2026-08-23: the Space loads and answers, but its member cache is empty, prediction
-routes return "not found", and it surfaces the XGBoost tuned-validation AUC (0.9642) rather than
-the LightGBM headline above — see
-[`docs/repair/2026-08-23-live-demo-check.md`](docs/repair/2026-08-23-live-demo-check.md).
+
+Driven end to end on 2026-08-24 with `scripts/verify/drive-demo.mjs`: 28 assertions, 0
+failures. It serves 1,995 holdout members, scores them with the isotonic calibrator applied,
+and explains each one on the real TreeExplainer path — worst reconciliation residual
+1.81e-05, no saturated probabilities, no approximation-path explanations.
+
+**The demo's numbers are not the headline numbers.** `/api/metrics` reports the *served*
+model: AUC 0.9765 and log loss 0.1534 on a 1,995-member holdout of a 10,000-member serving
+sample. The 0.9696 quoted elsewhere is an archived full-data LightGBM tuned-validation
+figure and describes no served model. See [LIMITATIONS.md](LIMITATIONS.md) §1.
+
+The earlier probe that found this Space broken —
+[`docs/repair/2026-08-23-live-demo-check.md`](docs/repair/2026-08-23-live-demo-check.md) — is
+kept as the record of what was wrong, not as a current description.
 
 Repaired 2026-08-23 (wave 3): the shipped dashboard is built from
 `brutalist-aesthetic-kkbox-churn-analysis-pro/` into the API's static dir and talks to the same
@@ -144,24 +154,42 @@ magnitudes mean something, which is why calibration is evaluated separately here
 
 ## Quick Start
 
-### Option 1: Full Stack
+### Option 1: One process, the way the Space runs it
+
+This is the path the live demo uses and the one the verification harness drives. It builds
+the dashboard into the API's static directory, so the client and `/api/*` share an origin.
 
 ```bash
 git clone https://github.com/robertlupo1997/kkbox-churn-prediction.git
 cd kkbox-churn-prediction
-make app
 
-# Dashboard at http://localhost:3000
-# API at http://localhost:8000/api/health
+cd brutalist-aesthetic-kkbox-churn-analysis-pro
+npm ci --legacy-peer-deps && npm run build
+cd .. && rm -rf static && cp -r brutalist-aesthetic-kkbox-churn-analysis-pro/dist static
+
+pip install -r requirements.txt
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+
+# Dashboard and API both at http://127.0.0.1:8000
 ```
 
-The dashboard serves its checked-in sample data. Member prediction through the API works from a
-clean clone as of 2026-08-23: `eval/app_features.csv` and `models/xgb.json` agree on an exact
-ordered feature list (`tests/test_artifact_contract.py` enforces this), and the served models are
-retrained on the shipped sample via `scripts/rebuild_serving_artifacts.py`. Remaining caveats:
-the Docker Compose frontend API URL is supplied at runtime although Vite substitutes it at build
-time, and the served model's metrics describe a 10k-member serving-sample holdout, not the
-full-data tuned-validation numbers quoted elsewhere. See [LIMITATIONS.md](LIMITATIONS.md).
+### Option 2: Docker Compose — currently broken
+
+```bash
+make app   # do not expect a working dashboard yet
+```
+
+`docker-compose` puts the dashboard in a separate static-file container on :3000 with no
+reverse proxy, while the client requests relative `/api/*` paths. Those requests hit the
+static container, which has no API behind them, so member lookup reports the API unavailable
+even though it is healthy on :8000. The relative base URL is correct — it is what makes the
+Space work — so the fix belongs in the compose container, not in the client. Tracked in
+[LIMITATIONS.md](LIMITATIONS.md).
+
+Artifact integrity holds from a clean clone: `eval/app_features.csv` and `models/xgb.json`
+agree on an exact ordered 121-feature list (`tests/test_artifact_contract.py` enforces it),
+and both served models are retrained on the shipped sample by
+`scripts/rebuild_serving_artifacts.py`.
 
 ### Option 2: ML Pipeline Only
 
@@ -212,24 +240,32 @@ kkbox-churn-prediction/
 | Page | What it shows |
 |------|---------------|
 | **Dashboard** | KPI cards computed from exported aggregates, risk distribution, member table, CSV export |
-| **Member Lookup** | Search across the 200 checked-in sample members; the factor waterfall is an illustrative placeholder, not model SHAP output |
+| **Member Lookup** | Search the live API's holdout serving population (1,995 members). Scores and the factor waterfall come from the API; the waterfall is real TreeExplainer SHAP reconciled against the served score. When an explanation cannot be produced, the page says so rather than substituting numbers |
 | **Model Performance** | Recorded AUC/log loss, calibration curves, lift and gains charts from exported JSON |
-| **Feature Importance** | Grouped XGBoost importance, plus an explicitly synthetic beeswarm generated from global importance |
+| **Feature Importance** | Grouped XGBoost importance from the served model. The synthetic beeswarm was removed — it was generated from global importance and was not a beeswarm of anything |
 | **Retention Savings Projection** | Gross revenue retained under user-supplied assumptions; no campaign cost, uplift, or experiment evidence |
 
 ## API Endpoints
 
 ```
 GET  /api/health              # Liveness: reports whether model and feature files loaded
-GET  /api/members             # Cached members (empty unless compatible features are supplied)
-GET  /api/members/{id}        # Member features, risk fields, rule-selected action
-POST /api/predictions/single  # Single cached prediction
-POST /api/predictions         # Batch cached predictions (max 1000)
-GET  /api/metrics             # Recorded model metrics
+GET  /api/members             # The holdout serving population, paged (1,995 members)
+POST /api/members/lookup      # Member features, risk fields, rule-selected action. msno in the body
+POST /api/shap                # SHAP values for one member. msno in the body
+POST /api/predictions/single  # Single prediction
+POST /api/predictions         # Batch predictions (max 1000)
+GET  /api/metrics             # Served model's metrics
 GET  /api/features/importance # Feature importance list
-GET  /api/calibration         # Calibration curve points
-GET  /api/shap/{member_id}    # SHAP values, or an explicitly flagged approximation
+GET  /api/calibration         # Measured calibration curve points, before and after isotonic
+GET  /api/members/{msno}      # Path-parameter variant. Cannot carry ~49% of member ids
+GET  /api/shap/{msno}         # Path-parameter variant. Same limitation
 ```
+
+**Use the POST routes for member ids.** 4,927 of the 10,000 shipped msnos are base64 strings
+containing `/`, which ends a path segment; percent-encoding does not survive routing, and
+4,802 contain `+`, which decodes to a space in a query string. The path-parameter routes
+remain for compatibility and silently fail for about half the population. The dashboard uses
+the POST routes, and `scripts/verify/drive-demo.mjs` asserts that it does.
 
 See [api/README.md](api/README.md) for request and response shapes and for what does not work with
 the checked-in defaults.
