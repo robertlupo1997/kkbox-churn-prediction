@@ -121,8 +121,9 @@ Infrastructure:   Docker, GitHub Actions (workflows present but non-gating)
 3. **Containerized delivery** — Docker configuration, an automated test suite, and a `make app`
    command for local startup.
 
-4. **Explainability code paths** — A SHAP endpoint that returns model SHAP values, or an explicitly
-   flagged importance-based approximation when true SHAP is unavailable.
+4. **Explainability code paths** — A SHAP endpoint that returns model SHAP values. The UI refuses
+   to draw an explanation that does not reconcile with the score it explains and says
+   "explanation unavailable" instead of substituting placeholder factors.
 
 ---
 
@@ -141,3 +142,6 @@ Infrastructure:   Docker, GitHub Actions (workflows present but non-gating)
 
 - **GitHub**: [View Source Code →](https://github.com/robertlupo1997/kkbox-churn-prediction)
 - **Live Demo**: [Hugging Face Spaces](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction)
+  — interactive demo of the serving-sample model. Until the repaired client is actually deployed,
+  this link may still show the pre-repair Space; do not present it as live proof of the headline
+  AUC, which remains an archived tuned-validation figure (see LIMITATIONS.md §1).
