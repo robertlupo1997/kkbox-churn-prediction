@@ -54,16 +54,27 @@ const ModelPerformance: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-12">
-      {/* Data provenance banner (wave-3 panel inventory): every figure on this
-          page comes from the bundled static export of the ARCHIVED full-data
-          March-2017 tuned-validation run. It describes no served model. The
-          served model's live numbers are at /api/metrics and /api/calibration,
-          and the demo's live member scoring is on the Member Lookup page. */}
-      <div className="bg-black text-brand p-4 brutalist-border brutalist-shadow">
+      {/* Data provenance banner. The previous version of this claimed every figure
+          on the page came from one archived run. It did not: datasetStats.json
+          spliced its population count from eval/dataset_summary.json (a different
+          cohort split) onto sample counts from the archived run, so the page
+          reported 916,814 rows next to 1,929,125 + 970,960. datasetStats.json now
+          describes the archived run alone. Separately, five of the exported files
+          are built from eval/stacked_ensemble_predictions.csv, which is not
+          committed -- those numbers are not reproducible from this repository, and
+          the banner has to say so rather than implying they are evidence. */}
+      <div className="bg-black text-brand p-4 brutalist-border brutalist-shadow space-y-2">
         <p className="text-[11px] font-black uppercase tracking-widest">
-          Historical data — every figure below is from the archived full-data training run
-          (tuned-validation, March-2017 window). None of it describes the model this demo serves.
+          Historical data — the model comparison, calibration curves, and population
+          counts below come from the archived full-data training run (tuned-validation,
+          March-2017 window). None of it describes the model this demo serves.
           Live numbers: <code>/api/metrics</code>.
+        </p>
+        <p className="text-[10px] font-black uppercase tracking-widest opacity-80">
+          The calibration, lift/gains, precision-recall, and risk-distribution charts were
+          exported from <code>eval/stacked_ensemble_predictions.csv</code>, which is not in
+          this repository and cannot be regenerated from it. Those curves are a record of
+          what the archived run produced, not something you can check here.
         </p>
       </div>
       {/* Header */}

@@ -1,129 +1,132 @@
-[
-  {
-    "model": "xgb",
-    "points": [
-      {
-        "mean_predicted": 0.0705,
-        "fraction_of_positives": 0.0
-      },
-      {
-        "mean_predicted": 0.1453,
-        "fraction_of_positives": 0.0009
-      },
-      {
-        "mean_predicted": 0.2492,
-        "fraction_of_positives": 0.0044
-      },
-      {
-        "mean_predicted": 0.3481,
-        "fraction_of_positives": 0.0103
-      },
-      {
-        "mean_predicted": 0.4391,
-        "fraction_of_positives": 0.0136
-      },
-      {
-        "mean_predicted": 0.544,
-        "fraction_of_positives": 0.0312
-      },
-      {
-        "mean_predicted": 0.6453,
-        "fraction_of_positives": 0.2521
-      },
-      {
-        "mean_predicted": 0.7647,
-        "fraction_of_positives": 0.2542
-      },
-      {
-        "mean_predicted": 0.8506,
-        "fraction_of_positives": 0.3599
-      },
-      {
-        "mean_predicted": 0.9388,
-        "fraction_of_positives": 0.8326
-      }
-    ]
-  },
-  {
-    "model": "lgb",
-    "points": [
-      {
-        "mean_predicted": 0.0673,
-        "fraction_of_positives": 0.0
-      },
-      {
-        "mean_predicted": 0.1478,
-        "fraction_of_positives": 0.0006
-      },
-      {
-        "mean_predicted": 0.2482,
-        "fraction_of_positives": 0.0039
-      },
-      {
-        "mean_predicted": 0.3483,
-        "fraction_of_positives": 0.0097
-      },
-      {
-        "mean_predicted": 0.4403,
-        "fraction_of_positives": 0.0156
-      },
-      {
-        "mean_predicted": 0.5423,
-        "fraction_of_positives": 0.0229
-      },
-      {
-        "mean_predicted": 0.6407,
-        "fraction_of_positives": 0.2629
-      },
-      {
-        "mean_predicted": 0.7707,
-        "fraction_of_positives": 0.3302
-      },
-      {
-        "mean_predicted": 0.8546,
-        "fraction_of_positives": 0.2897
-      },
-      {
-        "mean_predicted": 0.9417,
-        "fraction_of_positives": 0.8199
-      }
-    ]
-  },
-  {
-    "model": "stacked",
-    "points": [
-      {
-        "mean_predicted": 0.0255,
-        "fraction_of_positives": 0.0056
-      },
-      {
-        "mean_predicted": 0.1405,
-        "fraction_of_positives": 0.1005
-      },
-      {
-        "mean_predicted": 0.2421,
-        "fraction_of_positives": 0.2205
-      },
-      {
-        "mean_predicted": 0.3586,
-        "fraction_of_positives": 0.2208
-      },
-      {
-        "mean_predicted": 0.4509,
-        "fraction_of_positives": 0.2592
-      },
-      {
-        "mean_predicted": 0.5514,
-        "fraction_of_positives": 0.5379
-      },
-      {
-        "mean_predicted": 0.6385,
-        "fraction_of_positives": 0.8681
-      },
-      {
-        "mean_predicted": 0.7077,
-        "fraction_of_positives": 0.9698
-      }
-    ]
-  }
-]
+{
+  "_provenance": "DERIVATION NOT COMMITTED. scripts/export_dashboard_data.py builds this file from eval/stacked_ensemble_predictions.csv, which is not in the repository and cannot be regenerated from it (the raw Kaggle data is absent -- LIMITATIONS.md section 6). Re-running the export today returns an empty result for this file rather than these numbers. The values are kept because they are what the archived run produced, not because they are checkable.",
+  "data": [
+    {
+      "model": "xgb",
+      "points": [
+        {
+          "mean_predicted": 0.0705,
+          "fraction_of_positives": 0.0
+        },
+        {
+          "mean_predicted": 0.1453,
+          "fraction_of_positives": 0.0009
+        },
+        {
+          "mean_predicted": 0.2492,
+          "fraction_of_positives": 0.0044
+        },
+        {
+          "mean_predicted": 0.3481,
+          "fraction_of_positives": 0.0103
+        },
+        {
+          "mean_predicted": 0.4391,
+          "fraction_of_positives": 0.0136
+        },
+        {
+          "mean_predicted": 0.544,
+          "fraction_of_positives": 0.0312
+        },
+        {
+          "mean_predicted": 0.6453,
+          "fraction_of_positives": 0.2521
+        },
+        {
+          "mean_predicted": 0.7647,
+          "fraction_of_positives": 0.2542
+        },
+        {
+          "mean_predicted": 0.8506,
+          "fraction_of_positives": 0.3599
+        },
+        {
+          "mean_predicted": 0.9388,
+          "fraction_of_positives": 0.8326
+        }
+      ]
+    },
+    {
+      "model": "lgb",
+      "points": [
+        {
+          "mean_predicted": 0.0673,
+          "fraction_of_positives": 0.0
+        },
+        {
+          "mean_predicted": 0.1478,
+          "fraction_of_positives": 0.0006
+        },
+        {
+          "mean_predicted": 0.2482,
+          "fraction_of_positives": 0.0039
+        },
+        {
+          "mean_predicted": 0.3483,
+          "fraction_of_positives": 0.0097
+        },
+        {
+          "mean_predicted": 0.4403,
+          "fraction_of_positives": 0.0156
+        },
+        {
+          "mean_predicted": 0.5423,
+          "fraction_of_positives": 0.0229
+        },
+        {
+          "mean_predicted": 0.6407,
+          "fraction_of_positives": 0.2629
+        },
+        {
+          "mean_predicted": 0.7707,
+          "fraction_of_positives": 0.3302
+        },
+        {
+          "mean_predicted": 0.8546,
+          "fraction_of_positives": 0.2897
+        },
+        {
+          "mean_predicted": 0.9417,
+          "fraction_of_positives": 0.8199
+        }
+      ]
+    },
+    {
+      "model": "stacked",
+      "points": [
+        {
+          "mean_predicted": 0.0255,
+          "fraction_of_positives": 0.0056
+        },
+        {
+          "mean_predicted": 0.1405,
+          "fraction_of_positives": 0.1005
+        },
+        {
+          "mean_predicted": 0.2421,
+          "fraction_of_positives": 0.2205
+        },
+        {
+          "mean_predicted": 0.3586,
+          "fraction_of_positives": 0.2208
+        },
+        {
+          "mean_predicted": 0.4509,
+          "fraction_of_positives": 0.2592
+        },
+        {
+          "mean_predicted": 0.5514,
+          "fraction_of_positives": 0.5379
+        },
+        {
+          "mean_predicted": 0.6385,
+          "fraction_of_positives": 0.8681
+        },
+        {
+          "mean_predicted": 0.7077,
+          "fraction_of_positives": 0.9698
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,13 @@
 {
-  "total_members": 916814,
-  "churn_rate": 4.72,
+  "_provenance": "models/archive/full-data-training_metrics.json, the ARCHIVED full-data March-2017 tuned-validation run. Every field here comes from that one file. This describes no served model; the served model's live numbers are at /api/metrics.",
+  "_replaces": "total_members was 916814 and churn_rate 4.72, taken from eval/dataset_summary.json -- a DIFFERENT split (cohort Mar->Apr 2017, 893,768 validation rows at 3.30% positive). The remaining fields came from the archived run. Splicing the two produced a file whose total_members was neither the sum of its own train_samples and val_samples (2,900,085) nor either of them, while the page above it claimed every figure came from one run.",
+  "total_members": 970960,
+  "churn_rate": 8.99,
   "train_samples": 1929125,
+  "train_churn_rate": 8.88,
   "val_samples": 970960,
   "feature_count": 131,
+  "val_window": "2017-03-2017-04",
   "temporal_windows": [
     "2017-01-2017-02",
     "2017-02-2017-03",

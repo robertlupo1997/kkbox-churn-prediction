@@ -7,6 +7,7 @@ from api.models.schemas import (
     CalibrationResponse,
     FeatureImportanceItem,
     FeatureImportanceResponse,
+    MetricRegime,
     MetricsResponse,
 )
 from api.services import model_service
@@ -47,10 +48,19 @@ async def get_metrics() -> MetricsResponse:
     models = metrics.get("models", {})
     xgb_metrics = models.get("xgboost", {})
 
-    # Get calibrated Brier score from calibration data
+    # The two regimes, measured on the same holdout. `before` is the raw model,
+    # `after` is the same scores through models/isotonic_calibrator.json -- which
+    # is what this API actually returns.
     xgb_calibration = calibration.get("xgboost", {})
-    calibrated_brier = xgb_calibration.get("after", {}).get("brier")
+    before = xgb_calibration.get("before", {})
+    after = xgb_calibration.get("after", {})
+    calibrated_brier = after.get("brier")
 
+    # The three top-level scalars are deliberately left as they were: `auc` and
+    # `log_loss` from the raw model, `brier_score` from the calibrated one. That
+    # mix is not defensible on its own, but changing it would silently move
+    # numbers under clients and probes that pin them. It is now labelled instead,
+    # and a coherent set of each regime is returned alongside.
     return MetricsResponse(
         model_name="xgboost",
         log_loss=xgb_metrics.get("log_loss", 0.0),
@@ -59,6 +69,22 @@ async def get_metrics() -> MetricsResponse:
         ece=None,  # Would need to compute from predictions
         training_samples=metrics.get("train_samples"),
         validation_samples=metrics.get("val_samples"),
+        calibration_applied_at_serving=model_service.load_calibrator() is not None,
+        metric_regimes={
+            "auc": "uncalibrated",
+            "log_loss": "uncalibrated",
+            "brier_score": "calibrated" if calibrated_brier else "uncalibrated",
+        },
+        uncalibrated=MetricRegime(
+            auc=before.get("auc", xgb_metrics.get("auc")),
+            log_loss=before.get("log_loss", xgb_metrics.get("log_loss")),
+            brier=before.get("brier", xgb_metrics.get("brier")),
+        ),
+        calibrated=MetricRegime(
+            auc=after.get("auc"),
+            log_loss=after.get("log_loss"),
+            brier=after.get("brier"),
+        ),
     )
 
 

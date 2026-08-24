@@ -25,16 +25,31 @@ import type {
   PRCurvePoint,
 } from '../types';
 
+// Five of these files carry a `_provenance` string saying their derivation is not
+// committed: scripts/export_dashboard_data.py builds them from
+// eval/stacked_ensemble_predictions.csv, which is not in the repository and cannot
+// be regenerated from it. Re-running the export returns empty for those files today.
+// The note travels with the data so it cannot be lost by reading the array alone.
+const unwrap = <T,>(raw: unknown): T[] =>
+  Array.isArray(raw) ? (raw as T[]) : ((raw as { data: T[] }).data ?? []);
+
+/** The provenance note attached to a data file, or null if it carries none. */
+export const provenanceOf = (raw: unknown): string | null =>
+  (!Array.isArray(raw) && (raw as { _provenance?: string })?._provenance) || null;
+
 // Type assertions for JSON imports
 export const featureImportance: RealFeatureImportance[] = featureImportanceData as RealFeatureImportance[];
 export const modelMetrics: ModelMetric[] = modelMetricsData as ModelMetric[];
 export const ensembleWeights: EnsembleWeights = ensembleWeightsData as EnsembleWeights;
 export const datasetStats: DatasetStats = datasetStatsData as DatasetStats;
-export const calibrationCurves: CalibrationCurve[] = calibrationCurvesData as CalibrationCurve[];
-export const riskDistribution: RiskDistribution[] = riskDistributionData as RiskDistribution[];
-export const sampleMembers: SampleMember[] = sampleMembersData as SampleMember[];
+export const calibrationCurves: CalibrationCurve[] = unwrap<CalibrationCurve>(calibrationCurvesData);
+export const riskDistribution: RiskDistribution[] = unwrap<RiskDistribution>(riskDistributionData);
+export const sampleMembers: SampleMember[] = unwrap<SampleMember>(sampleMembersData);
 export const liftGainsData: LiftGainsData = liftGainsDataRaw as LiftGainsData;
-export const prCurveData: PRCurvePoint[] = prCurveDataRaw as PRCurvePoint[];
+export const prCurveData: PRCurvePoint[] = unwrap<PRCurvePoint>(prCurveDataRaw);
+
+/** True for any chart whose numbers cannot be reproduced from this repository. */
+export const derivationNotCommitted = provenanceOf(prCurveDataRaw) !== null;
 
 // Computed statistics for dashboard KPIs
 export const dashboardKPIs = {
