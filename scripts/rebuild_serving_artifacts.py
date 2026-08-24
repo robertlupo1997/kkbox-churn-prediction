@@ -32,6 +32,7 @@ Run:  python3 scripts/rebuild_serving_artifacts.py
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -41,7 +42,7 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.calibration import IsotonicRegression
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 ROOT = Path(__file__).resolve().parent.parent
 FEATURES_IN = ROOT / "eval" / "app_features.csv"
@@ -51,6 +52,9 @@ LGB_OUT = ROOT / "models" / "lgb.txt"
 METRICS_OUT = ROOT / "models" / "training_metrics.json"
 CALIB_OUT = ROOT / "models" / "calibration_metrics.json"
 HPARAMS = ROOT / "models" / "best_hyperparameters.json"
+SPLIT_OUT = ROOT / "eval" / "serving_split.json"
+ISO_OUT = ROOT / "models" / "isotonic_calibrator.json"
+HOLDOUT_FRACTION = 0.2
 
 META = ["msno", "is_churn", "cutoff_ts"]
 SEED = 42
@@ -225,10 +229,22 @@ def main() -> None:
     assert all(pd.api.types.is_numeric_dtype(df[c]) for c in predictors), \
         "all predictors must be numeric for DMatrix"
 
-    # Stratified holdout split of the serving sample.
-    idx_train, idx_val = train_test_split(
-        np.arange(len(df)), test_size=0.2, random_state=SEED, stratify=y
+    # Deterministic holdout split derived from the msno itself:
+    # int(sha256(msno)[:8], 16) / 2**32 < HOLDOUT_FRACTION -> holdout.
+    # Reproducible from committed inputs alone -- no seed, no run-order
+    # dependence, stable under row reordering -- which the previous seed-42
+    # stratified split was not (it could not be re-derived from the shipped
+    # CSV). The cost is that the split is not stratified by churn rate; the
+    # realized rates are printed below and recorded in the metrics artifact.
+    frac = np.array(
+        [
+            int(hashlib.sha256(m.encode("utf-8")).hexdigest()[:8], 16) / 2**32
+            for m in df["msno"]
+        ]
     )
+    is_holdout = frac < HOLDOUT_FRACTION
+    idx_val = np.flatnonzero(is_holdout)
+    idx_train = np.flatnonzero(~is_holdout)
     X = df[predictors].astype(float).fillna(0.0)
     Xtr, Xva = X.iloc[idx_train], X.iloc[idx_val]
     ytr, yva = y.iloc[idx_train], y.iloc[idx_val]
@@ -317,10 +333,12 @@ def main() -> None:
     print("calibrated holdout:", cal_m)
 
     metrics = {
-        "split_type": "stratified_random_holdout_of_serving_sample",
+        "split_type": "deterministic_msno_hash_holdout_of_serving_sample",
         "note": (
             "Retrained serving models on eval/app_features.csv (10,000-member "
-            "Feb-2017-cutoff sample). Holdout = 20% stratified, seed 42. These "
+            "Feb-2017-cutoff sample). Holdout = members whose "
+            "sha256(msno)[:8]/2^32 < 0.2 (deterministic from the msno; see "
+            "eval/serving_split.json). These "
             "are NOT comparable to the archived tuned-validation numbers "
             "(LightGBM AUC 0.9696) which came from the full-data March-2017 "
             "window described in LIMITATIONS.md section 1."
@@ -341,7 +359,9 @@ def main() -> None:
 
     calibration = {
         "xgboost": {
-            "method": "isotonic (fit on training split, evaluated on holdout)",
+            "method": "isotonic (fit on out-of-fold training-split predictions, "
+            "evaluated on holdout); applied at serving time -- see "
+            "models/isotonic_calibrator.json",
             "before": {"brier": xgb_m["brier"]},
             "after": {"brier": cal_m["brier"]},
             "uncalibrated": reliability_points(yva, xgb_probs),
@@ -351,11 +371,51 @@ def main() -> None:
     with open(CALIB_OUT, "w") as f:
         json.dump(calibration, f, indent=2)
 
+    # ---- persist the fitted calibrator so the API can apply it ----
+    # np.interp with these knots reproduces iso.predict() for
+    # out_of_bounds="clip" (linear interpolation between knots, clamped at
+    # both ends).
+    calibrator = {
+        "method": "isotonic",
+        "out_of_bounds": "clip",
+        "fit_on": (
+            "out-of-fold training-split predictions of the retrained xgboost "
+            "(5-fold, seed 42); knots below are X_thresholds_/y_thresholds_"
+        ),
+        "feature_count": len(predictors),
+        "x_thresholds": [float(v) for v in iso.X_thresholds_],
+        "y_thresholds": [float(v) for v in iso.y_thresholds_],
+    }
+    with open(ISO_OUT, "w") as f:
+        json.dump(calibrator, f, indent=2)
+
+    # ---- persist split membership so the served surface is enforceable ----
+    split = {
+        "method": (
+            "int(sha256(msno utf-8)[:8], 16) / 2**32 < holdout_fraction; "
+            "derived solely from the msno, reproducible from committed inputs"
+        ),
+        "holdout_fraction": HOLDOUT_FRACTION,
+        "source_table": "eval/app_features.csv",
+        "n_total": int(len(df)),
+        "n_holdout": int(is_holdout.sum()),
+        "n_train": int((~is_holdout).sum()),
+        "holdout_churn_rate": float(y.iloc[idx_val].mean()),
+        "train_churn_rate": float(y.iloc[idx_train].mean()),
+        "holdout_msnos": sorted(df["msno"][is_holdout].tolist()),
+    }
+    with open(SPLIT_OUT, "w") as f:
+        json.dump(split, f, indent=2)
+
     # ---- write serving CSV: metadata first, predictors in canonical order ----
     out_df = df[META + predictors]
     out_df.to_csv(FEATURES_OUT, index=False)
     print(f"Wrote {len(out_df):,} rows x {len(out_df.columns)} cols -> {FEATURES_OUT}")
     print(f"Wrote {XGB_OUT}, {LGB_OUT}, {METRICS_OUT}, {CALIB_OUT}")
+    print(
+        f"Wrote {ISO_OUT} (serving-time calibrator) and {SPLIT_OUT} "
+        f"(holdout membership: {int(is_holdout.sum()):,} of {len(df):,})"
+    )
 
 
 if __name__ == "__main__":

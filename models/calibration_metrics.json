@@ -1,90 +1,90 @@
 {
   "xgboost": {
-    "method": "isotonic (fit on training split, evaluated on holdout)",
+    "method": "isotonic (fit on out-of-fold training-split predictions, evaluated on holdout); applied at serving time -- see models/isotonic_calibrator.json",
     "before": {
-      "brier": 0.03904283791780472
+      "brier": 0.04274804890155792
     },
     "after": {
-      "brier": 0.038950023066589144
+      "brier": 0.04303226585624005
     },
     "uncalibrated": [
       {
-        "mean_predicted": 0.009792834858760726,
-        "fraction_of_positives": 0.016260162601626018
+        "mean_predicted": 0.00961972595929789,
+        "fraction_of_positives": 0.018367346938775512
       },
       {
-        "mean_predicted": 0.1379790743265082,
-        "fraction_of_positives": 0.14705882352941177
+        "mean_predicted": 0.14150029852202065,
+        "fraction_of_positives": 0.19298245614035087
       },
       {
-        "mean_predicted": 0.234086834192276,
-        "fraction_of_positives": 0.2
+        "mean_predicted": 0.24355994623440963,
+        "fraction_of_positives": 0.1794871794871795
       },
       {
-        "mean_predicted": 0.34540729568554807,
-        "fraction_of_positives": 0.2692307692307692
+        "mean_predicted": 0.34736535901373083,
+        "fraction_of_positives": 0.4090909090909091
       },
       {
-        "mean_predicted": 0.4583941557828118,
-        "fraction_of_positives": 0.47058823529411764
+        "mean_predicted": 0.45913970867792764,
+        "fraction_of_positives": 0.6
       },
       {
-        "mean_predicted": 0.5390234464093259,
-        "fraction_of_positives": 0.631578947368421
+        "mean_predicted": 0.5415481354879297,
+        "fraction_of_positives": 0.5652173913043478
       },
       {
-        "mean_predicted": 0.6498508640698024,
-        "fraction_of_positives": 0.7428571428571429
+        "mean_predicted": 0.6611606386991647,
+        "fraction_of_positives": 0.6923076923076923
       },
       {
-        "mean_predicted": 0.7477150410413742,
-        "fraction_of_positives": 0.6875
+        "mean_predicted": 0.750412151669011,
+        "fraction_of_positives": 0.8181818181818182
       },
       {
-        "mean_predicted": 0.860193874876378,
-        "fraction_of_positives": 0.864406779661017
+        "mean_predicted": 0.8565870878989237,
+        "fraction_of_positives": 0.8421052631578947
       },
       {
-        "mean_predicted": 0.968755525326042,
-        "fraction_of_positives": 0.9670781893004116
+        "mean_predicted": 0.971309628882427,
+        "fraction_of_positives": 0.9486166007905138
       }
     ],
     "calibrated": [
       {
-        "mean_predicted": 0.010324353503694645,
-        "fraction_of_positives": 0.013783597518952447
+        "mean_predicted": 0.009856108020875314,
+        "fraction_of_positives": 0.015785861358956762
       },
       {
-        "mean_predicted": 0.16293237439068287,
-        "fraction_of_positives": 0.17333333333333334
+        "mean_predicted": 0.16810636648445582,
+        "fraction_of_positives": 0.23333333333333334
       },
       {
-        "mean_predicted": 0.22798813797409084,
-        "fraction_of_positives": 0.13953488372093023
+        "mean_predicted": 0.24297606659729454,
+        "fraction_of_positives": 0.12903225806451613
       },
       {
-        "mean_predicted": 0.31742886178861784,
-        "fraction_of_positives": 0.3170731707317073
+        "mean_predicted": 0.33183132943099725,
+        "fraction_of_positives": 0.35714285714285715
       },
       {
-        "mean_predicted": 0.5,
-        "fraction_of_positives": 0.75
+        "mean_predicted": 0.533625730994152,
+        "fraction_of_positives": 0.5833333333333334
       },
       {
-        "mean_predicted": 0.6629520912170748,
-        "fraction_of_positives": 0.6938775510204082
+        "mean_predicted": 0.6895725402185539,
+        "fraction_of_positives": 0.6428571428571429
       },
       {
-        "mean_predicted": 0.7575927371748484,
-        "fraction_of_positives": 0.7045454545454546
+        "mean_predicted": 0.7558528556498137,
+        "fraction_of_positives": 0.8947368421052632
       },
       {
-        "mean_predicted": 0.8426556403072615,
-        "fraction_of_positives": 0.9156626506024096
+        "mean_predicted": 0.8779045775020742,
+        "fraction_of_positives": 0.864406779661017
       },
       {
-        "mean_predicted": 0.9724171042321464,
-        "fraction_of_positives": 0.9714285714285714
+        "mean_predicted": 0.9733496769368957,
+        "fraction_of_positives": 0.956140350877193
       }
     ]
   }

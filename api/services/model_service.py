@@ -90,6 +90,21 @@ def load_features() -> pd.DataFrame:
 
     try:
         df = pd.read_csv(features_path)
+
+        # Restrict the serving surface to the persisted holdout population.
+        # The 10,000-row table includes ~8,000 training rows whose scores are
+        # systematically optimistic (they were in the model's fitting data);
+        # only holdout members may be browsable/searchable.
+        population = load_serving_population()
+        if population is not None:
+            before = len(df)
+            df = df[df["msno"].isin(population)].reset_index(drop=True)
+            logger.info(
+                "Serving surface restricted to %d holdout members of %d rows",
+                len(df),
+                before,
+            )
+
         _model_cache["features"] = df
 
         # Try to pre-compute predictions, but don't fail if features don't match
@@ -135,6 +150,68 @@ def load_metrics() -> dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to load metrics: {e}")
         return {}
+
+
+def load_calibrator() -> dict[str, Any] | None:
+    """Load the persisted isotonic calibrator knots.
+
+    Returns:
+        Dict with x_thresholds/y_thresholds, or None when the artifact is
+        absent (then scores are served uncalibrated and the calibration
+        claims must not be advertised -- but the rebuild script always
+        writes it).
+    """
+    if "calibrator" in _model_cache:
+        return _model_cache["calibrator"]
+    path = Path(settings.CALIBRATOR_PATH)
+    if not path.exists():
+        logger.warning(f"Calibrator file not found: {path}")
+        _model_cache["calibrator"] = None
+        return None
+    with open(path) as f:
+        calibrator = json.load(f)
+    _model_cache["calibrator"] = calibrator
+    return calibrator
+
+
+def apply_calibrator(probs: np.ndarray) -> np.ndarray:
+    """Map model probabilities through the fitted isotonic calibrator.
+
+    Isotonic regression is a monotone step/linear function given by knots;
+    np.interp between the knots with clamping at both ends reproduces
+    sklearn's predict() for out_of_bounds="clip". Applying it here is what
+    makes the served number match the calibrated Brier / reliability curves
+    the API advertises.
+    """
+    calibrator = load_calibrator()
+    if calibrator is None:
+        return probs
+    x = np.asarray(calibrator["x_thresholds"], dtype=float)
+    y = np.asarray(calibrator["y_thresholds"], dtype=float)
+    return np.interp(probs, x, y)
+
+
+def load_serving_population() -> set[str] | None:
+    """Load the holdout msno set that defines the browsable surface.
+
+    Returns None when no split artifact exists (dev fallback: serve all rows,
+    logged loudly). Production images always ship the artifact.
+    """
+    if "serving_population" in _model_cache:
+        return _model_cache["serving_population"]
+    path = Path(settings.SERVING_SPLIT_PATH)
+    if not path.exists():
+        logger.warning(
+            f"Serving split not found: {path}. Serving ALL rows -- this "
+            "includes training members and must never reach production."
+        )
+        _model_cache["serving_population"] = None
+        return None
+    with open(path) as f:
+        split = json.load(f)
+    population = frozenset(split["holdout_msnos"])
+    _model_cache["serving_population"] = population
+    return population
 
 
 def load_calibration_data() -> dict[str, Any]:
@@ -196,6 +273,10 @@ def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     # Get predictions (Booster returns probabilities directly for binary classification)
     probs = bst.predict(dmatrix)
+
+    # Serve the calibrated probability. The API advertises calibrated Brier
+    # and reliability curves; the served number must be the same quantity.
+    probs = apply_calibrator(probs)
 
     return probs, feats
 

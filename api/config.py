@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     RULES_PATH: str = "rules.yaml"
     METRICS_PATH: str = "models/training_metrics.json"
     CALIBRATION_PATH: str = "models/calibration_metrics.json"
+    CALIBRATOR_PATH: str = "models/isotonic_calibrator.json"
+    SERVING_SPLIT_PATH: str = "eval/serving_split.json"
     PREDICTIONS_PATH: str = "eval/stacked_ensemble_predictions.csv"
 
     # CORS settings - includes HF Spaces and local development
