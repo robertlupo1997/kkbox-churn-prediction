@@ -26,10 +26,10 @@ tx_parsed AS (
   SELECT
     tx.msno,
     TRY_CAST(
-      strptime(CAST(tx.transaction_date AS VARCHAR), '%Y%m%d') AS DATE
+      try_strptime(CAST(tx.transaction_date AS VARCHAR), '%Y%m%d') AS DATE
     ) AS transaction_date,
     TRY_CAST(
-      strptime(CAST(tx.membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE
+      try_strptime(CAST(tx.membership_expire_date AS VARCHAR), '%Y%m%d') AS DATE
     ) AS membership_expire_date,
     CAST(tx.payment_plan_days AS INTEGER) AS payment_plan_days,
     CAST(tx.plan_list_price AS INTEGER) AS plan_list_price,
@@ -88,7 +88,7 @@ logs_parsed AS (
   SELECT
     ul.msno,
     TRY_CAST(
-      strptime(CAST(ul.date AS VARCHAR), '%Y%m%d') AS DATE
+      try_strptime(CAST(ul.date AS VARCHAR), '%Y%m%d') AS DATE
     ) AS log_date,
     CAST(ul.num_25 AS INTEGER) AS num_25,
     CAST(ul.num_50 AS INTEGER) AS num_50,
@@ -156,7 +156,7 @@ members_parsed AS (
     END AS age,
     CAST(m.registered_via AS INTEGER) AS registered_via,
     TRY_CAST(
-      strptime(CAST(m.registration_init_time AS VARCHAR), '%Y%m%d') AS DATE
+      try_strptime(CAST(m.registration_init_time AS VARCHAR), '%Y%m%d') AS DATE
     ) AS registration_date
   FROM read_csv_auto('${members_path}') m
   WHERE m.msno IS NOT NULL

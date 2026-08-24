@@ -275,10 +275,15 @@ class TestFeatureWindows:
         # Create data with specific dates to test window boundaries
         old_transactions = pd.DataFrame(
             [
-                # Transaction 91 days before cutoff (should be excluded from 90-day window)
+                # Transaction 91 days before the 2017-02-28 feature cutoff, so outside
+                # the 90-day window, which opens 2016-11-30.
+                #
+                # This date was 20161201, labelled "91 days before" in a comment. It is
+                # 89 days before, so it was inside the window and the assertion below
+                # asserted something false. The SQL was correct the whole time.
                 {
                     "msno": "user1",
-                    "transaction_date": "20161201",
+                    "transaction_date": "20161129",
                     "membership_expire_date": "20170101",
                     "payment_plan_days": 30,
                     "plan_list_price": 149,
@@ -287,7 +292,7 @@ class TestFeatureWindows:
                     "is_cancel": 0,
                     "payment_method_id": 1,
                 },
-                # Transaction 89 days before cutoff (should be included)
+                # 87 days before the cutoff, inside the window.
                 {
                     "msno": "user1",
                     "transaction_date": "20161203",
@@ -304,7 +309,8 @@ class TestFeatureWindows:
 
         old_logs = pd.DataFrame(
             [
-                # Log 31 days before cutoff (should be excluded from 30-day window)
+                # Exactly 30 days before the cutoff. The log window is strict
+                # (log_date > cutoff - 30 days), so this is excluded.
                 {
                     "msno": "user1",
                     "date": "20170129",
@@ -316,7 +322,7 @@ class TestFeatureWindows:
                     "num_unq": 20,
                     "total_secs": 3600,
                 },
-                # Log 29 days before cutoff (should be included)
+                # 28 days before the cutoff, inside the window.
                 {
                     "msno": "user1",
                     "date": "20170131",
@@ -350,7 +356,7 @@ class TestFeatureWindows:
 
             user1 = result[result["msno"] == "user1"].iloc[0]
 
-            # Should include only the transaction from 2016-12-03 (within 90-day window)
+            # Only 2016-12-03 is inside; 2016-11-29 predates the window by two days.
             assert (
                 user1["tx_count_total"] == 1
             ), "Should include only 1 transaction (within 90-day window)"
