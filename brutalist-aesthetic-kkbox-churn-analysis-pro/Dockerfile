@@ -16,18 +16,20 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Install serve to host static files
-RUN npm install -g serve
+#
+# nginx, not `serve`, because this container has to reverse-proxy /api/* to the
+# api service. The client requests relative paths -- that is what makes the same
+# bundle work on Hugging Face Spaces, where one uvicorn serves both -- and
+# `serve` cannot proxy to an upstream. See nginx.conf.
+FROM nginx:1.27-alpine
 
 # Copy built files from build stage
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port
+# Replace the default server block; ours listens on 3000 and proxies /api/.
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/app.conf
+
 EXPOSE 3000
 
-# Start the server
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["nginx", "-g", "daemon off;"]

@@ -45,9 +45,10 @@ services:
     container_name: kkbox-frontend
     ports:
       - "3000:3000"
-    environment:
-      # Vite config will proxy /api to backend service
-      - VITE_API_URL=http://api:8000
+    # No VITE_API_URL here. It used to be set, and it did nothing: Vite
+    # substitutes it at build time and this is a runtime environment. The client
+    # requests relative /api/* paths and nginx in this container proxies them to
+    # the api service -- see brutalist-aesthetic-kkbox-churn-analysis-pro/nginx.conf.
     depends_on:
       api:
         condition: service_healthy

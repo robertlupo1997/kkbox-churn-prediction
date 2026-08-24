@@ -173,18 +173,32 @@ python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 # Dashboard and API both at http://127.0.0.1:8000
 ```
 
-### Option 2: Docker Compose — currently broken
+### Option 2: Docker Compose — repaired, not yet run
 
 ```bash
-make app   # do not expect a working dashboard yet
+make app
+
+# Dashboard at http://localhost:3000
+# API at http://localhost:8000/api/health
 ```
 
-`docker-compose` puts the dashboard in a separate static-file container on :3000 with no
-reverse proxy, while the client requests relative `/api/*` paths. Those requests hit the
-static container, which has no API behind them, so member lookup reports the API unavailable
-even though it is healthy on :8000. The relative base URL is correct — it is what makes the
-Space work — so the fix belongs in the compose container, not in the client. Tracked in
-[LIMITATIONS.md](LIMITATIONS.md).
+`docker-compose` puts the dashboard in its own container on :3000 while the client requests
+relative `/api/*` paths. That container previously ran `serve`, a static-file server with no
+proxy, so every API call hit the bundle host and member lookup reported the API unavailable
+while it was healthy on :8000. It now runs nginx and proxies `/api/` to the api service,
+which keeps the relative base URL — the same one that makes the Space work.
+
+**This has not been run end to end.** Docker was unavailable in the environment where the fix
+was written, so the wiring is asserted by `tests/test_compose_wiring.py` and nothing more. If
+you run it, these three commands settle it:
+
+```bash
+make app
+curl -s http://localhost:3000/api/health          # through the proxy, not :8000
+node scripts/verify/drive-demo.mjs http://localhost:3000
+```
+
+See [LIMITATIONS.md](LIMITATIONS.md).
 
 Artifact integrity holds from a clean clone: `eval/app_features.csv` and `models/xgb.json`
 agree on an exact ordered 121-feature list (`tests/test_artifact_contract.py` enforces it),
