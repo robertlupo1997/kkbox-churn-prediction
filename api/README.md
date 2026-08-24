@@ -11,9 +11,14 @@ metrics, feature importance, and SHAP explanations.
 > Supplying a compatible feature file or a precomputed predictions file is required first. See
 > [../LIMITATIONS.md](../LIMITATIONS.md).
 >
-> The API also serves the XGBoost booster **uncalibrated**. No calibrator artifact is loaded, so
-> returned probabilities are raw model scores, not the calibrated probabilities the recorded log
-> loss and Brier figures describe.
+> Since the wave-3 repair (2026-08-23) the API loads the fitted calibrator from
+> `models/isotonic_calibrator.json` and applies it to every served score, so returned
+> probabilities ARE calibrated — the same quantity `models/calibration_metrics.json` measures.
+> Before that repair the booster was served raw while calibrated figures were advertised.
+>
+> The browsable member surface is restricted to the persisted holdout population in
+> `eval/serving_split.json` (1,995 members); training-split members are not listable or
+> searchable.
 
 ## Quick Start
 
@@ -102,7 +107,7 @@ empty and this route returns `[]`.
       "action_recommendation": "Immediate outreach recommended"
     }
   ],
-  "total": 10000,
+  "total": 1995,
   "limit": 100,
   "offset": 0
 }
@@ -174,7 +179,8 @@ this route returns 404.
 }
 ```
 
-There is no `confidence` field. `churn_probability` is a raw, uncalibrated model score.
+There is no `confidence` field. `churn_probability` is the isotonic-calibrated model score
+(the same quantity the calibration endpoints measure).
 
 #### Batch Predictions
 
@@ -245,10 +251,11 @@ GET /api/calibration
 Returns uncalibrated and calibrated curve points, the bin count, and optional before/after fields
 (`CalibrationResponse`). There are no `bins`, `ece`, or `mce` top-level fields.
 
-Two caveats on this route: when curve arrays are absent from the metrics file — as they are in the
-committed `models/calibration_metrics.json` — the router **synthesizes** near-diagonal points rather
-than returning nothing, and the fields named `ece_before` / `ece_after` are populated with Brier
-scores, not expected calibration error.
+Two caveats on this route: when curve arrays are absent from the metrics file the router
+**synthesizes** near-diagonal points rather than returning nothing (the committed
+`models/calibration_metrics.json` HAS measured curve arrays since 2026-08-23, so the live route
+serves real points; `tests/test_calibration_serving.py` guards this), and the fields named
+`ece_before` / `ece_after` are populated with Brier scores, not expected calibration error.
 
 **Response:**
 ```json
@@ -260,6 +267,10 @@ scores, not expected calibration error.
   "ece_before": 0.1255,
   "ece_after": 0.0331
 }
+```
+
+(The values above are an illustrative payload shape, not a recorded measurement; despite their
+names, both fields carry Brier scores.)
 ```
 
 ---

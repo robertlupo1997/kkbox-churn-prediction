@@ -8,7 +8,7 @@ is unverified.
 | Field | Value |
 |-------|-------|
 | **Best recorded offline result** | LightGBM classifier with isotonic calibration fitted afterwards |
-| **What the API actually serves** | An uncalibrated XGBoost booster (`models/xgb.json`), loaded via `api/config.py` |
+| **What the API actually serves** | The XGBoost booster (`models/xgb.json`) with the fitted isotonic calibrator in `models/isotonic_calibrator.json` applied to every served score (since the 2026-08-23 wave-3 repair; before that it was raw) |
 | **Version** | 2.0 (2026-01-04) |
 | **Owner** | Robert "Trey" Lupo |
 | **Framework** | scikit-learn, LightGBM, XGBoost |
@@ -25,9 +25,13 @@ repository, so none of these should be read as a held-out estimate of future per
 
 | Metric | Value | Source | Notes |
 |--------|-------|--------|-------|
-| **AUC-ROC** | 0.9696 | `models/training_metrics.json` | LightGBM, uncalibrated; ranking only |
-| **Log Loss** | 0.1127 | `models/calibration_metrics.json` | LightGBM after isotonic calibration |
-| **Brier Score** | 0.0331 | `models/calibration_metrics.json` | LightGBM after isotonic calibration |
+| **AUC-ROC** | 0.9695664691945679 | `models/archive/full-data-training_metrics.json` | LightGBM, uncalibrated; ranking only; HISTORICAL full-data figure, describes no served model |
+| **Log Loss** | 0.11270724473096795 | `models/archive/full-data-calibration_metrics.json` | LightGBM after isotonic calibration; HISTORICAL |
+| **Brier Score** | 0.03311632255290847 | `models/archive/full-data-calibration_metrics.json` | LightGBM after isotonic calibration; HISTORICAL |
+
+The currently served model (retrained 2026-08-23 on the 10,000-member serving sample) has its own
+metrics in `models/training_metrics.json`; the archived figures above are kept only so historical
+claims remain checkable.
 
 The calibration figures come from a random split of that same already-tuned March population
 (`src/calibrate_and_evaluate.py`), so they are not independent of the tuning.
@@ -37,17 +41,18 @@ and the prediction files needed to recompute them are not checked in.
 
 ### Recorded model comparison
 
-All AUC values below are from the same tuned validation window (`models/training_metrics.json`,
-`models/stacked_ensemble_metrics.json`):
+All AUC values below are from the same tuned validation window
+(`models/archive/full-data-training_metrics.json`, `models/stacked_ensemble_metrics.json`) and are
+HISTORICAL full-data figures describing no served model:
 
 | Model | AUC | Log loss (uncalibrated) |
 |-------|-----|-------------------------|
-| Logistic regression | 0.8690 | 0.1991 |
-| Random forest | 0.9122 | 0.3156 |
-| XGBoost | 0.9642 | 0.4134 |
-| LightGBM | 0.9696 | 0.4138 |
-| XGB/LGB 50-50 blend | 0.9680 | 0.4119 |
-| Stacked ensemble | 0.9638 | 0.1432 |
+| Logistic regression | 0.8690087735213405 | 0.19909616799751986 |
+| Random forest | 0.912174183137231 | 0.31556132060476005 |
+| XGBoost | 0.964237080730037 | 0.4134 |
+| LightGBM | 0.9695664691945679 | 0.41384120518506373 |
+| XGB/LGB 50-50 blend | 0.9679521670054696 | 0.4118884557067262 |
+| Stacked ensemble | 0.9637549319898823 | 0.14317636528089922 |
 
 No comparison against the competition winners is made here: the repository holds no winner
 evaluation artifact, and the cited paper file is a Git LFS pointer in this checkout.
@@ -69,11 +74,15 @@ evaluation artifact, and the cited paper file is a Git LFS pointer in this check
 | Field | Value | Source |
 |-------|-------|--------|
 | **Source** | KKBOX Kaggle Competition | — |
-| **Windows used** | Two 2017 monthly windows for training, a later 2017 window for validation | `models/training_metrics.json` |
-| **Training rows** | 1,929,125 | `models/training_metrics.json` |
-| **Validation rows** | 970,960 | `models/training_metrics.json` |
-| **Training churn rate** | 8.88% | `models/training_metrics.json` |
-| **Validation churn rate** | 8.99% | `models/training_metrics.json` |
+| **Windows used** | Two 2017 monthly windows for training, a later 2017 window for validation (historical full-data run) | `models/archive/full-data-training_metrics.json` |
+| **Training rows** | 1,929,125 | `models/archive/full-data-training_metrics.json` |
+| **Validation rows** | 970,960 | `models/archive/full-data-training_metrics.json` |
+| **Training churn rate** | 0.08878118317890235 (~8.88%) | `models/archive/full-data-training_metrics.json` |
+| **Validation churn rate** | 0.08994191315811156 (~8.99%) | `models/archive/full-data-training_metrics.json` |
+
+(The rows/churn-rate figures above are HISTORICAL full-population values from the archived
+artifact; the served model trains on 10,000 serving-sample rows - see
+`models/training_metrics.json`.)
 
 Row counts, not distinct members: a member can appear in more than one monthly window. No
 distinct-member count is recorded. The repository does not include the raw data or a data manifest
@@ -129,9 +138,9 @@ stage entirely and serves the XGBoost booster instead.
 
 | Metric (LightGBM) | Before | After | Source |
 |-------------------|--------|-------|--------|
-| Log loss | 0.4130 | 0.1127 | `models/calibration_metrics.json` |
-| Brier score | 0.1255 | 0.0331 | `models/calibration_metrics.json` |
-| AUC | 0.96996 | 0.97034 | `models/calibration_metrics.json` |
+| Log loss | 0.41297890834500645 | 0.11270724473096795 | `models/archive/full-data-calibration_metrics.json` |
+| Brier score | 0.12552498527058062 | 0.03311632255290847 | `models/archive/full-data-calibration_metrics.json` |
+| AUC | 0.9699632964687438 | 0.9703411520587144 | `models/archive/full-data-calibration_metrics.json` |
 
 Isotonic regression substantially improved the recorded probability metrics. It did **not** leave
 ranking untouched: the recorded AUC moved. Isotonic mapping can introduce ties, so exact rank

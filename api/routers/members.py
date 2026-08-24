@@ -6,6 +6,7 @@ from api.models.schemas import (
     ActionRecommendation,
     MemberDetail,
     MemberListResponse,
+    MemberLookupRequest,
     MemberResponse,
 )
 from api.services import model_service, rules_service
@@ -18,8 +19,16 @@ async def list_members(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     risk_tier: str | None = Query(None, description="Filter by risk tier: High, Medium, Low"),
+    q: str | None = Query(
+        None,
+        min_length=1,
+        max_length=64,
+        description="Case-insensitive substring match on msno. This is what the demo's "
+        "member search uses, so the search runs over the served population rather "
+        "than a list bundled into the client.",
+    ),
 ) -> MemberListResponse:
-    """List all members with risk scores.
+    """List members with risk scores, optionally filtered and searched.
 
     Uses pre-computed member data for instant response times.
 
@@ -27,16 +36,25 @@ async def list_members(
         limit: Maximum number of members to return
         offset: Number of members to skip
         risk_tier: Optional filter by risk tier
+        q: Optional case-insensitive substring match on msno
 
     Returns:
         Paginated list of members with risk scores
     """
-    # Use pre-computed sorted members (O(1) lookup)
-    member_data, total = model_service.get_sorted_members(
-        limit=limit,
-        offset=offset,
-        risk_tier=risk_tier,
-    )
+    if q:
+        member_data, total = model_service.search_members(
+            query=q,
+            limit=limit,
+            offset=offset,
+            risk_tier=risk_tier,
+        )
+    else:
+        # Use pre-computed sorted members (O(1) lookup)
+        member_data, total = model_service.get_sorted_members(
+            limit=limit,
+            offset=offset,
+            risk_tier=risk_tier,
+        )
 
     if not member_data:
         return MemberListResponse(members=[], total=0, limit=limit, offset=offset)
@@ -64,11 +82,32 @@ async def list_members(
     )
 
 
+@router.post("/lookup", response_model=MemberDetail)
+async def lookup_member(request: MemberLookupRequest) -> MemberDetail:
+    """Get single member details with the member id in the request body.
+
+    Identical payload to ``GET /members/{msno}``. It exists because that route
+    is unreachable for 4,927 of the 10,000 shipped members: their base64 msno
+    contains ``/``, which ends the path segment, and percent-encoding does not
+    survive routing. See ``MemberLookupRequest``. The demo client uses this one
+    for every member, not just the affected half, so one code path is exercised.
+
+    Args:
+        request: Body carrying the member id verbatim
+
+    Returns:
+        Member details with features, risk score, and recommendations
+    """
+    return _member_detail(request.msno)
+
+
 @router.get("/{msno}", response_model=MemberDetail)
 async def get_member(msno: str) -> MemberDetail:
     """Get single member details with prediction.
 
     Uses pre-computed member data for O(1) lookup.
+
+    Unreachable for any msno containing ``/``. Use ``POST /members/lookup``.
 
     Args:
         msno: Member ID
@@ -76,6 +115,11 @@ async def get_member(msno: str) -> MemberDetail:
     Returns:
         Member details with features, risk score, and recommendations
     """
+    return _member_detail(msno)
+
+
+def _member_detail(msno: str) -> MemberDetail:
+    """Build the MemberDetail payload. Shared by both transports."""
     # O(1) lookup from pre-computed cache
     member = model_service.get_member_by_msno(msno)
 

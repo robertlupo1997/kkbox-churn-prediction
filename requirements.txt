@@ -19,6 +19,12 @@ tqdm>=4.65.0
 # Model interpretation
 shap==0.43.0
 
+# API service (needed to import and run api/, and to collect tests/api_tests/)
+fastapi>=0.104.0
+pydantic-settings>=2.0.0
+uvicorn[standard]>=0.24.0
+httpx>=0.25.0
+
 # Development and testing
 pytest==7.4.3
 pytest-cov==4.1.0

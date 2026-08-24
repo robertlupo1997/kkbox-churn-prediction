@@ -1,9 +1,11 @@
 # KKBOX Churn Prediction
 
-ML churn prediction project for KKBOX music streaming service. Records 0.9696 AUC on a later
-monthly window than the training windows -- but that same window was also the Optuna tuning window,
-so it is a tuned-validation figure, not a held-out result. Read LIMITATIONS.md before quoting any
-metric from this repository.
+ML churn prediction project for KKBOX music streaming service. Its historical full-data artifacts
+record 0.9695664691945679 AUC (LightGBM; commonly rounded to 0.9696) on a later monthly window than
+the training windows -- but that same window was also the Optuna tuning window, so it is a
+tuned-validation figure, not a held-out result. Those figures are archived (not served):
+`models/archive/full-data-training_metrics.json`. The currently served model has separate metrics in
+`models/training_metrics.json`. Read LIMITATIONS.md before quoting any metric from this repository.
 
 ## Quick Reference
 
@@ -214,9 +216,10 @@ March window was also used for hyperparameter tuning, so it is not an untouched 
 User churns if no new subscription within 30 days after expiration (official KKBOX definition).
 
 ### Isotonic Calibration
-Transforms raw model scores into calibrated probability estimates. In the recorded evaluation it
-improved log loss and Brier substantially and moved AUC slightly (0.96996 -> 0.97034); it does not
-guarantee exact rank preservation. The API does not apply it.
+Transforms raw model scores into calibrated probability estimates. In the archived full-data
+evaluation it improved log loss and Brier substantially and moved AUC slightly (stored values
+0.9699632964687438 -> 0.9703411520587144 in `models/archive/full-data-calibration_metrics.json`);
+it does not guarantee exact rank preservation. The API does not apply it.
 
 ### Feature Categories (131 total)
 - Transaction features (35): Payment patterns across 5 time windows

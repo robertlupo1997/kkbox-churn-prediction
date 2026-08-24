@@ -90,6 +90,21 @@ def load_features() -> pd.DataFrame:
 
     try:
         df = pd.read_csv(features_path)
+
+        # Restrict the serving surface to the persisted holdout population.
+        # The 10,000-row table includes ~8,000 training rows whose scores are
+        # systematically optimistic (they were in the model's fitting data);
+        # only holdout members may be browsable/searchable.
+        population = load_serving_population()
+        if population is not None:
+            before = len(df)
+            df = df[df["msno"].isin(population)].reset_index(drop=True)
+            logger.info(
+                "Serving surface restricted to %d holdout members of %d rows",
+                len(df),
+                before,
+            )
+
         _model_cache["features"] = df
 
         # Try to pre-compute predictions, but don't fail if features don't match
@@ -137,6 +152,68 @@ def load_metrics() -> dict[str, Any]:
         return {}
 
 
+def load_calibrator() -> dict[str, Any] | None:
+    """Load the persisted isotonic calibrator knots.
+
+    Returns:
+        Dict with x_thresholds/y_thresholds, or None when the artifact is
+        absent (then scores are served uncalibrated and the calibration
+        claims must not be advertised -- but the rebuild script always
+        writes it).
+    """
+    if "calibrator" in _model_cache:
+        return _model_cache["calibrator"]
+    path = Path(settings.CALIBRATOR_PATH)
+    if not path.exists():
+        logger.warning(f"Calibrator file not found: {path}")
+        _model_cache["calibrator"] = None
+        return None
+    with open(path) as f:
+        calibrator = json.load(f)
+    _model_cache["calibrator"] = calibrator
+    return calibrator
+
+
+def apply_calibrator(probs: np.ndarray) -> np.ndarray:
+    """Map model probabilities through the fitted isotonic calibrator.
+
+    Isotonic regression is a monotone step/linear function given by knots;
+    np.interp between the knots with clamping at both ends reproduces
+    sklearn's predict() for out_of_bounds="clip". Applying it here is what
+    makes the served number match the calibrated Brier / reliability curves
+    the API advertises.
+    """
+    calibrator = load_calibrator()
+    if calibrator is None:
+        return probs
+    x = np.asarray(calibrator["x_thresholds"], dtype=float)
+    y = np.asarray(calibrator["y_thresholds"], dtype=float)
+    return np.interp(probs, x, y)
+
+
+def load_serving_population() -> set[str] | None:
+    """Load the holdout msno set that defines the browsable surface.
+
+    Returns None when no split artifact exists (dev fallback: serve all rows,
+    logged loudly). Production images always ship the artifact.
+    """
+    if "serving_population" in _model_cache:
+        return _model_cache["serving_population"]
+    path = Path(settings.SERVING_SPLIT_PATH)
+    if not path.exists():
+        logger.warning(
+            f"Serving split not found: {path}. Serving ALL rows -- this "
+            "includes training members and must never reach production."
+        )
+        _model_cache["serving_population"] = None
+        return None
+    with open(path) as f:
+        split = json.load(f)
+    population = frozenset(split["holdout_msnos"])
+    _model_cache["serving_population"] = population
+    return population
+
+
 def load_calibration_data() -> dict[str, Any]:
     """Load calibration curve data from JSON file.
 
@@ -163,16 +240,18 @@ def load_calibration_data() -> dict[str, Any]:
         return {}
 
 
-def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
-    """Generate churn predictions for members.
+def predict_raw(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+    """Score members with the raw booster output -- NO calibrator applied.
+
+    This is the quantity SHAP attributions are additive in. Anything that
+    explains the model in log-odds space must be reconciled against this
+    probability, not the calibrated one.
 
     Args:
         df: DataFrame with member features
 
     Returns:
         Tuple of (probabilities, feature_names)
-        - probabilities: Array of churn probabilities
-        - feature_names: List of feature column names used
     """
     bst = load_model()
 
@@ -183,7 +262,10 @@ def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     X = df[feats].copy()
 
     # Encode categorical columns
-    if "gender" in X.columns:
+    if "gender" in X.columns and X["gender"].dtype == object:
+        # String gender is mapped; the shipped table stores the already-encoded
+        # 0/1/2 ints, which must pass through untouched (mapping them would
+        # turn every row into "unknown" = 2).
         gender_map = {"male": 0, "female": 1, "unknown": 2}
         X["gender"] = X["gender"].map(gender_map).fillna(2)
 
@@ -195,6 +277,25 @@ def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     probs = bst.predict(dmatrix)
 
     return probs, feats
+
+
+def predict(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+    """Generate the SERVED churn probability for members: calibrated and clipped.
+
+    The API advertises calibrated Brier and reliability curves; the served
+    number must be the same quantity. Isotonic regression saturates at 0/1 by
+    construction, so the result is clipped into [1e-4, 1 - 1e-4]: no member is
+    ever told they have a 100% or 0% churn probability.
+
+    Args:
+        df: DataFrame with member features
+
+    Returns:
+        Tuple of (probabilities, feature_names)
+    """
+    probs, feats = predict_raw(df)
+    probs = apply_calibrator(probs)
+    return np.clip(probs, 1e-4, 1 - 1e-4), feats
 
 
 def get_feature_importance(top_n: int | None = None) -> list[dict[str, Any]]:
@@ -387,6 +488,38 @@ def get_sorted_members(
     else:
         total = len(_sorted_members)
         return _sorted_members[offset : offset + limit], total
+
+
+def search_members(
+    query: str,
+    limit: int = 100,
+    offset: int = 0,
+    risk_tier: str | None = None,
+) -> tuple[list[dict], int]:
+    """Find members whose msno contains ``query``, case-insensitively.
+
+    Searching the served population is the point: the demo previously searched
+    a list bundled into the client, so a hit told you nothing about whether the
+    API knew the member.
+
+    Args:
+        query: Case-insensitive substring of the member id
+        limit: Maximum members to return
+        offset: Number to skip
+        risk_tier: Optional filter by tier
+
+    Returns:
+        Tuple of (members list, total matching count) -- total is the number of
+        matches, not the page size
+    """
+    if not _sorted_members:
+        return [], 0
+
+    needle = query.casefold()
+    matches = [m for m in _sorted_members if needle in m["msno"].casefold()]
+    if risk_tier:
+        matches = [m for m in matches if m["risk_tier"] == risk_tier]
+    return matches[offset : offset + limit], len(matches)
 
 
 def get_member_by_msno(msno: str) -> dict | None:

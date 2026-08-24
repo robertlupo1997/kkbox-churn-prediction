@@ -1,35 +1,64 @@
 # KKBOX Churn Prediction - Production Makefile
 .PHONY: all clean test lint format install dev docker-build docker-run features labels models calibrate evaluate backtest backtest-ci fixtures psi app
 
+VENV ?= .venv
+
+# Interpreter resolution: an activated virtualenv wins; otherwise a local
+# $(VENV) is used if it exists; otherwise the system python3.
+ifeq ($(VIRTUAL_ENV),)
+  ifneq ($(wildcard $(VENV)/bin/python3),)
+    PY := $(VENV)/bin/python3
+  else
+    PY := python3
+  endif
+else
+  PY := python3
+endif
+
+# Ensure a usable interpreter target exists (PEP 668: on current Debian/Ubuntu
+# a bare `pip install` into the system Python fails with
+# externally-managed-environment). `make install` creates $(VENV) when run
+# outside any virtualenv, then installs into it. Inside a virtualenv the
+# behavior is unchanged.
+define ensure_venv
+	if [ -z "$$VIRTUAL_ENV" ] && [ ! -f "$(VENV)/pyvenv.cfg" ]; then 		echo "No virtualenv active; creating $(VENV) (PEP 668 safe install)..."; 		python3 -m venv $(VENV); 	fi
+endef
+
 # Default target - one command to rule them all
 all: install lint test features models calibrate evaluate
 
 # Installation
+define pip_install
+	if [ -n "$$VIRTUAL_ENV" ]; then 		$(PY) -m pip install $(1); 	else 		$(VENV)/bin/python3 -m pip install $(1); 	fi
+endef
+
 install:
-	pip install -r requirements.txt
+	$(ensure_venv)
+	$(call pip_install,-r requirements.txt)
 
 dev:
-	pip install -r requirements-dev.txt
+	$(ensure_venv)
+	$(call pip_install,-r requirements-dev.txt)
 
 # Code quality
 lint:
 	@echo "🔍 Running code quality checks..."
-	python -m ruff check src/ tests/ || true
-	python -m black --check src/ tests/ || true
+	$(PY) -m ruff check src/ tests/ || true
+	$(PY) -m black --check src/ tests/ || true
 
 format:
 	@echo "🎨 Formatting code..."
-	python -m black src/ tests/
-	python -m ruff --fix src/ tests/ || true
+	$(PY) -m black src/ tests/
+	$(PY) -m ruff --fix src/ tests/ || true
 
 # Testing
 test:
 	@echo "🧪 Running tests..."
-	python3 -m pytest tests/ -v --tb=short -c pytest.ini 2>/dev/null || python3 tests/test_temporal_safety.py
+	$(PY) -m pytest tests/ -v --tb=short -c pytest.ini
 
 test-ci:
 	@echo "🧪 Running CI tests..."
-	python3 -m pytest tests/ -q --tb=line -c pytest.ini 2>/dev/null || python3 tests/test_temporal_safety.py
+	$(PY) -m pytest tests/ -q --tb=line -c pytest.ini
 
 # Pipeline stages
 features:

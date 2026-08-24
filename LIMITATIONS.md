@@ -11,6 +11,10 @@ If a statement anywhere else in this repository conflicts with this file, this f
 ## 1. The headline metrics are tuned-validation numbers, not held-out results
 
 **What is claimed elsewhere:** LightGBM AUC 0.9696, calibrated log loss 0.1127, Brier 0.0331.
+(Exact stored values: 0.9695664691945679 AUC in
+`models/archive/full-data-training_metrics.json`; 0.11270724473096795 log loss and
+0.03311632255290847 Brier in `models/archive/full-data-calibration_metrics.json` - both recovered
+from git history on 2026-08-23 after the serving artifacts were rebuilt.)
 
 **What is true:** those numbers are real — they are in `models/training_metrics.json` and
 `models/calibration_metrics.json`. But they were measured on the March 2017 window, and that same
@@ -27,24 +31,38 @@ optimistic by an unmeasured amount, and no uncertainty interval is computed anyw
 during tuning or calibration, score the frozen model against it once, and report that number
 alongside the tuned one.
 
-## 2. Scoring does not work from a clean clone
+## 2. Scoring works, but on a retrained serving-sample model (repaired 2026-08-23)
 
-`api/config.py` loads `models/xgb.json`, which declares **131 named features**. The checked-in
-`eval/app_features.csv` has 102 columns, of which 3 are metadata (`msno`, `is_churn`, `cutoff_ts`),
-leaving **99 predictors**. `api/services/model_service.py` builds a `DMatrix` straight from those
-columns, so XGBoost raises a feature-name mismatch.
+The original defect: `models/xgb.json` declared **131 named features** while
+`eval/app_features.csv` carried only **99 predictors**, so XGBoost refused to score and
+the API served an empty member cache (`/api/members` returned zero members,
+`POST /api/predictions/single` 404ed). Both deployed models (`xgb.json`, `lgb.txt`)
+wanted the identical 131 features; 23 of the missing 32 were deterministic transforms of
+columns already in the CSV, but 9 were historical churn lags that cannot be regenerated
+(section 6).
 
-The service catches that and falls back to a precomputed predictions file
-(`eval/stacked_ensemble_predictions.csv`), which is **not committed** and is git-ignored
-(`.gitignore:83`). The member cache therefore stays empty. Consequences:
+**Repair:** `scripts/rebuild_serving_artifacts.py` derives those 22 computable columns
+with the exact SQL formulas, retrains XGBoost and LightGBM on the shipped 10,000-member
+sample (holdout = members whose `sha256(msno)[:8]/2^32 < 0.2`, deterministic from the msno
+and persisted in `eval/serving_split.json`; it was a seed-42 stratified random split before
+the 2026-08-23 wave-3 repair, which could not be reproduced from committed inputs), and
+rewrites the serving CSV plus both metrics files so every recorded number describes exactly
+what is served.
+`tests/test_artifact_contract.py` now passes with its assertions untouched.
 
-- `GET /api/members` returns an empty list
-- `POST /api/predictions/single` returns 404
-- `POST /api/predictions` marks every member not found
-- `GET /api/shap/{msno}` returns the flagged importance-based approximation, never true SHAP
+**New honest limitations of the serving artifacts:**
 
-**To verify a fix:** add a test that loads the configured model and feature file, asserts exact
-ordered feature-name parity, scores ten rows, and asserts finite probabilities.
+- The serving models are trained on a 10,000-member February-2017-cutoff sample, NOT on
+  the full Kaggle training set. Their metrics (xgboost holdout `auc` 0.9765) are measured
+  on an in-sample holdout and are **not comparable** to the archived
+  full-data tuned-validation numbers in section 1.
+- Since the wave-3 repair, the browsable/searchable demo surface serves ONLY the persisted
+  holdout population (`eval/serving_split.json`, 1,995 of 10,000 members). Before that
+  repair, 80% of the members shown were training split members whose scores were
+  systematically optimistic; that exposure is gone from the API, but the underlying sample
+  is still an in-sample holdout of a small serving sample, not an external test set.
+- The 9 historical churn-lag features remain absent from every artifact here;
+  reproducing them still requires the raw transaction history (section 6).
 
 ## 3. The API never applies calibration
 
@@ -54,11 +72,21 @@ JSON, not a calibrator. No prediction path transforms scores, and no calibrator 
 `models/`. The calibrated log loss and Brier figures describe an offline LightGBM evaluation, not
 anything the API returns.
 
-## 4. The API serves a different model from the one the results describe
+## 4. The best recorded result (LightGBM) is not what the API loads
 
-The best recorded result is LightGBM. The API loads `models/xgb.json` and describes itself as
-XGBoost (`api/config.py`, `api/main.py`). Both models are checked in; only the XGBoost one is wired
-to the service.
+Still true structurally: the API loads `models/xgb.json` and describes itself as XGBoost;
+`models/lgb.txt` sits beside it unserved. Additionally, `models/xgboost.json` is a stale archived booster left over from before the
+2026-08-23 repair; nothing loads it (the API reads `MODEL_PATH = models/xgb.json`, and the
+Space Dockerfile ships only `xgb.json`, `training_metrics.json`,
+`calibration_metrics.json`, and `eval/app_features.csv`). It does not match the served
+model and its contents must not be cited as describing anything live. Since the
+2026-08-23 repair,
+`models/training_metrics.json` records honest holdout metrics for BOTH retrained models
+(lightgbm holdout AUC 0.9799 vs xgboost 0.9765 on the serving sample), so the metrics
+endpoint no longer contradicts the served model. What remains is a presentation gap:
+portfolio copy citing the archived full-data LightGBM tuned-validation AUC of 0.9696 must
+not be presented as describing the demo's served model. See
+`docs/repair/space-redeploy-plan.md`.
 
 ## 5. The rolling backtest produces nothing
 
@@ -78,7 +106,9 @@ runs the backtest SQL; the two never meet.
 
 Yet `models/training_metrics.json` records 131 features, and the checked-in model artifacts name
 historical lag columns. The dataset that produced the headline model is **absent from the repository
-and not reproducible by the shown orchestration**.
+and not reproducible by the shown orchestration**. (Since 2026-08-23 the *serving* artifacts are
+reproducible via `scripts/rebuild_serving_artifacts.py`, but only on the shipped 10k sample; the
+original full-data 131-feature training set remains unreproducible.)
 
 ## 7. The current feature builder cannot feed the trainer
 
@@ -148,13 +178,14 @@ most members receive generic score-tier copy. No campaign evaluation of any rule
 Member precomputation assigns the same three globally important features to every member
 (`api/services/model_service.py`). Despite the field name, these are not per-member drivers.
 
-## 15. The calibration endpoint fabricates its curve
+## 15. Calibration data is now real, but the API still never applies the calibrator
 
-When curve arrays are absent from the metrics file — and they are absent from the committed
-`models/calibration_metrics.json` — `api/routers/metrics.py` **synthesizes** near-diagonal
-before/after points rather than returning nothing. The same route populates fields named
-`ece_before` / `ece_after` with Brier scores. No ECE is computed anywhere in this repository, and no
-reliability data backs any calibration-quality statement.
+Repaired 2026-08-23: `models/calibration_metrics.json` now carries real reliability-diagram
+points (isotonic fit on out-of-fold training predictions, evaluated on the holdout), so
+`GET /api/calibration` serves measured curves instead of synthesized ones. Still true:
+no prediction path transforms scores through the calibrator (section 3), and the fields
+named `ece_before` / `ece_after` in that route are still Brier scores, not ECE. No ECE is
+computed anywhere in this repository.
 
 ## 16. The health check can call a broken system healthy
 
@@ -162,19 +193,13 @@ reliability data backs any calibration-quality statement.
 model and feature files loaded. `docker-compose.yml` checks only for HTTP 200. Missing predictions,
 a feature mismatch, and an empty member cache all pass this check.
 
-## 17. `make test` hides suite failures
+## 17. ~~`make test` hides suite failures~~ — FIXED 2026-08-23
 
-```make
-test:
-	python3 -m pytest tests/ -v --tb=short -c pytest.ini 2>/dev/null || python3 tests/test_temporal_safety.py
-```
-
-If any collection error or test failure occurs, stderr is discarded and Make runs a single file
-instead. If that one file passes, `make test` reports success. `test-ci` has the same fallback.
-
-The advertised install target also omits API dependencies (`requirements.txt` has no FastAPI), while
-`tests/api_tests/test_endpoints.py` imports FastAPI — so a fresh `make install && make test` takes
-the fallback path.
+The `|| python3 tests/test_temporal_safety.py` fallback was removed from both `test` and `test-ci`
+in the Makefile, and `requirements.txt` now installs the API dependencies (`fastapi`,
+`pydantic-settings`, `uvicorn`, `httpx`) that `tests/api_tests/test_endpoints.py` needs to even be
+collected. A fresh `make install && make test` no longer silently substitutes a single passing file
+for the suite; failures surface with their real exit code. What still fails is described in §19.
 
 ## 18. CI is green by construction around the riskiest stages
 
@@ -185,15 +210,20 @@ steps are all `continue-on-error`. A green badge does not indicate the pipeline 
 
 ## 19. The test suite does not pass
 
-Measured on 2026-08-09 in this checkout:
+Measured on 2026-08-23 from a clean clone (`git clone` of this repository into an empty directory,
+fresh virtualenv, `pip install -r requirements.txt`):
 
-- `python -m pytest tests/` **fails at collection**: `tests/api_tests/test_endpoints.py` imports
-  FastAPI, which `requirements.txt` does not install.
-- `python -m pytest tests/ --ignore=tests/api_tests` runs, and **16 tests fail** — across
-  `tests/test_labels.py`, `tests/test_feature_windows.py`, and `tests/test_calibration_modules.py`.
+- The suite runs to completion (no collection error since `requirements.txt` now includes the API
+  dependencies): **10 failed, 70 passed** (`make install && make test` measured on the fixed
+tree; `make test` exits 2).
+- Failures sit in `tests/test_labels.py` (6), `tests/test_feature_windows.py` (2), and
+  `tests/test_artifact_contract.py` (2, the serving-contract mismatch documented in §2).
+- On 2026-08-09 the count was 16 failures plus a collection error, measured before the API
+  dependencies were installable from `requirements.txt`; several label/window tests were evidently
+  repaired between those dates, and today's numbers are the current baseline.
 
-Because `make test` swallows this and falls back to a single file (see §17 above), the failures are
-not visible through the advertised entry point.
+Because the Makefile fallback is gone (§17), these failures now abort `make test` with a non-zero
+exit instead of being hidden.
 
 ## 20. Much of the test suite asserts existence, not behavior
 
@@ -238,6 +268,15 @@ nobody mistakes their absence for a passing result:
 - Drift monitoring output (`scripts/psi_scores.py` exists; no PSI result is recorded)
 - Robustness to activity gaps, pricing changes, or platform-wide behavior shifts
 - Any comparison against the competition winners' actual solutions
+
+## 25. The documented pipeline path overwrites the cited metric artifact
+
+Measured 2026-08-23 from a clean clone: `make features && make models` runs on synthetic data and
+rewrites `models/training_metrics.json` in place (212 lines changed), replacing the artifact the
+README and this file cite with synthetic-data numbers (1,000 samples, 9 features, XGBoost AUC
+0.4716). A visitor who follows the documented pipeline destroys the very evidence the
+documentation points at. The model binaries were byte-identical after the run, but the metric
+artifact was not.
 
 ---
 

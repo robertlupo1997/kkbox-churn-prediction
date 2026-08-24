@@ -54,6 +54,18 @@ const ModelPerformance: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-12">
+      {/* Data provenance banner (wave-3 panel inventory): every figure on this
+          page comes from the bundled static export of the ARCHIVED full-data
+          March-2017 tuned-validation run. It describes no served model. The
+          served model's live numbers are at /api/metrics and /api/calibration,
+          and the demo's live member scoring is on the Member Lookup page. */}
+      <div className="bg-black text-brand p-4 brutalist-border brutalist-shadow">
+        <p className="text-[11px] font-black uppercase tracking-widest">
+          Historical data — every figure below is from the archived full-data training run
+          (tuned-validation, March-2017 window). None of it describes the model this demo serves.
+          Live numbers: <code>/api/metrics</code>.
+        </p>
+      </div>
       {/* Header */}
       <div className="max-w-3xl">
         <h2 className="text-6xl font-black tracking-tighter leading-none mb-4 uppercase dark:text-white">
@@ -300,10 +312,10 @@ const ModelPerformance: React.FC = () => {
       {/* Ensemble Weights */}
       <EnsembleWeights />
 
-      {/* Lift and Gains Curves */}
+      {/* Lift and Gains Curves — historical export, see banner above */}
       <LiftGainsCurve />
 
-      {/* Precision-Recall Curve with Threshold Selector */}
+      {/* Precision-Recall Curve with Threshold Selector — historical export, see banner above */}
       <PrecisionRecallCurve />
     </div>
   );

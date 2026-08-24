@@ -1,0 +1,35 @@
+{
+  "_provenance": "ARCHIVED HISTORICAL ARTIFACT (2026-08-23). Recovered verbatim from git history (git show 8de1bcc:models/calibration_metrics.json) when the serving artifacts were rebuilt. Full-population tuned-validation isotonic-calibration figures on the already-tuned March 2017 population (random split; see LIMITATIONS.md section 1). They are NOT produced by the current pipeline (scripts/rebuild_serving_artifacts.py now writes models/calibration_metrics.json from the 10,000-member serving sample with measured reliability curves), and they describe NO served model.",
+  "lightgbm": {
+    "before": {
+      "log_loss": 0.41297890834500645,
+      "auc": 0.9699632964687438,
+      "brier": 0.12552498527058062
+    },
+    "after": {
+      "log_loss": 0.11270724473096795,
+      "auc": 0.9703411520587144,
+      "brier": 0.03311632255290847
+    },
+    "improvement": {
+      "log_loss": 0.3002716636140385,
+      "brier": 0.09240866271767215
+    }
+  },
+  "xgboost": {
+    "before": {
+      "log_loss": 0.412753936598159,
+      "auc": 0.9646057003756572,
+      "brier": 0.12435018390995851
+    },
+    "after": {
+      "log_loss": 0.12004610471468133,
+      "auc": 0.965347553807852,
+      "brier": 0.03560055180046916
+    },
+    "improvement": {
+      "log_loss": 0.2927078318834777,
+      "brier": 0.08874963210948936
+    }
+  }
+}

@@ -29,19 +29,19 @@ const MetricsBanner: React.FC = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-black text-white py-2 px-4 flex items-center justify-center gap-4 sm:gap-6 text-[10px] font-black uppercase tracking-widest">
       <span className="flex items-center gap-1">
-        <span className="text-brand">0.9696</span> Tuned-Val AUC
+        Archived Tuned-Val AUC <span className="text-brand">0.9696</span> — no served model
       </span>
       <span className="hidden sm:inline text-zinc-500">|</span>
       <span className="hidden sm:flex items-center gap-1">
-        <span className="text-brand">131</span> Features
+        Served model: <span className="text-brand">121</span> Features
       </span>
       <span className="hidden md:inline text-zinc-500">|</span>
       <span className="hidden md:flex items-center gap-1">
-        <span className="text-brand">916K</span> Rows
+        Browsable: <span className="text-brand">1,995</span> Holdout Members
       </span>
       <span className="hidden lg:inline text-zinc-500">|</span>
       <span className="hidden lg:flex items-center gap-1">
-        <span className="text-brand">6</span> Models
+        Sample of <span className="text-brand">10K</span> Rows
       </span>
       <button
         onClick={() => setIsVisible(false)}

@@ -1,7 +1,11 @@
 # Portfolio Copy: KKBOX Churn Prediction
 
-> Every figure below is sourced from a checked-in artifact. Read [LIMITATIONS.md](../LIMITATIONS.md)
-> before reusing this copy anywhere; it states what is unverified.
+> Every figure below is sourced from a checked-in artifact. The historical full-data figures come
+from `models/archive/full-data-training_metrics.json` and
+`models/archive/full-data-calibration_metrics.json` (recovered from git history on 2026-08-23;
+they describe no served model); serving-sample figures come from `models/training_metrics.json`.
+Read [LIMITATIONS.md](../LIMITATIONS.md) before reusing this copy anywhere; it states what is
+unverified.
 
 ## Headline Options
 
@@ -53,11 +57,13 @@ All measured on the March 2017 window, which Optuna also tuned on. Not held-out 
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| **AUC-ROC (LightGBM)** | 0.9696 | `models/training_metrics.json` |
-| **Log Loss (calibrated)** | 0.1127 | `models/calibration_metrics.json` |
-| **Brier Score (calibrated)** | 0.0331 | `models/calibration_metrics.json` |
-| **Features in recorded model** | 131 | `models/training_metrics.json` |
-| **Training rows** | 1,929,125 across two monthly windows | `models/training_metrics.json` |
+| **AUC-ROC (LightGBM)** | 0.9695664691945679 | `models/archive/full-data-training_metrics.json` |
+| **Log Loss (calibrated)** | 0.11270724473096795 | `models/archive/full-data-calibration_metrics.json` |
+| **Brier Score (calibrated)** | 0.03311632255290847 | `models/archive/full-data-calibration_metrics.json` |
+| **Features in recorded model** | 131 | `models/archive/full-data-training_metrics.json` |
+| **Training rows** | 1,929,125 across two monthly windows | `models/archive/full-data-training_metrics.json` |
+
+All five rows are HISTORICAL full-data tuned-validation figures describing no served model.
 | **Evaluation** | One fixed later window; also the tuning window | `train_temporal.py` |
 
 ---
@@ -115,8 +121,9 @@ Infrastructure:   Docker, GitHub Actions (workflows present but non-gating)
 3. **Containerized delivery** — Docker configuration, an automated test suite, and a `make app`
    command for local startup.
 
-4. **Explainability code paths** — A SHAP endpoint that returns model SHAP values, or an explicitly
-   flagged importance-based approximation when true SHAP is unavailable.
+4. **Explainability code paths** — A SHAP endpoint that returns model SHAP values. The UI refuses
+   to draw an explanation that does not reconcile with the score it explains and says
+   "explanation unavailable" instead of substituting placeholder factors.
 
 ---
 
@@ -135,3 +142,6 @@ Infrastructure:   Docker, GitHub Actions (workflows present but non-gating)
 
 - **GitHub**: [View Source Code →](https://github.com/robertlupo1997/kkbox-churn-prediction)
 - **Live Demo**: [Hugging Face Spaces](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction)
+  — interactive demo of the serving-sample model. Until the repaired client is actually deployed,
+  this link may still show the pre-repair Space; do not present it as live proof of the headline
+  AUC, which remains an archived tuned-validation figure (see LIMITATIONS.md §1).

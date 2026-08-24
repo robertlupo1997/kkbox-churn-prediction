@@ -52,7 +52,12 @@ COPY rules.yaml ./
 COPY models/xgb.json ./models/
 COPY models/training_metrics.json ./models/
 COPY models/calibration_metrics.json ./models/
+# Serving-time isotonic calibrator and holdout membership: without these the
+# API serves uncalibrated scores and the full 10,000-row table including
+# training members.
+COPY models/isotonic_calibrator.json ./models/
 COPY eval/app_features.csv ./eval/
+COPY eval/serving_split.json ./eval/
 
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./static
