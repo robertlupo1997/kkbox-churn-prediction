@@ -180,7 +180,7 @@ metrics mean, they do not carry the temporal guarantee the rest of the project i
 
 - **Placeholder member data.** `scripts/export_dashboard_data.py` hard-codes city to 1, tenure and
   active days to 0, and infers auto-renew from the risk score.
-- **Docker Compose is repaired, but the repair has not been run.** As written before, the
+- **Docker Compose is repaired and verified.** As written before, the
   frontend container ran `serve` -- a static-file server with no proxy -- while the client
   requested relative `/api/*` paths, so every API call hit the bundle host and the dashboard
   reported the API unavailable. `VITE_API_URL=http://api:8000` was set as a runtime service
@@ -190,10 +190,9 @@ metrics mean, they do not carry the temporal guarantee the rest of the project i
 
   The frontend container now runs nginx and proxies `/api/` to the api service, which keeps the
   relative base URL that makes the same bundle work on Hugging Face Spaces.
-  `tests/test_compose_wiring.py` asserts the wiring. **Nobody has run `make app` against it** --
-  Docker was unavailable in the environment where the fix was written -- so treat it as
-  built-and-guarded, not verified. The commands that would settle it are in the PR that
-  introduced the change.
+  `tests/test_compose_wiring.py` asserts the wiring, and `make app` was run end to end from a
+  clean clone of `353ba5f` on Docker 29.4.1: the API answered through the proxy on :3000, and
+  `scripts/verify/drive-demo.mjs http://localhost:3000` passed 28 assertions with 0 failures.
 
 ## 12. Business impact figures are assumptions, not measurements
 
