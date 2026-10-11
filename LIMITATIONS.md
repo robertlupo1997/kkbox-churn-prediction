@@ -66,6 +66,10 @@ what is served.
 
 ## 3. The API never applies calibration
 
+> **Superseded.** `predict()` in `api/services/model_service.py` now applies
+> `models/isotonic_calibrator.json` to served scores. The text below describes the earlier state
+> and is kept for the record.
+
 Serving loads only an XGBoost booster and returns its raw output
 (`api/services/model_service.py`). The function that looks like calibration loading reads the metrics
 JSON, not a calibrator. No prediction path transforms scores, and no calibrator artifact exists in
@@ -122,8 +126,7 @@ producing `is_churn_x` / `is_churn_y`. `train_temporal.py` requires a literal `i
 - `src/labels.py` uses `DATE_DIFF(...) <= window_days`: renewal on day 30 counts as **retained**.
 - `src/backtest.py` uses `DATE_DIFF(...) < window_days`: the same member is **churned**.
 
-A project built around the official 30-day rule cannot have two answers at the boundary. See
-[DECISIONS-PENDING.md](DECISIONS-PENDING.md).
+A project built around the official 30-day rule cannot have two answers at the boundary.
 
 ## 9. Categorical encoding is not stable across splits
 
@@ -333,5 +336,5 @@ In rough order of value per hour:
 5. **Wire the historical lag features into the feature pipeline**, or state clearly that the shipped
    model uses a dataset built by a path no longer in the repository.
 
-See [DECISIONS-PENDING.md](DECISIONS-PENDING.md) for the claims that were deleted rather than fixed,
-and what fixing each would take.
+The notes on which claims were deleted rather than fixed, and what fixing each would take, are
+not published in this repository.
