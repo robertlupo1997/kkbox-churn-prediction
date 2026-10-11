@@ -67,8 +67,8 @@ what is served.
 ## 3. The API never applies calibration
 
 > **Superseded.** `predict()` in `api/services/model_service.py` now applies
-> `models/isotonic_calibrator.json` to served scores. The text below describes the earlier state
-> and is kept for the record.
+> `models/isotonic_calibrator.json` when the API scores members at startup. The text below
+> describes the earlier state and is kept for the record.
 
 Serving loads only an XGBoost booster and returns its raw output
 (`api/services/model_service.py`). The function that looks like calibration loading reads the metrics

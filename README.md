@@ -326,9 +326,10 @@ calibrated and isotonic regression improved them substantially:
 These are historical figures describing no served model. The archived artifact stores no ECE or
 reliability curves alongside them, so the *degree* of remaining calibration error is unmeasured
 there; the serving-sample calibration artifact (`models/calibration_metrics.json`) does store
-measured reliability points. The API applies the isotonic calibrator in
-`models/isotonic_calibrator.json` to every served score (`predict()` in
-`api/services/model_service.py`); the SHAP route uses the raw score.
+measured reliability points. At startup the API scores members with `predict()` in
+`api/services/model_service.py`, which applies the isotonic calibrator in
+`models/isotonic_calibrator.json`. If that scoring step fails, it falls back to precomputed
+predictions from a CSV. The SHAP route uses the raw score.
 
 ## Tech Stack
 
