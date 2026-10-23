@@ -57,7 +57,7 @@ make format           # Auto-format code
 ### Infrastructure
 - Docker + Docker Compose
 - GitHub Actions CI/CD
-- Hugging Face Spaces deployment
+- Hugging Face Space deployment retired 2026-10-23 (workflow removed; static demo planned, issue #18)
 
 ## Project Structure
 

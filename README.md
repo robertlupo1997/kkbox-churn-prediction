@@ -1,14 +1,3 @@
----
-title: KKBOX Churn Prediction
-emoji: "🎵"
-colorFrom: purple
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
----
-
 # KKBOX Churn Prediction
 
 > A churn modelling project on the WSDM KKBOX Churn Prediction Challenge: SQL/DuckDB point-in-time
@@ -33,12 +22,14 @@ Run the stack locally:
 make app  # Starts API on :8000, Dashboard on :3000
 ```
 
-The live demo runs on Hugging Face Spaces at
-[robertlupo1997/kkbox-churn-prediction](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction).
+There is no hosted demo right now. The Hugging Face Space that used to run this stack was taken
+offline on 2026-10-23; a static version that needs no server is planned in
+[#18](https://github.com/robertlupo1997/kkbox-churn-prediction/issues/18). Until then, run it locally
+with either option under [Quick Start](#quick-start).
 
-Driven end to end on 2026-08-24 with `scripts/verify/drive-demo.mjs`: 28 assertions, 0
-failures. It serves 1,995 holdout members, scores them with the isotonic calibrator applied,
-and explains each one on the real TreeExplainer path — worst reconciliation residual
+When it was hosted, the Space was driven end to end on 2026-08-24 with `scripts/verify/drive-demo.mjs`: 28 assertions, 0
+failures. It served 1,995 holdout members, scored them with the isotonic calibrator applied,
+and explained each one on the real TreeExplainer path — worst reconciliation residual
 1.81e-05, no saturated probabilities, no approximation-path explanations.
 
 **The demo's numbers are not the headline numbers.** `/api/metrics` reports the *served*
@@ -154,9 +145,9 @@ magnitudes mean something, which is why calibration is evaluated separately here
 
 ## Quick Start
 
-### Option 1: One process, the way the Space runs it
+### Option 1: One process, the way the Docker image runs it
 
-This is the path the live demo uses and the one the verification harness drives. It builds
+This is the path the root `Dockerfile` uses and the one the verification harness drives. It builds
 the dashboard into the API's static directory, so the client and `/api/*` share an origin.
 
 ```bash
@@ -186,7 +177,7 @@ make app
 relative `/api/*` paths. That container previously ran `serve`, a static-file server with no
 proxy, so every API call hit the bundle host and member lookup reported the API unavailable
 while it was healthy on :8000. It now runs nginx and proxies `/api/` to the api service,
-which keeps the relative base URL — the same one that makes the Space work.
+which keeps the relative base URL — the same one the single-process image relies on.
 
 Verified end to end on 2026-08-23 from a clean clone of `353ba5f`, Docker 29.4.1:
 
@@ -342,7 +333,7 @@ predictions from a CSV. The SHAP route uses the raw score.
 | **Data** | DuckDB, pandas, numpy, Optuna |
 | **API** | FastAPI, uvicorn, Pydantic |
 | **Frontend** | React 19, TypeScript, Vite, Recharts, Tailwind |
-| **Infrastructure** | Docker, GitHub Actions, Hugging Face Spaces |
+| **Infrastructure** | Docker, GitHub Actions |
 
 CI (`.github/workflows/ci.yml`) gates on ruff, black, and the full `tests/` suite, with every
 dependency pinned to an exact version in `requirements.txt`. It also trains on synthetic data; the

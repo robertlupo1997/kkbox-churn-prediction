@@ -141,9 +141,9 @@ Infrastructure:   Docker, GitHub Actions (workflows present but non-gating)
 ## Links
 
 - **GitHub**: [View Source Code →](https://github.com/robertlupo1997/kkbox-churn-prediction)
-- **Live Demo**: [Hugging Face Spaces](https://huggingface.co/spaces/robertlupo1997/kkbox-churn-prediction)
-  — interactive demo of the serving-sample model. Deployed and verified 2026-08-24: 1,995
-  holdout members served, 28 of 28 browser assertions passing against the live Space. Do not
-  present it as live proof of the headline AUC — the demo's model scores 0.9765 on its own
+- **Demo**: no hosted demo at present. The Hugging Face Space was taken offline 2026-10-23; a
+  static version is planned (issue #18). When it was hosted it was verified 2026-08-24: 1,995
+  holdout members served, 28 of 28 browser assertions passing. Do not present any demo as proof
+  of the headline AUC — the demo's model scores 0.9765 on its own
   holdout, while 0.9696 remains an archived full-data tuned-validation figure that describes
   no served model (see LIMITATIONS.md §1).
