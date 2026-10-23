@@ -336,9 +336,10 @@ predictions from a CSV. The SHAP route uses the raw score.
 | **Infrastructure** | Docker, GitHub Actions |
 
 CI (`.github/workflows/ci.yml`) gates on ruff, black, and the full `tests/` suite, with every
-dependency pinned to an exact version in `requirements.txt`. It also trains on synthetic data; the
-calibration, integration, and backtest steps after training still use `continue-on-error`, so they
-do not gate.
+dependency pinned to an exact version in `requirements.txt`. It also runs the feature build, training,
+calibration, integration script, and backtest on synthetic data, and any of them failing fails the
+build. Those steps prove the pipeline runs, not that its numbers mean anything; see LIMITATIONS §5
+and §18.
 
 ## Notes on Metrics
 

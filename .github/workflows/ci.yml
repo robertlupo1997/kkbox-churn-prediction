@@ -105,15 +105,12 @@ jobs:
 
       - name: Calibrate models
         run: python src/calibration.py --features features/features_processed.csv
-        continue-on-error: true
 
       - name: Integration tests
         run: python test_integration.py
-        continue-on-error: true
 
       - name: Backtests (synthetic)
         run: make backtest-ci
-        continue-on-error: true
 
       - name: Upload model artifacts
         uses: actions/upload-artifact@v4
