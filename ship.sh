@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# KNOWN ISSUES (documented, not yet fixed -- see DECISIONS-PENDING.md):
+# KNOWN ISSUES (documented, not yet fixed -- see LIMITATIONS.md):
 #   * This script passes --cutoff to the label CLI, which defines --cutoff-date.
 #   * It reads improvement.brier_delta / improvement.ece_delta from
 #     models/calibration_metrics.json, which stores 'brier' and no ECE at all.
