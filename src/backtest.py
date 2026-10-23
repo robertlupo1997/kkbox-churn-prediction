@@ -177,9 +177,12 @@ def labels_for_expire_month(
         lq.exp_dt AS last_exp_dt,
         lq.exp_date_int,
         MIN(CASE
+          -- Same closed window as src/labels.py: a renewal on the expiry day
+          -- (day 0) through day window_days counts. t2.exp_dt > lq.exp_dt keeps
+          -- the expiring transaction itself from matching at day 0.
           WHEN t2.is_cancel = 0
-            AND t2.txn_dt > lq.exp_dt
-            AND DATE_DIFF('day', lq.exp_dt, t2.txn_dt) < {window_days}
+            AND t2.txn_dt >= lq.exp_dt
+            AND DATE_DIFF('day', lq.exp_dt, t2.txn_dt) <= {window_days}
             AND t2.exp_dt > lq.exp_dt
           THEN t2.txn_dt
           ELSE NULL
