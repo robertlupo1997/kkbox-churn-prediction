@@ -83,7 +83,7 @@ Accuracy, precision, and recall are not reported here: no artifact in the reposi
 and the predictions needed to recompute them are not checked in.
 
 No comparison against the competition winners is made. The repository holds no winner evaluation
-artifact, and the cited paper file is a Git LFS pointer in this checkout.
+artifact. The cited paper is [arXiv:1802.03396](https://arxiv.org/abs/1802.03396).
 
 ## What Is Actually Built
 
@@ -285,7 +285,7 @@ the checked-in defaults.
 The feature set spans transaction, listening, demographic, trend, and historical-churn families
 across 7/14/30/60/90-day windows. Several features are labelled "winner-inspired" in source comments,
 referencing [Bryan Gregory's 1st place solution](https://arxiv.org/abs/1802.03396); the repository
-does not carry a traceable feature-to-source derivation, and the paper file is an LFS pointer here.
+does not carry a traceable feature-to-source derivation.
 
 ### Top Recorded Features (XGBoost importance)
 

@@ -55,7 +55,7 @@ HISTORICAL full-data figures describing no served model:
 | Stacked ensemble | 0.9637549319898823 | 0.14317636528089922 |
 
 No comparison against the competition winners is made here: the repository holds no winner
-evaluation artifact, and the cited paper file is a Git LFS pointer in this checkout.
+evaluation artifact. The cited paper is [arXiv:1802.03396](https://arxiv.org/abs/1802.03396).
 
 ## Intended Use
 

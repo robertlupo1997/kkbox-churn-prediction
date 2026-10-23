@@ -9,8 +9,8 @@ Predict churn one month ahead. Score on log loss. See CITES.md.
 
 Approach
 
-* Rebuilt labels with the 30-day rule and tests. (Two implementations currently disagree on the
-  day-30 boundary; see LIMITATIONS.md.)
+* Rebuilt labels with the 30-day rule and tests; both labelers agree at the day-0 and day-30
+  boundaries, pinned by tests.
 * DuckDB features with as-of windows, plus tests that fabricate post-cutoff events and assert
   they are excluded.
 * Baselines, XGBoost, LightGBM, isotonic calibration.

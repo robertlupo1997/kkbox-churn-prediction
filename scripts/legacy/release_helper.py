@@ -62,8 +62,8 @@ def create_release_bundle():
                 print(f"  ✅ Added: {doc}")
 
         # Add brief if available
-        if Path("Resume_Assets/brief.txt").exists():
-            zipf.write("Resume_Assets/brief.txt", "brief.txt")
+        if Path("docs/resume/brief.txt").exists():
+            zipf.write("docs/resume/brief.txt", "brief.txt")
             print("  ✅ Added: brief.txt")
 
     print(f"✅ Release bundle created: {bundle_path}")

@@ -293,10 +293,10 @@ not at that path.
 
 ## 22. Assets referenced in docs are LFS pointers here
 
-`eval/calibration_reliability_diagram.png`, `eval/calibration_distributions.png`,
-`eval/calibration_isotonic_mapping.png`, and `1802.03396v1.pdf` are Git LFS pointer files (~130
-bytes each) in this checkout, not the images and paper themselves. Any claim resting on the contents
-of the cited paper cannot be checked from this clone.
+`eval/calibration_reliability_diagram.png`, `eval/calibration_distributions.png`, and
+`eval/calibration_isotonic_mapping.png` are Git LFS pointer files (~130 bytes each) in this
+checkout, not the images themselves. The cited paper's pointer file was removed on 2026-10-23; the
+paper is public at [arXiv:1802.03396](https://arxiv.org/abs/1802.03396).
 
 ## 23. Multiple overlapping implementations, no authoritative path
 
