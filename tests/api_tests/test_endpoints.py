@@ -123,7 +123,9 @@ class TestMemberDetailEndpoint:
 
         if members:
             msno = members[0]["msno"]
-            response = client.get(f"/api/members/{msno}")
+            # POST, not GET /members/{msno}: about half of all ids contain "/",
+            # which the path route cannot carry (README, "Use the POST routes").
+            response = client.post("/api/members/lookup", json={"msno": msno})
             assert response.status_code == 200
 
             data = response.json()
@@ -143,7 +145,9 @@ class TestMemberDetailEndpoint:
 
         if members:
             msno = members[0]["msno"]
-            response = client.get(f"/api/members/{msno}")
+            # POST, not GET /members/{msno}: about half of all ids contain "/",
+            # which the path route cannot carry (README, "Use the POST routes").
+            response = client.post("/api/members/lookup", json={"msno": msno})
             data = response.json()
 
             # Should have some feature data

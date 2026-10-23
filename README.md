@@ -216,6 +216,20 @@ synthetic run. Run `git restore models/training_metrics.json` afterwards, or the
 synthetic metrics. The full-data path (`make features-real`, `train_temporal.py`) needs the 30 GB
 Kaggle download and is not exercised by CI.
 
+### Static demo bundle
+
+```bash
+python scripts/export_static_bundle.py   # writes static-bundle/ (about 90 s)
+```
+
+Precomputes every answer the member-lookup page asks the API for, for all 1,995 holdout members:
+the list, each member's detail and calibrated score, and each SHAP explanation, plus the metrics,
+importance, and calibration payloads. Each file is the exact JSON the matching API route returns
+(the script calls the API in process), and `manifest.json` records the sha256 of every model and
+data file that produced it. About 25 MB on disk, 4 MB gzipped; a visitor fetches one ~10 KB file
+per member looked up. `tests/test_static_bundle.py` checks the files against live API calls. The
+dashboard does not read it yet ([#24](https://github.com/robertlupo1997/kkbox-churn-prediction/issues/24)).
+
 ### Option 4: Frontend Development
 
 ```bash
