@@ -121,14 +121,13 @@ original full-data 131-feature training set remains unreproducible.)
 producing `is_churn_x` / `is_churn_y`. `train_temporal.py` requires a literal `is_churn` column. The
 `make features` → `make models` path should fail before model fitting.
 
-## 8. The 30-day label boundary is implemented two different ways
+## 8. ~~The 30-day label boundary is implemented two different ways~~ — FIXED 2026-10-23
 
-- `src/labels.py` uses `DATE_DIFF(...) <= window_days`: renewal on day 30 counts as **retained**.
-- `src/backtest.py` uses `DATE_DIFF(...) < window_days`: the same member is **churned**.
-
-A project built around the official 30-day rule cannot have two answers at the boundary.
-`src/labels.py` is the tested implementation (`tests/test_labels.py` pins day 30 as retained);
-`src/backtest.py` is not tested and still disagrees.
+`src/backtest.py` used strict comparisons at both ends of the window, so a renewal on the expiry
+day (day 0) or on day 30 labelled a member churned, while `src/labels.py` labelled the same member
+retained. The backtest labeler now uses the same closed window as `src/labels.py` (day 0 through
+day 30 retained, day 31 churned), and `tests/test_backtest_labels.py` runs its SQL on fabricated
+renewals at days 0, 29, 30 and 31 to hold the two in agreement.
 
 ## 9. Categorical encoding is not stable across splits
 
@@ -341,7 +340,7 @@ In rough order of value per hour:
    and add FastAPI to the install target so the full suite can actually run.
 3. **One untouched window.** Build April 2017, never tune on it, score once, and report that number
    next to the tuned one.
-4. **Pick one label boundary** and make both implementations agree, with a test at day 30.
+4. ~~**Pick one label boundary** and make both implementations agree, with a test at day 30.~~ Done (§8).
 5. **Wire the historical lag features into the feature pipeline**, or state clearly that the shipped
    model uses a dataset built by a path no longer in the repository.
 
