@@ -243,12 +243,14 @@ in the Makefile, and `requirements.txt` now installs the API dependencies (`fast
 collected. A fresh `make install && make test` no longer silently substitutes a single passing file
 for the suite; failures surface with their real exit code. What still fails is described in §19.
 
-## 18. ~~CI is green by construction around the riskiest stages~~ — mostly FIXED 2026-10-23
+## 18. ~~CI is green by construction around the riskiest stages~~ — FIXED 2026-10-23
 
 `.github/workflows/ci.yml` now fails on ruff and black errors, runs the whole `tests/` directory
-(label, window, calibration, artifact-contract, and API tests included), and installs exact-pinned
-dependencies. What remains: the calibration, integration, and backtest steps of the synthetic
-`pipeline` job are still `continue-on-error`, so a green check says nothing about them.
+(label, window, calibration, artifact-contract, and API tests included), installs exact-pinned
+dependencies, and has no `continue-on-error` step: the synthetic feature build, training,
+calibration, integration script, and backtest all fail the build if they exit non-zero. What a
+green pipeline job does **not** prove: these steps run on 1,000 synthetic members, and the backtest
+still writes no metrics rows (§5), so "it ran" is all the backtest step checks.
 
 ## 19. ~~The test suite does not pass~~ — FIXED
 
@@ -291,10 +293,10 @@ not at that path.
 
 ## 22. Assets referenced in docs are LFS pointers here
 
-`eval/calibration_reliability_diagram.png`, `eval/calibration_distributions.png`,
-`eval/calibration_isotonic_mapping.png`, and `1802.03396v1.pdf` are Git LFS pointer files (~130
-bytes each) in this checkout, not the images and paper themselves. Any claim resting on the contents
-of the cited paper cannot be checked from this clone.
+`eval/calibration_reliability_diagram.png`, `eval/calibration_distributions.png`, and
+`eval/calibration_isotonic_mapping.png` are Git LFS pointer files (~130 bytes each) in this
+checkout, not the images themselves. The cited paper's pointer file was removed on 2026-10-23; the
+paper is public at [arXiv:1802.03396](https://arxiv.org/abs/1802.03396).
 
 ## 23. Multiple overlapping implementations, no authoritative path
 

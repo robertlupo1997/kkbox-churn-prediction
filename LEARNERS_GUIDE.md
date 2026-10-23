@@ -24,7 +24,7 @@ repository. See LIMITATIONS.md.
 | **Features** | 108 | **131** | Including historical churn lags |
 
 No comparison against the winners' scores is made here. This repository holds no winner evaluation
-artifact, and the cited paper is a Git LFS pointer in this checkout.
+artifact. The cited paper is [arXiv:1802.03396](https://arxiv.org/abs/1802.03396).
 
 ---
 
