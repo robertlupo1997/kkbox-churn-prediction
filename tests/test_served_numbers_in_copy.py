@@ -35,8 +35,7 @@ def test_cites_the_served_feature_count(header):
     served = len(json.loads(MODEL.read_text())["learner"]["feature_names"])
     assert str(served) in header, f"the header does not name the served feature count ({served})"
     assert "131 engineered features" not in header, (
-        "131 is the archived full-data feature count; the served model has "
-        f"{served}"
+        "131 is the archived full-data feature count; the served model has " f"{served}"
     )
 
 

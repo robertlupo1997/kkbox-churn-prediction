@@ -20,6 +20,7 @@ def call_get_calibration():
     """Invoke the async route handler synchronously."""
     return asyncio.run(get_calibration())
 
+
 CALIBRATION_PATH = Path("models/calibration_metrics.json")
 
 
@@ -42,7 +43,9 @@ def test_api_serves_the_artifacts_stored_points_not_synthetic_ones():
     stored = json.loads(CALIBRATION_PATH.read_text())["xgboost"]
     response = call_get_calibration()
 
-    stored_uncal = [(p["mean_predicted"], p["fraction_of_positives"]) for p in stored["uncalibrated"]]
+    stored_uncal = [
+        (p["mean_predicted"], p["fraction_of_positives"]) for p in stored["uncalibrated"]
+    ]
     stored_cal = [(p["mean_predicted"], p["fraction_of_positives"]) for p in stored["calibrated"]]
     served_uncal = [(p.mean_predicted, p.fraction_of_positives) for p in response.uncalibrated]
     served_cal = [(p.mean_predicted, p.fraction_of_positives) for p in response.calibrated]
@@ -51,12 +54,10 @@ def test_api_serves_the_artifacts_stored_points_not_synthetic_ones():
         "/api/calibration does not serve the committed uncalibrated points "
         "(synthetic-curve fallback likely fired on a key-shape drift)"
     )
-    assert served_cal == stored_cal, (
-        "/api/calibration does not serve the committed calibrated points"
-    )
+    assert (
+        served_cal == stored_cal
+    ), "/api/calibration does not serve the committed calibrated points"
 
     synthetic = {(round(i / 10, 4), round(0.85 * i / 10 + 0.02, 4)) for i in range(1, 10)}
     served_pairs = {(round(m, 4), round(f, 4)) for m, f in served_uncal}
-    assert not (served_pairs & synthetic), (
-        "served curve contains literal synthetic-fallback points"
-    )
+    assert not (served_pairs & synthetic), "served curve contains literal synthetic-fallback points"

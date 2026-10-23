@@ -207,22 +207,25 @@ agree on an exact ordered 121-feature list (`tests/test_artifact_contract.py` en
 and both served models are retrained on the shipped sample by
 `scripts/rebuild_serving_artifacts.py`.
 
-### Option 2: ML Pipeline Only
+### Option 3: ML Pipeline Only
 
 ```bash
 pip install -r requirements.txt
 
-make test      # See LIMITATIONS.md: this target masks suite failures
+make test      # Full suite: 123 passed, 1 skipped on a clean Python 3.11 install (2026-10-23)
 make features  # Generate features
 make models    # Train models
 make calibrate # Calibrate predictions
 ```
 
-`make features` followed by `make models` does not currently run end to end; the feature builder
-emits duplicate `is_churn` columns that the trainer cannot consume (`src/backtest.py`,
-`train_temporal.py`).
+On the synthetic fixtures (`python tests/fixtures/generate_synthetic.py` first), `make features`
+followed by `make models` runs end to end; CI runs exactly that on every push. **`make models`
+overwrites `models/training_metrics.json`, the served model's metrics file**, with numbers from the
+synthetic run. Run `git restore models/training_metrics.json` afterwards, or the API will advertise
+synthetic metrics. The full-data path (`make features-real`, `train_temporal.py`) needs the 30 GB
+Kaggle download and is not exercised by CI.
 
-### Option 3: Frontend Development
+### Option 4: Frontend Development
 
 ```bash
 cd brutalist-aesthetic-kkbox-churn-analysis-pro
@@ -341,8 +344,10 @@ predictions from a CSV. The SHAP route uses the raw score.
 | **Frontend** | React 19, TypeScript, Vite, Recharts, Tailwind |
 | **Infrastructure** | Docker, GitHub Actions, Hugging Face Spaces |
 
-The GitHub Actions workflows exist but are not gating: lint failures are non-blocking, only two test
-files run, and the calibration, integration, and backtest steps use `continue-on-error`.
+CI (`.github/workflows/ci.yml`) gates on ruff, black, and the full `tests/` suite, with every
+dependency pinned to an exact version in `requirements.txt`. It also trains on synthetic data; the
+calibration, integration, and backtest steps after training still use `continue-on-error`, so they
+do not gate.
 
 ## Notes on Metrics
 

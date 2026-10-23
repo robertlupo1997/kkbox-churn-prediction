@@ -127,6 +127,8 @@ producing `is_churn_x` / `is_churn_y`. `train_temporal.py` requires a literal `i
 - `src/backtest.py` uses `DATE_DIFF(...) < window_days`: the same member is **churned**.
 
 A project built around the official 30-day rule cannot have two answers at the boundary.
+`src/labels.py` is the tested implementation (`tests/test_labels.py` pins day 30 as retained);
+`src/backtest.py` is not tested and still disagrees.
 
 ## 9. Categorical encoding is not stable across splits
 
@@ -242,16 +244,23 @@ in the Makefile, and `requirements.txt` now installs the API dependencies (`fast
 collected. A fresh `make install && make test` no longer silently substitutes a single passing file
 for the suite; failures surface with their real exit code. What still fails is described in §19.
 
-## 18. CI is green by construction around the riskiest stages
+## 18. ~~CI is green by construction around the riskiest stages~~ — mostly FIXED 2026-10-23
 
-In `.github/workflows/ci.yml`: ruff and black failures are `continue-on-error`; the test step runs
-only `tests/test_temporal_safety.py` and `tests/test_new_modules.py`, excluding the label,
-comprehensive-window, calibration, and API tests; and the calibration, integration, and backtest
-steps are all `continue-on-error`. A green badge does not indicate the pipeline works.
+`.github/workflows/ci.yml` now fails on ruff and black errors, runs the whole `tests/` directory
+(label, window, calibration, artifact-contract, and API tests included), and installs exact-pinned
+dependencies. What remains: the calibration, integration, and backtest steps of the synthetic
+`pipeline` job are still `continue-on-error`, so a green check says nothing about them.
 
-## 19. The test suite does not pass
+## 19. ~~The test suite does not pass~~ — FIXED
 
-Measured on 2026-08-23 from a clean clone (`git clone` of this repository into an empty directory,
+Re-measured 2026-10-23 from a clean clone, fresh Python 3.11 virtualenv,
+`pip install -r requirements-dev.txt`, synthetic fixtures generated: **123 passed, 1 skipped, 0
+failed** (`pytest tests/ -rs`). The skip is deliberate: `tests/test_docker_build_context.py` skips a
+glob `COPY` source it cannot check as a single path. The label and window failures were fixed in
+`a6c922b` (`fix(labels)`), and CI now runs the full suite on every push (§18). Section 20 still
+applies: passing is not the same as testing behavior.
+
+The earlier record, kept for history. Measured on 2026-08-23 from a clean clone (`git clone` of this repository into an empty directory,
 fresh virtualenv, `pip install -r requirements.txt`):
 
 - The suite runs to completion (no collection error since `requirements.txt` now includes the API
@@ -261,7 +270,7 @@ tree; `make test` exits 2).
   `tests/test_artifact_contract.py` (2, the serving-contract mismatch documented in §2).
 - On 2026-08-09 the count was 16 failures plus a collection error, measured before the API
   dependencies were installable from `requirements.txt`; several label/window tests were evidently
-  repaired between those dates, and today's numbers are the current baseline.
+  repaired between those dates.
 
 Because the Makefile fallback is gone (§17), these failures now abort `make test` with a non-zero
 exit instead of being hidden.
