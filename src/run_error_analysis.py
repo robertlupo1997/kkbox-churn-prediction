@@ -14,9 +14,8 @@ import pickle
 from pathlib import Path
 
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-
 from error_analysis import run_error_analysis
+from sklearn.preprocessing import LabelEncoder
 
 
 def load_validation_data(features_path: str):

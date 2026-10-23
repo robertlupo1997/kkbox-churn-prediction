@@ -52,9 +52,7 @@ def test_dataset_stats_matches_the_archived_run(dataset_stats, archived):
     assert dataset_stats["train_samples"] == archived["train_samples"]
     assert dataset_stats["val_samples"] == archived["val_samples"]
     assert dataset_stats["feature_count"] == archived["feature_count"]
-    assert dataset_stats["churn_rate"] == pytest.approx(
-        archived["val_churn_rate"] * 100, abs=0.01
-    )
+    assert dataset_stats["churn_rate"] == pytest.approx(archived["val_churn_rate"] * 100, abs=0.01)
 
 
 def test_dataset_stats_population_is_one_of_its_own_splits(dataset_stats):
@@ -109,11 +107,13 @@ def test_the_annotated_files_are_exactly_the_ones_that_need_it():
 def test_contact_volume_is_not_invented():
     """`max(0.01, 1 - threshold) * 0.5` is not a property of the model or the data."""
     src = (COMPONENTS / "PrecisionRecallCurve.tsx").read_text()
-    invented = re.search(r"Math\.max\(\s*0\.01\s*,\s*1\s*-\s*point\.threshold\s*\)\s*\*\s*0\.5", src)
+    invented = re.search(
+        r"Math\.max\(\s*0\.01\s*,\s*1\s*-\s*point\.threshold\s*\)\s*\*\s*0\.5", src
+    )
     assert invented is None, (
         "The contact count is back to a fabricated flag rate. It is pinned exactly "
         "by the curve: predicted positive = recall * churners / precision."
     )
-    assert "capturedChurners / point.precision" in src, (
-        "The contact count must be derived from precision and recall."
-    )
+    assert (
+        "capturedChurners / point.precision" in src
+    ), "The contact count must be derived from precision and recall."

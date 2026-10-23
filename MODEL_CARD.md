@@ -94,7 +94,7 @@ A user churns if they do NOT renew within 30 days after membership expiration.
 
 The repository currently implements this boundary two ways: `src/labels.py` treats renewal on day 30
 as retained, while `src/backtest.py` treats the same member as churned. See
-[LIMITATIONS.md](LIMITATIONS.md).
+[LIMITATIONS.md](LIMITATIONS.md) §8.
 
 ## Features
 

@@ -88,9 +88,7 @@ def test_dockerfile_has_copy_sources():
     assert len(copy_sources()) >= 10, copy_sources()
 
 
-@pytest.mark.parametrize(
-    "dockerfile,source", copy_sources(), ids=lambda v: v.replace("/", "_")
-)
+@pytest.mark.parametrize("dockerfile,source", copy_sources(), ids=lambda v: v.replace("/", "_"))
 def test_copy_source_survives_dockerignore(dockerfile, source):
     patterns = _patterns()
     if any(ch in source for ch in "*?"):

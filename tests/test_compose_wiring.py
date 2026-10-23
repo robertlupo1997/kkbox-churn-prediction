@@ -56,9 +56,9 @@ def test_nginx_proxies_api_to_the_compose_service_name(compose):
     conf = NGINX_CONF.read_text()
     assert "location /api/" in conf
     api_port = str(compose["services"]["api"]["ports"][0]).split(":")[-1].strip('"')
-    assert f"proxy_pass http://api:{api_port}" in conf, (
-        f"nginx must proxy /api/ to the api service on port {api_port}"
-    )
+    assert (
+        f"proxy_pass http://api:{api_port}" in conf
+    ), f"nginx must proxy /api/ to the api service on port {api_port}"
 
 
 def test_nginx_listens_on_the_published_frontend_port(compose):
