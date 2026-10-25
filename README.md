@@ -238,8 +238,13 @@ node scripts/verify/drive-static.mjs            # browser check: scores match, n
 ```
 
 In this mode every page says its numbers were calculated once by the served model and saved;
-nothing is computed while a visitor browses. Where to host it is
-[#25](https://github.com/robertlupo1997/kkbox-churn-prediction/issues/25).
+nothing is computed while a visitor browses. The built site has no runtime dependency beyond
+Google Fonts: Tailwind is compiled in, and CI's `frontend` job builds both modes and runs the
+browser check on every pull request.
+
+Publishing is manual: the `static demo (GitHub Pages)` workflow (`.github/workflows/pages.yml`)
+runs only when started by hand, repeats the browser check, and deploys to GitHub Pages. Hosting
+plan: [#25](https://github.com/robertlupo1997/kkbox-churn-prediction/issues/25).
 
 ### Option 4: Frontend Development
 

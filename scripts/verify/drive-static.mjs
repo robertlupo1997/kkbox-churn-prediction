@@ -12,14 +12,9 @@
  *   node scripts/verify/drive-static.mjs [baseUrl] [screenshotDir]
  *
  * Exits non-zero on any failed assertion.
- *
- * The page loads Tailwind from cdn.tailwindcss.com. Where that host is unreachable (a locked
- * down CI or sandbox), set TAILWIND_CSS to a locally compiled stylesheet and the CDN request
- * is answered with it, so screenshots still show the real layout.
  */
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 
 const BASE = (process.argv[2] ?? 'http://127.0.0.1:8080').replace(/\/$/, '');
 const SHOTS = process.argv[3] ?? '.';
@@ -50,18 +45,14 @@ check('every listed member has a file', manifest.members_exported === listing.to
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-if (process.env.TAILWIND_CSS) {
-  const css = JSON.stringify(readFileSync(process.env.TAILWIND_CSS, 'utf8'));
-  await context.route('https://cdn.tailwindcss.com/**', (route) => route.fulfill({
-    contentType: 'application/javascript',
-    body: `window.tailwind = {}; document.head.appendChild(Object.assign(` +
-          `document.createElement('style'), { textContent: ${css} }));`,
-  }));
-}
 const watch = (page) => {
   const apiCalls = [], errors = [];
   page.on('request', (r) => {
-    if (new URL(r.url()).pathname.includes('/api/')) apiCalls.push(r.url());
+    const u = new URL(r.url());
+    // Only the page's own files and Google Fonts. Anything else is a runtime dependency the
+    // static host does not control (the Tailwind Play CDN and an esm.sh import map were).
+    const own = u.origin === new URL(BASE).origin && !u.pathname.includes('/api/');
+    if (!own && !/^fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) apiCalls.push(r.url());
   });
   page.on('pageerror', (e) => errors.push(e.message));
   return { apiCalls, errors };
@@ -93,7 +84,7 @@ for (const { name, pick } of CLASSES) {
   check('explanation reconciles on the page', lc.includes('they reconcile to within'));
   check('precomputed notice shown', lc.includes('calculated once by the served model'));
   check('no rejected-explanation notice', !lc.includes('was rejected because'));
-  check('no API calls', apiCalls.length === 0, apiCalls.join(' | '));
+  check('no API or third-party script calls', apiCalls.length === 0, apiCalls.join(' | '));
   check('no page errors', errors.length === 0, errors.join(' | '));
 
   await page.screenshot({ path: `${SHOTS}/static-lookup-${name}.png`, fullPage: true });
@@ -110,7 +101,7 @@ for (const { name, pick } of CLASSES) {
   await page.waitForTimeout(2500);
   const lc = (await page.locator('body').innerText()).toLowerCase();
   check('random pick shows a score', lc.includes('log-odds') && lc.includes('_risk'));
-  check('no API calls', apiCalls.length === 0, apiCalls.join(' | '));
+  check('no API or third-party script calls', apiCalls.length === 0, apiCalls.join(' | '));
   check('no page errors', errors.length === 0, errors.join(' | '));
   await page.screenshot({ path: `${SHOTS}/static-random-member.png`, fullPage: true });
   await page.close();
@@ -127,7 +118,7 @@ for (const [route, label, needle] of [
   await page.waitForTimeout(1500);
   const lc = (await page.locator('body').innerText()).toLowerCase();
   check(`"${needle}" shown`, lc.includes(needle));
-  check('no API calls', apiCalls.length === 0, apiCalls.join(' | '));
+  check('no API or third-party script calls', apiCalls.length === 0, apiCalls.join(' | '));
   check('no page errors', errors.length === 0, errors.join(' | '));
   await page.screenshot({ path: `${SHOTS}/static-${label}.png`, fullPage: true });
   await page.close();
