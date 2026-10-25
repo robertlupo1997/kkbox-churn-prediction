@@ -132,3 +132,51 @@ jobs:
             eval/*.csv
             features/features_processed.csv
           retention-days: 7
+
+  frontend:
+    # Builds the dashboard both ways it ships (API mode for the Docker image,
+    # static mode for the hosted demo) and drives the static build in a browser.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: brutalist-aesthetic-kkbox-churn-analysis-pro/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          cd brutalist-aesthetic-kkbox-churn-analysis-pro && npm ci --legacy-peer-deps
+
+      - name: Build (API mode)
+        working-directory: brutalist-aesthetic-kkbox-churn-analysis-pro
+        run: npm run build
+
+      - name: Build (static mode)
+        run: scripts/build_static_site.sh "$PWD/static-site"
+
+      - name: Drive the static build in a browser
+        working-directory: brutalist-aesthetic-kkbox-churn-analysis-pro
+        run: |
+          npm install --no-save --legacy-peer-deps playwright@1.63.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8080 -d ../static-site > /dev/null 2>&1 &
+          for i in $(seq 1 20); do curl -sf http://127.0.0.1:8080/ > /dev/null && break; sleep 1; done
+          cp ../scripts/verify/drive-static.mjs ./drive-static.mjs
+          node drive-static.mjs http://127.0.0.1:8080 "$RUNNER_TEMP"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-demo-screenshots
+          path: ${{ runner.temp }}/*.png
+          if-no-files-found: ignore
