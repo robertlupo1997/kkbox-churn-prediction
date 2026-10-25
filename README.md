@@ -227,8 +227,19 @@ the list, each member's detail and calibrated score, and each SHAP explanation, 
 importance, and calibration payloads. Each file is the exact JSON the matching API route returns
 (the script calls the API in process), and `manifest.json` records the sha256 of every model and
 data file that produced it. About 25 MB on disk, 4 MB gzipped; a visitor fetches one ~10 KB file
-per member looked up. `tests/test_static_bundle.py` checks the files against live API calls. The
-dashboard does not read it yet ([#24](https://github.com/robertlupo1997/kkbox-churn-prediction/issues/24)).
+per member looked up. `tests/test_static_bundle.py` checks the files against live API calls.
+
+To build the whole dashboard as a static site that reads that bundle instead of the API:
+
+```bash
+scripts/build_static_site.sh                    # writes static-site/ (bundle + built frontend)
+python -m http.server 8080 -d static-site       # serve over localhost or HTTPS, not file://
+node scripts/verify/drive-static.mjs            # browser check: scores match, no /api calls
+```
+
+In this mode every page says its numbers were calculated once by the served model and saved;
+nothing is computed while a visitor browses. Where to host it is
+[#25](https://github.com/robertlupo1997/kkbox-churn-prediction/issues/25).
 
 ### Option 4: Frontend Development
 

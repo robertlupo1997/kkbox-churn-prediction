@@ -14,9 +14,20 @@
  *
  * There is no mock data in this file. When the API cannot answer, the caller is
  * told so and the UI says so.
+ *
+ * Static mode (`VITE_DATA_MODE=static`) reads the bundle that
+ * `scripts/export_static_bundle.py` writes instead of calling the API. Every
+ * file in it is the exact JSON the matching API route returned for the same
+ * model, so the functions below hand the page identical payloads either way.
+ * Nothing is computed in the browser: the score and the explanation were
+ * produced once by the served model and saved.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
+
+/** True when this build reads the precomputed bundle rather than a live API. */
+export const IS_STATIC = import.meta.env.VITE_DATA_MODE === 'static';
+const STATIC_BASE = import.meta.env.VITE_STATIC_BASE ?? './data-bundle/';
 
 const HEALTH_TIMEOUT_MS = 3000;
 const REQUEST_TIMEOUT_MS = 10000;
@@ -95,6 +106,80 @@ export interface ApiStatus {
   featuresLoaded?: boolean;
 }
 
+/** What produced a static bundle; see `scripts/export_static_bundle.py`. */
+export interface BundleManifest {
+  bundle_version: number;
+  generated_at: string;
+  population: number;
+  members_exported: number;
+  approximate_explanations: number;
+  source_artifacts: Record<string, string>;
+}
+
+// ---- static bundle ---------------------------------------------------------
+
+let manifestPromise: Promise<BundleManifest> | null = null;
+let membersPromise: Promise<ApiMember[]> | null = null;
+
+async function getStatic<T>(path: string): Promise<T> {
+  const response = await fetch(`${STATIC_BASE}${path}`, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (response.status === 404) {
+    throw new ApiUnavailableError('not_found');
+  }
+  if (!response.ok) {
+    throw new ApiUnavailableError(`${path} returned ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+/** The bundle's manifest, or null in API mode. Cached; a failure is retried. */
+export function fetchBundleManifest(): Promise<BundleManifest | null> {
+  if (!IS_STATIC) return Promise.resolve(null);
+  manifestPromise ??= getStatic<BundleManifest>('manifest.json').catch((error) => {
+    manifestPromise = null;
+    throw error;
+  });
+  return manifestPromise;
+}
+
+function staticMembers(): Promise<ApiMember[]> {
+  membersPromise ??= getStatic<{ members: ApiMember[] }>('members.json')
+    .then((listing) => listing.members)
+    .catch((error) => {
+      membersPromise = null;
+      throw error;
+    });
+  return membersPromise;
+}
+
+/** Same key the exporter uses: first 16 hex chars of sha256(msno). */
+async function memberKey(msno: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msno));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
+
+interface StaticMemberFile {
+  detail: ApiMemberDetail;
+  shap: { msno: string; explanation: ApiShapExplanation };
+}
+
+async function staticMemberFile(msno: string): Promise<StaticMemberFile | null> {
+  try {
+    return await getStatic<StaticMemberFile>(`m/${await memberKey(msno)}.json`);
+  } catch (error) {
+    if (error instanceof ApiUnavailableError && error.message === 'not_found') {
+      return null;
+    }
+    throw error;
+  }
+}
+
 async function getJson<T>(path: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'GET',
@@ -131,6 +216,18 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
  * this also asks for one member and treats an empty population as unavailable.
  */
 export async function checkApiStatus(): Promise<ApiStatus> {
+  if (IS_STATIC) {
+    try {
+      const [manifest, members] = await Promise.all([fetchBundleManifest(), staticMembers()]);
+      return {
+        available: !!manifest && members.length > 0,
+        modelLoaded: true,
+        featuresLoaded: true,
+      };
+    } catch {
+      return { available: false };
+    }
+  }
   try {
     const health = await getJson<{
       status: string;
@@ -152,6 +249,7 @@ export async function checkApiStatus(): Promise<ApiStatus> {
 
 /** How many members the API is serving. */
 export async function fetchPopulationSize(): Promise<number> {
+  if (IS_STATIC) return (await staticMembers()).length;
   const page = await getJson<ApiMemberList>('/api/members?limit=1');
   return page.total;
 }
@@ -164,12 +262,20 @@ export async function fetchPopulationSize(): Promise<number> {
  * hit said nothing about whether the API knew the member.
  */
 export async function searchMembers(query: string, limit = 12): Promise<ApiMemberList> {
+  if (IS_STATIC) {
+    // The same rule as the API's search_members: case-insensitive substring
+    // of the id, in served order.
+    const needle = query.toLowerCase();
+    const matches = (await staticMembers()).filter((m) => m.msno.toLowerCase().includes(needle));
+    return { members: matches.slice(0, limit), total: matches.length, limit, offset: 0 };
+  }
   const params = new URLSearchParams({ q: query, limit: String(limit) });
   return getJson<ApiMemberList>(`/api/members?${params.toString()}`);
 }
 
 /** Full record for one member. Returns null when the API has no such member. */
 export async function fetchMemberDetail(msno: string): Promise<ApiMemberDetail | null> {
+  if (IS_STATIC) return (await staticMemberFile(msno))?.detail ?? null;
   try {
     return await postJson<ApiMemberDetail>('/api/members/lookup', { msno });
   } catch (error) {
@@ -248,6 +354,7 @@ export function checkShapReconciles(
  * served calibrated risk_score.
  */
 export async function fetchShap(msno: string): Promise<ApiShapExplanation | null> {
+  if (IS_STATIC) return (await staticMemberFile(msno))?.shap.explanation ?? null;
   try {
     const payload = await postJson<{ msno: string; explanation: ApiShapExplanation }>(
       '/api/shap',
@@ -260,4 +367,17 @@ export async function fetchShap(msno: string): Promise<ApiShapExplanation | null
     }
     throw error;
   }
+}
+
+/** One member chosen uniformly at random from the served population. */
+export async function fetchRandomMember(): Promise<ApiMember | null> {
+  if (IS_STATIC) {
+    const members = await staticMembers();
+    return members.length ? members[Math.floor(Math.random() * members.length)] : null;
+  }
+  const total = await fetchPopulationSize();
+  if (!total) return null;
+  const offset = Math.floor(Math.random() * total);
+  const page = await getJson<ApiMemberList>(`/api/members?limit=1&offset=${offset}`);
+  return page.members[0] ?? null;
 }
