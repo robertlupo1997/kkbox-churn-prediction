@@ -149,13 +149,13 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8" onClick={() => setShowTagMenu(false)}>
       {/* Panel-inventory banner (wave 3): this page is a static illustrative
-          export, not the served population. Live scoring lives in Member
-          Lookup. */}
+          export, not the served population. Served-model scores live in
+          Member Lookup. */}
       <div className="bg-black text-brand p-4 brutalist-border brutalist-shadow">
         <p className="text-[11px] font-black uppercase tracking-widest">
           Illustrative sample — every figure and member row on this dashboard comes from a
-          bundled static export, not from the served model. For live scores over the holdout
-          population, use Member Lookup.
+          bundled static export, not from the served model. For the served model&apos;s scores over
+          the holdout population, use Member Lookup.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

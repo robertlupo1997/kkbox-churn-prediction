@@ -107,3 +107,4 @@ features/features_comprehensive.parquet
 features/features_processed.csv
 nul
 static-bundle/
+static-site/

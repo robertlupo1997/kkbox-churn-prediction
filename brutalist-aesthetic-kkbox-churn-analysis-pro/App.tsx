@@ -9,6 +9,8 @@ import ModelPerformance from './components/ModelPerformance';
 import FeatureImportanceView from './components/FeatureImportanceView';
 import ROICalculator from './components/ROICalculator';
 import About from './components/About';
+import HowItWorks from './components/HowItWorks';
+import { IS_STATIC } from './services/apiService';
 import Soundwave from './components/Soundwave';
 
 // Tech stack badges for recruiter visibility
@@ -28,7 +30,13 @@ const MetricsBanner: React.FC = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-black text-white py-2 px-4 flex items-center justify-center gap-4 sm:gap-6 text-[10px] font-black uppercase tracking-widest">
-      <span className="flex items-center gap-1">
+      {IS_STATIC && (
+        <>
+          <span className="flex items-center gap-1 text-brand">Static demo: scores precomputed by the served model</span>
+          <span className="hidden sm:inline text-zinc-500">|</span>
+        </>
+      )}
+      <span className={`${IS_STATIC ? 'hidden sm:flex' : 'flex'} items-center gap-1`}>
         Archived Tuned-Val AUC <span className="text-brand">0.9696</span> — no served model
       </span>
       <span className="hidden sm:inline text-zinc-500">|</span>
@@ -117,6 +125,12 @@ const Header = () => {
           <div className="flex flex-wrap gap-1 mb-3">
             {TECH_STACK.map(tech => <TechBadge key={tech} label={tech} />)}
           </div>
+          <Link
+            to="/how"
+            className="inline-flex items-center gap-2 mb-4 bg-brand text-black px-3 py-2 text-[10px] font-black uppercase tracking-widest brutalist-border hover:bg-black hover:text-white transition-colors"
+          >
+            New here? How this works <MoveRight size={14} />
+          </Link>
           <div className="flex items-center space-x-2">
             <div className="h-[2px] w-12 bg-black dark:bg-white"></div>
             <span className="text-[10px] font-black uppercase tracking-[0.3em] dark:text-white">Portfolio Project</span>
@@ -190,6 +204,7 @@ const Navigation = () => {
 
   return (
     <nav className="px-8 mb-4 flex flex-wrap gap-2">
+      <NavItem to="/how" label="How it works" active={currentPath === '/how'} />
       <NavItem to="/" label="Dashboard" active={currentPath === '/'} />
       <NavItem to="/lookup" label="Member Lookup" active={currentPath === '/lookup'} />
       <NavItem to="/performance" label="Performance" active={currentPath === '/performance'} />
@@ -259,6 +274,7 @@ function AppContent() {
                 <Route path="/features" element={<FeatureImportanceView />} />
                 <Route path="/roi" element={<ROICalculator />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/how" element={<HowItWorks />} />
               </Routes>
             </AnimatePresence>
           </main>

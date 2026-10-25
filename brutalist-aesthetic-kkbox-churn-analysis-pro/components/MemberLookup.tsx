@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Loader2, Sparkles, Zap, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Search, Loader2, Sparkles, Zap, AlertCircle, Wifi, WifiOff, Shuffle, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   checkApiStatus,
   checkShapReconciles,
+  fetchBundleManifest,
   fetchMemberDetail,
+  fetchRandomMember,
   fetchPopulationSize,
   fetchShap,
+  IS_STATIC,
   searchMembers,
   type ApiMember,
   type ApiMemberDetail,
@@ -16,13 +19,17 @@ import {
 import ShapWaterfall from './ShapWaterfall';
 
 /**
- * Member lookup, served entirely by the API.
+ * Member lookup, served entirely by the model's own output.
  *
- * Everything on this screen comes from the running model. There is no bundled
- * member list and no generated explanation: search hits the served population,
- * the score is the served score, and when an explanation is unavailable the
- * screen says so rather than substituting anything.
+ * Everything on this screen comes from the served model: live from the API, or
+ * (static builds) from the bundle that recorded the API's answers. There is no
+ * generated explanation: search covers the served population, the score is the
+ * served score, and when an explanation is unavailable the screen says so
+ * rather than substituting anything.
  */
+
+const formatBundleDate = (iso: string): string =>
+  new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
 /** Feature keys worth showing beside the score, if the member record has them. */
 const HIGHLIGHT_FEATURES: { key: string; label: string }[] = [
@@ -77,12 +84,18 @@ const MemberLookup: React.FC = () => {
   const [shapUnavailable, setShapUnavailable] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [bundleDate, setBundleDate] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     checkApiStatus().then(async status => {
       if (cancelled) return;
       setApiAvailable(status.available);
+      if (status.available && IS_STATIC) {
+        fetchBundleManifest()
+          .then((m) => !cancelled && m && setBundleDate(formatBundleDate(m.generated_at)))
+          .catch(() => undefined);
+      }
       if (status.available) {
         try {
           setPopulation(await fetchPopulationSize());
@@ -107,7 +120,7 @@ const MemberLookup: React.FC = () => {
       const record = await fetchMemberDetail(msno);
       if (!record) {
         setDetail(null);
-        setSearchError(`The API has no member with id "${msno}".`);
+        setSearchError(`The served population has no member with id "${msno}".`);
         return;
       }
       setDetail(record);
@@ -201,6 +214,23 @@ const MemberLookup: React.FC = () => {
     performSearch(searchId);
   };
 
+  const pickRandom = async () => {
+    setResults([]);
+    try {
+      const member = await fetchRandomMember();
+      if (member) {
+        setSearchId(member.msno);
+        await selectMember(member.msno);
+      }
+    } catch (error) {
+      setSearchError(
+        `Could not pick a member: ${error instanceof Error ? error.message : 'unknown error'}.`,
+      );
+    }
+  };
+
+  const sourceLabel = IS_STATIC ? 'Saved model output' : 'API';
+
   const riskPercent = detail ? detail.risk_score * 100 : 0;
 
   return (
@@ -221,7 +251,16 @@ const MemberLookup: React.FC = () => {
           {apiAvailable === null ? (
             <>
               <Loader2 size={12} className="animate-spin dark:text-white" />
-              <span className="dark:text-white">Checking API...</span>
+              <span className="dark:text-white">Checking {sourceLabel}...</span>
+            </>
+          ) : apiAvailable && IS_STATIC ? (
+            <>
+              <Archive size={12} className="text-green-600" />
+              <span className="text-green-700 dark:text-green-400">
+                Precomputed
+                {bundleDate ? ` ${bundleDate}` : ''} from the served model
+                {population !== null ? ` — ${population.toLocaleString()} members` : ''}
+              </span>
             </>
           ) : apiAvailable ? (
             <>
@@ -235,7 +274,7 @@ const MemberLookup: React.FC = () => {
             <>
               <WifiOff size={12} className="text-red-500" />
               <span className="text-red-700 dark:text-red-400">
-                API unavailable — this page cannot show a prediction
+                {sourceLabel} unavailable — this page cannot show a prediction
               </span>
             </>
           )}
@@ -263,6 +302,17 @@ const MemberLookup: React.FC = () => {
             EXECUTE
           </button>
         </form>
+        <button
+          type="button"
+          onClick={pickRandom}
+          disabled={apiAvailable !== true || loading}
+          className="mt-3 inline-flex items-center gap-2 brutalist-border dark:border-white bg-white dark:bg-zinc-900 dark:text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-brand hover:text-black transition-colors disabled:opacity-40"
+        >
+          <Shuffle size={14} /> Show me a random member
+        </button>
+        <p className="mt-2 text-[10px] font-bold opacity-50 dark:text-white">
+          Member ids are long random strings, so the quickest way in is a random pick.
+        </p>
       </div>
 
       {searchError && (
@@ -362,6 +412,13 @@ const MemberLookup: React.FC = () => {
                 </div>
 
                 <div className="prose prose-sm max-w-none text-black dark:text-white font-medium leading-relaxed">
+                  {IS_STATIC && (
+                    <p className="mb-4 text-[11px] font-bold opacity-60">
+                      Calculated once by the served model
+                      {bundleDate ? ` on ${bundleDate}` : ''} and saved; nothing on this page
+                      is computed live.
+                    </p>
+                  )}
                   <p className="mb-4">
                     The model scores this member at{' '}
                     <strong>{riskPercent.toFixed(2)}%</strong> churn probability, which places
@@ -454,8 +511,8 @@ const MemberLookup: React.FC = () => {
           </h3>
           <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">
             {apiAvailable === false
-              ? 'The API is not serving members right now.'
-              : 'Search any part of a subscriber id to begin analysis.'}
+              ? `The ${sourceLabel.toLowerCase()} is not available right now.`
+              : 'Search any part of a subscriber id, or pick a random member.'}
           </p>
         </div>
       ) : null}
